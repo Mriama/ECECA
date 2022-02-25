@@ -1,0 +1,91 @@
+{% extends '::base.html.twig' %}
+
+{% block title %}
+	{{ parent() }}{% if sousTypeElect is defined %} {{ sousTypeElect.code }} {% elseif typeElect is defined %}{{ typeElect.code }} {% endif %}
+{% endblock %}
+
+{% block arianeComplements %}{{ parent() }}
+	{% if sousTypeElect is defined %}
+	<li>Élections <abbr title="{{ sousTypeElect.libelle }}">{{ sousTypeElect.code }}</abbr></li>
+	{% elseif typeElect is defined %}
+	<li>Élections <abbr title="{{ typeElect.libelle }}">{{ typeElect.code }}</abbr></li>
+	{% endif %}
+{% endblock %}
+
+{% block contentPage %}
+<h3>Exemple de <span>tableau</span></h3>
+<table>
+	<tr>
+		<th scope="col">&nbsp;</th>
+		<th scope="col">Résultats bruts</th>
+		<th scope="col">dont ECLAIR</th>
+	</tr>
+	<tr>
+		<th scope="row">Nombre d'électeurs</th>
+		<td>XXXXXXXX</td>
+		<td>YYYYY</td>
+	</tr>
+	<tr>
+		<th scope="row">Nombre de sièges</th>
+		<td>xx</td>
+		<td>yy</td>
+	</tr>
+	<tr>
+		<th scope="row">Nombre de suffrages</th>
+		<td>XXXXXXXX</td>
+		<td>YYYYY</td>
+	</tr>
+	<tr>
+		<th scope="row">Nombre de votes blancs ou nuls</th>
+		<td>XXXXXXXX</td>
+		<td>YYYYY</td>
+	</tr>
+	<tr>
+		<th scope="row">Nombre de suffrages exprimés</th>
+		<td>XXXXXXXX</td>
+		<td>YYYYY</td>
+	</tr>
+	<tr>
+		<th scope="row">Taux de participation</th>
+		<td>xx%</td>
+		<td>yy%</td>
+	</tr>
+	<tr>
+		<th scope="row">Quotient</th>
+		<td>xx</td>
+		<td>yy</td>
+	</tr>	 
+</table>
+
+<h3>Exemple de <span>formulaire</span></h3>
+<form action="#" method="post" accept-charset="UTF-8">
+	<div id="form">
+		{# par défaut Symfony va créer les div, label et compagnie - s'appuyer au max sur ça et ne pas réinventer la roue #}
+		<div>
+			<label for="etab">Type d'établissement</label>
+			<select name="etab" id="etab">
+				<option>École</option>
+				<option>Collège</option>
+				<option>Lycée</option>
+			</select>
+		</div>
+		<div>
+			<label for="eclair">Type Éclair</label>
+			<input name="eclair" id="eclair" type="checkbox" />
+		</div>
+		<div>
+			<label for="email">Adresse courriel</label>
+			<input name="email" id="email" type="email" />
+		</div>
+	</div>
+	<div class="boutons">
+		<input type="submit" value="Enregistrer" />
+	</div>
+</form>
+
+<div class="pageactions">
+	<a href="#" class="retour">Retour</a>
+	<input type="button" value="Imprimer le PV" class="pv" />
+	<input type="button" value="Télécharger en PDF" class="pdf" />
+</div>
+{% endblock %}

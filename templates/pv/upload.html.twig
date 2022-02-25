@@ -1,0 +1,52 @@
+{% extends 'EPLEElectionBundle::layout.html.twig' %}
+
+{% block title %}{{ parent() }} - Import du PV signé
+{% endblock %}
+
+{% block arianeComplements %}{{ parent() }}<li>Import du PV signé
+</li>{% endblock %}
+
+{% block contentPage %}
+
+<h3>Import du PV signé pour l'établissement <span>{{ electEtablissement.etablissement.libelle }} ({{ electEtablissement.etablissement.uai }})</span></h3>
+{% if msgErr is defined %}
+	<p class="message erreur">{{ msgErr }}</p>
+{% endif %}
+{% if fileExistsError is defined %}
+	<p class="message erreur">{{ erreurs[007] }}</p>
+{% endif %}
+<h4>Rappel</h4>
+<table>
+	<tr>
+		<th scope="row">Campagne</th>
+		<td>{{ electEtablissement.campagne.anneeDebut }} - {{ electEtablissement.campagne.anneeFin }}</td>
+	</tr>
+	<tr>
+		<th scope="row">Type d'établissement</th>
+		<td>{{ electEtablissement.etablissement.typeEtablissement.libelle }}</td>
+	</tr>
+	<tr>
+		<th scope="row">Catégorie</th>
+		<td>{% if electEtablissement.etablissement.typePrioritaire.code is defined %}{{electEtablissement.etablissement.typePrioritaire.code}}{% else %}N/A{% endif %}</td>
+	</tr>
+	<tr>
+		<th scope="row">Commune (Département)</th>
+		{% if electEtablissement.etablissement.commune is not empty %}
+			<td>{{ electEtablissement.etablissement.commune.libelle }} ({{ electEtablissement.etablissement.commune.departement.libelle}})</td>
+		{% else %}
+			<td><abbr title="Non communiqué">N/C</abbr></td>
+		{% endif %}
+	</tr>
+</table>
+
+<h4>Import du fichier (max. 250Ko, format PDF uniquement)</h4>
+<form action="{{ path('EPLEElectionBundle_do_upload', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect' : typeElect.getCodeUrlById() }) }}" method="post" accept-charset="UTF-8" {{ form_enctype(form) }}>
+		{{ form_widget(form) }}
+	<div class="boutons"><input type="submit" value="Valider" /></div>
+</form>
+
+<div class="pageactions">
+	<a href="{{ path('EPLEElectionBundle_resultats_etablissement', { 'codeUrlTypeElect' : typeElect.getCodeUrlById(), 'uai': electEtablissement.etablissement.uai }) }}" class="retour">Retour</a>
+</div>
+
+{% endblock %}

@@ -1,0 +1,7 @@
+{% if campagne.isFinished == false %}
+		{% if nbEtabSaisieParZone is defined and nbEtabSaisieValideeParZone is defined and nbEtabSaisieValideeParZone < nbEtabSaisieParZone %}
+			<p class="message info">
+				Les données sont provisoires, saisie effectuée par {{ nbEtabSaisieParZone }} établissement{% if nbEtabSaisieParZone>1 %}s{% endif %} sur {{nbEtabParZone}}, {{ nbEtabSaisieValideeParZone }} validée{% if nbEtabSaisieValideeParZone>1 %}s{% endif %}
+			</p>
+		{% endif %}
+{% endif %}

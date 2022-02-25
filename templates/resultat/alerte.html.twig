@@ -1,0 +1,38 @@
+{% if campagne.isFinished == false %}
+		
+	{# Affichage Zone = Etablissement #}
+	{% if statutSaisi is defined %}{#TODO affichage si CE#}
+		<p class="message info">Les résultats n'ont pas encore été transmis.</p>
+	{% endif %}
+	{% if statutTransmis is defined %}
+		{# defect 206 #}
+		{% if statutEnAttenteDeNouvellesElections is defined %}
+			<p class="message info">Transmis à DSDEN / RECTORAT pour validation.</p> {#sesam 0316037 : Changement libellé#}
+		{% else %}
+			{# anomalie 154831 #}
+			{% if isDeCe is defined and isDeCe %}
+				<p class="message info">Résultats transmis.</p>
+			{% else %}
+                {# ex05 texte replacement #}
+                <p class="message info">Transmis à DSDEN / RECTORAT pour validation.</p>
+			{% endif %}
+		{% endif %}
+	{% endif %}
+	
+	{% if fileUpload is defined %}
+		<p class="message info">Le PV a été importé avec succès.</p>
+	{% endif %}
+		
+	{# Affichage Zone > Etablissement #}
+	<p class="message info">
+	{% if nbEtabSaisieParZone is defined and nbEtabParZone is defined and nbEtabSaisieParZone < nbEtabParZone %}
+		{{ nbEtabSaisieParZone }} établissement{% if nbEtabSaisieParZone >1 %}s{% endif %} sur {{ nbEtabParZone }} {% if nbEtabSaisieParZone >1 %}ont{% else %}a{% endif %} saisi mais pas transmis.
+	{% endif %}
+	{% if nbEtabSaisieTransmiseParZone is defined and nbEtabSaisieTransmiseParZone < nbEtabSaisieParZone %}
+		{% if nbEtabSaisieTransmiseParZone == 0 %}Aucun{% else %}{{ nbEtabSaisieTransmiseParZone }}{% endif %} établissement{% if nbEtabSaisieTransmiseParZone >1 %}s{% endif %} en attente de validation.
+	{% endif %}
+	{% if nbEtabSaisieValideeParZone is defined and nbEtabSaisieValideeParZone < nbEtabSaisieTransmiseParZone %}
+		{% if nbEtabSaisieValideeParZone == 0 %}Aucun{% else %}{{ nbEtabSaisieValideeParZone }}{% endif %} établissement{% if nbEtabSaisieValideeParZone >1 %}s{% endif %} validé{% if nbEtabSaisieValideeParZone >1 %}s{% endif %}.
+	{% endif %}
+	</p>
+{% endif %}

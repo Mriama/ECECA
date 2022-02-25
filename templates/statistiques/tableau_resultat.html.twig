@@ -1,0 +1,148 @@
+<!-- YME Mise en place de la balise page-break pour éviter à TCPDF de couper le tableau -->
+<div style="page-break-inside:avoid;">
+	<h4>Répartition détaillée des sièges</h4>
+	<table>
+		{% if elect is not empty or electPrec is not empty %}
+			<tr>
+				<th scope="col" id="libelle_org">Organisation</th>
+				<th scope="col" class="resultats" id="libelle_res"><abbr title="Nombre de">Nb</abbr> suffrages</th>
+				<th scope="col" class="resultats" id="libelle_res"><abbr title="Pourcentage">%</abbr></th>
+				<th scope="col" class="resultats" id="libelle_res">Rappel {{ campagne.anneeDebut-1 }} - {{ campagne.anneeFin-1 }}</th>
+				<th scope="col" class="resultats" id="libelle_res">Variation</th>
+				<th scope="col" class="resultats" id="libelle_res"><abbr title="Nombre de">Nb</abbr> sièges</th>
+				<th scope="col" class="resultats" id="libelle_res"><abbr title="Pourcentage">%</abbr></th>
+				<th scope="col" class="resultats" id="libelle_res">Rappel {{ campagne.anneeDebut-1 }} - {{ campagne.anneeFin-1 }}</th>
+				<th scope="col" class="resultats" id="libelle_res">Variation</th>
+			</tr>
+			{% set resultatVoix = false %}
+			{% set resultatSieges = false %}
+			{% for res in listeResultat %}
+				{# Contenu du tableau #}
+				<tr>
+					{# Nb suffrages #}
+					{% if res.resultat is not empty %}
+						{% set resultatVoix = true %}
+						<td>{{ res.resultat.organisation.Libelle }}</td>
+						<td class="resultats">{{ res.resultat.nbVoix }}</td>
+						<td class="resultats">{% if elect.NbVoixTotal != 0 %}
+								{{ (res.resultat.nbVoix / elect.NbVoixTotal * 100) | number_format(2, '.', ',') }}%{% endif %}
+						</td>
+						{% if electPrec is not empty %}
+							{% if hidePrecResult is defined and hidePrecResult == true %}
+								<td class="resultats">-</td>
+								<td class="resultats">-</td>
+							{% elseif res.resultatPrec is not empty %}
+								<td class="resultats">{% if electPrec.NbVoixTotal != 0 and res.resultatPrec is defined %}{{ (res.resultatPrec.nbVoix / electPrec.NbVoixTotal * 100) | number_format(2, '.', ',') }}%
+									{% else %}-
+									{% endif %}
+								</td>
+								<td class="resultats">{% if electPrec.NbVoixTotal != 0 and res.resultatPrec is defined %}{{ ((res.resultat.nbVoix / elect.NbVoixTotal * 100) | number_format(2, '.', ',') - (res.resultatPrec.nbVoix / electPrec.NbVoixTotal * 100) | number_format(2, '.', ',') ) | number_format(2, '.', ',') }}%
+									{% else %}-
+									{% endif %}
+								</td>
+							{% else %}
+								<td class="resultats">-</td>
+								<td class="resultats">-</td>
+							{% endif %}
+						{% else %}
+							<td class="resultats">-</td>
+							<td class="resultats">-</td>
+						{% endif %}
+					{% else %}
+						<td>{{ res.resultatPrec.organisation.Libelle }}</td>
+						<td class="resultats">-</td>
+						<td class="resultats">-</td>
+						{% if hidePrecResult is defined and hidePrecResult == true %}
+							<td class="resultats">-</td>
+							<td class="resultats">-</td>
+						{% elseif electPrec is not empty %}
+							<td class="resultats">{% if electPrec.NbVoixTotal != 0 and res.resultatPrec is defined %}{{ (res.resultatPrec.nbVoix / electPrec.NbVoixTotal * 100) | number_format(2, '.', ',') }}%
+								{% else %}-
+								{% endif %}
+							</td>
+							<td class="resultats">-</td>
+						{% else %}
+							<td class="resultats">-</td>
+							<td class="resultats">-</td>
+						{% endif %}
+					{% endif %}
+
+					{# Nb sièges #}
+					{% if res.resultat is not empty %}
+						{% set resultatSieges = true %}
+						<td class="resultats">{{ (res.resultat.nbSieges) + res.resultat.nbSiegesSort }}</td>
+						<td class="resultats">{% if totalDetails != 0 %}
+								{{ (((res.resultat.nbSieges) + res.resultat.nbSiegesSort) / totalDetails * 100)|number_format(2, '.', ',') }}%{% endif %}
+						</td>
+						{% if electPrec is not empty %}
+							{% if hidePrecResult is defined and hidePrecResult == true %}
+								<td class="resultats">-</td>
+								<td class="resultats">-</td>
+							{% elseif res.resultatPrec is not empty %}
+								<td class="resultats">{% if totalDetailsPrec != 0 and res.resultatPrec is defined %}{{ (((res.resultatPrec.nbSieges) + res.resultatPrec.nbSiegesSort) / totalDetailsPrec *100)|number_format(2, '.', ',') }}%
+									{% else %}-
+									{% endif %}
+								</td>
+								<td class="resultats">
+									{% if totalDetails != 0 %}
+										{% if totalDetailsPrec != 0 and res.resultatPrec is defined %}
+											{{ (((res.resultat.nbSieges + res.resultat.nbSiegesSort ) / totalDetails * 100) | number_format(2, '.', ',') - ((res.resultatPrec.nbSieges + res.resultatPrec.nbSiegesSort ) / totalDetailsPrec * 100) | number_format(2, '.', ',')) | number_format(2, '.', ',') }}%
+
+										{% else %}-
+										{% endif %}
+									{% else %}
+										{% if totalDetailsPrec != 0 and res.resultatPrec is defined %}{{ (0 | number_format(2, '.', ',') - (((res.resultatPrec.nbSieges) + res.resultatPrec.nbSiegesSort ) / totalDetailsPrec * 100) | number_format(2, '.', ',') ) | number_format(2, '.', ',') }}%
+										{% else %}-
+										{% endif %}
+									{% endif %}
+								</td>
+							{% else %}
+								<td class="resultats">-</td>
+								<td class="resultats">-</td>
+							{% endif %}
+						{% else %}
+							<td class="resultats">-</td>
+							<td class="resultats">-</td>
+						{% endif %}
+					{% else %}
+						<td class="resultats">-</td>
+						<td class="resultats">-</td>
+						{% if hidePrecResult is defined and hidePrecResult == true %}
+							<td class="resultats">-</td>
+							<td class="resultats">-</td>
+						{% elseif electPrec is not empty %}
+							<td class="resultats">{% if totalDetailsPrec != 0 and res.resultatPrec is defined %}{{ (((res.resultatPrec.nbSieges) + res.resultatPrec.nbSiegesSort ) / totalDetailsPrec * 100) | number_format(2, '.', ',') }}%
+								{% else %}-
+								{% endif %}
+							</td>
+							<td class="resultats">-</td>
+						{% else %}
+							<td class="resultats">-</td>
+							<td class="resultats">-</td>
+						{% endif %}
+					{% endif %}
+				</tr>
+				{# Fin contenu du tableau #}
+			{% else %}
+				<tr>
+					<td colspan="9" class="warning">Aucun résultat détaillé pour {% if app.session.get('select_etablissement') is not empty %}cet établissement{% else %}cette zone{% endif %}</td>
+				</tr>
+			{% endfor %}
+
+			{# Totaux, dernière ligne #}
+			{# {% if resultatVoix is not empty and resultatSieges is not empty %} YME 0145648 #}
+			<tr class="total">
+				<td id="libelle_org">TOTAL TOUTES ORGANISATIONS</td>
+				<td class="resultats">{{ elect is not empty ? elect.NbVoixTotal : '-' }}</td>
+				<td colspan="3"></td>
+				<td class="resultats">{{ elect is not empty ? elect.NbSiegesTotal : '-' }}</td>
+				<td colspan="3"></td>
+			</tr>
+			{# {% endif %} #}
+		{% else %}
+			<tr>
+				<td colspan="9" class="warning">Aucun résultat détaillé pour {% if app.session.get('select_etablissement') is not empty %}cet établissement{% else %}cette zone{% endif %}</td>
+			</tr>
+		{% endif %}
+	</table>
+</div>

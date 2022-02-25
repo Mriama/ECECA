@@ -1,0 +1,26 @@
+{% extends 'EPLEElectionBundle::layout.html.twig' %}
+
+{% block ql_menu %}{% endblock %}
+{% block menu %}{% endblock %}
+{% block ariane %}{% block arianeComplements %}{% endblock %}{% endblock %}
+{% block contentPage %}
+	<!--  <h3>Identification</h3> -->
+	{% include '::flash.html.twig' with {'flash':'info'} %}{% include '::flash.html.twig' with {'flash':'erreur'} %}
+	
+	{% if messageKO is defined %}
+		<div class="message erreur">{{ messageKO }}</div>
+	{% else %}
+		<form name="identification" id="identification" action="{{ path('EPLEElectionBundle_login_check') }}" method="post" accept-charset="UTF-8" {{ form_enctype(form) }}>
+		<p class="note">Un astérisque * marque un champ obligatoire</p>
+		{{ form_widget(form) }}
+		<!--  <div class="boutons"><input type="submit" value="Se connecter" /></div>-->
+	</form>				
+	{% endif %}
+	
+	<script language="javascript">
+		var auto = document.getElementById("form_auto");
+		if (auto != null && auto.value == 1) {
+			document.identification.submit();
+		}
+	</script>
+{% endblock %}

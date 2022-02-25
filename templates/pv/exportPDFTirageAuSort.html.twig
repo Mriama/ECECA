@@ -1,0 +1,141 @@
+<html>
+{% block stylesheets %}
+<link href="css/eple_pv.css" type="text/css" rel="stylesheet" />
+{% endblock %}
+<body>
+	{% block contentPage %}
+
+	<div class="text-center">
+		<h1 class="u">TIRAGE AU SORT</h1>
+        <p class="b">Article 4 de l'arrêté du 13 mai 1985 relatif au conseil d’école</p>
+		<br />
+		<p class="u b">Élection des représentants des parents d'élèves au conseil d'école</p>
+		<br />
+		<p class="u b">Année scolaire {{campagne.anneeDebut }} - {{campagne.anneeFin }}</p>
+	</div>
+
+	<table>
+		<tr>
+			<td scope="row">Académie</td>
+			<td>
+				{% if electEtablissement.etablissement.commune.departement.academie is not empty
+					and (campagne.anneeDebut ~ "-01-01")|date('Y-m-d') >= electEtablissement.etablissement.commune.departement.academie.dateDesactivation|date('Y-m-d')
+					and electEtablissement.etablissement.commune.departement.academie.academiefusion is not empty
+				%}
+					{{electEtablissement.etablissement.commune.departement.academie.academiefusion.libelle}}
+				{% elseif electEtablissement.etablissement.commune.departement.academie is not empty %}
+					{{electEtablissement.etablissement.commune.departement.academie.libelle}}
+				{% else %}
+					Non communiqué
+				{% endif %}
+			</td>
+		</tr>
+		<tr>
+			<td scope="row">Département</td>
+			<td>
+				{% if electEtablissement.etablissement.commune is not empty %}
+					{{electEtablissement.etablissement.commune.departement.libelle}}
+				{% else %}
+					Non communiqué
+				{% endif %}
+			</td>
+		</tr>
+		<tr>
+			<td scope="row">Commune</td>
+			<td>
+				{% if electEtablissement.etablissement.commune is not empty %}
+					{{electEtablissement.etablissement.commune.libelle }} 
+				{% else %}
+					Non communiqué
+				{% endif %}
+			</td>
+		</tr>
+		<tr>
+			<td scope="row">
+				Type d'école
+			</td>
+			<td>
+				{% if electEtablissement.etablissement.typeEtablissement is not empty %}
+					{{electEtablissement.etablissement.typeEtablissement.libelle}} 
+				{% else %}
+					Non communiqué
+				{% endif %}
+			</td>
+		</tr>
+		<tr>
+			<td scope="row">N°UAI</td>
+			<td>{{electEtablissement.etablissement.uai }}</td>
+		</tr>
+	</table>
+	
+	<h4>&nbsp;</h4>
+	<div style="text-align:center;font-weight: bold">°°°°°°°°°°°°°</div>
+
+	<div style="text-align:center;font-weight:bold;">RESULTAT DU TIRAGE AU SORT</div>
+	
+	<h4>&nbsp;</h4>
+	
+	<table class="signatures">
+		<tr>
+			<td width="450px">Nombre total de sièges à pourvoir dans l’école :</td>
+			<td width="30px" align="center" style="border: 1px solid #999;">{{ electEtablissement.participation.nbSiegesPourvoir }}</td>
+		</tr>
+		<tr>
+			<td width="450px"></td>
+			<td width="30px"></td>
+		</tr>
+        <tr>
+            <td width="450px">Nombre de sièges non pourvus à l’issue de l'élection :</td>
+            <td width="30px" align="center" style="border: 1px solid #999;">
+                {%- set nbSiegesNonPourvus = electEtablissement.participation.nbSiegesPourvoir - electEtablissement.participation.nbSiegesPourvus -%}
+                {{ nbSiegesNonPourvus }}
+            </td>
+        </tr>
+        <tr>
+            <td width="450px"></td>
+            <td width="30px"></td>
+        </tr>
+        <tr>
+			<td width="450px">Nombre de sièges pourvus par tirage au sort :</td>
+			<td width="30px" align="center" style="border: 1px solid #999;">
+				{%if electEtablissement.participation.nbSiegesSort is not null %}
+					{{ electEtablissement.participation.nbSiegesSort }}
+				{% endif %}
+			</td>
+		</tr>
+	</table>
+	
+	<h4>&nbsp;</h4>
+    <h4>&nbsp;</h4>
+    
+    <p><img src="images/pictos/checkbox.jpg" /> Le tirage au sort a été organisé le .................................................................................... </p>
+    
+    <p style="font-weight:bold;">OU</p>
+    
+    <p><img src="images/pictos/checkbox.jpg" /> Le tirage au sort n’a pas pu être organisé en l’absence de parent (éligible) volontaire.</p>
+    
+	<h4>&nbsp;</h4>
+	<h4>&nbsp;</h4>
+	<h4>&nbsp;</h4>
+	
+	<table class="signatures">
+		<tr>
+			<td scope="col"></td>
+			<td scope="col">Fait à ......................., le .......................</td>
+		</tr>
+	</table>
+		
+	<h4>&nbsp;</h4>
+	<h4>&nbsp;</h4>
+	<h4>&nbsp;</h4>
+	
+	<div style="text-align:center;">
+		La directrice / Le directeur d'école
+	</div>
+	
+	{% endblock %}
+
+    </div>
+
+</body>
+</html>

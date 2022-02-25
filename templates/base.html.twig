@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="fr">
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<title>ECECA{% block title %}{% endblock %}</title>
+		<meta name="description" content="Application pour la saisie, la consultation et les statistiques des élections de représentants du personnel et de parents d'élèves." />
+		<link rel="icon" type="image/x-icon" href="{{ asset('images/favicon.ico') }}" />
+
+		{% block stylesheets %}
+			<link href="{{ asset('css/eple.css') }}" type="text/css" rel="stylesheet" />
+			<link href="{{ asset('css/print.css') }}" type="text/css" rel="stylesheet" media="print" />
+		{% endblock %}
+		{% block js %}
+		<script src="{{ asset('js/jquery-1.9.1.min.js') }}"></script>
+		<script src="{{ asset('js/eple.js') }}"></script>
+		{% endblock %}
+	</head>
+	<body>
+		<div id="layout">
+			<nav id="quicknav" role="navigation" aria-labelledby="labquick">
+				{% block ql_menu %}<a href="#menu">Menu</a>{% endblock %}
+				<a href="#page">Contenu</a>
+				<a href="#footer">Pied de page</a>
+			</nav>
+			<header role="banner" aria-labelledby="labheader">
+				<p id="labheader" class="arialabel">Entete</p>
+				<a href="https://www.education.gouv.fr/les-parents-d-eleves-11834" title="Ministère de l'éducation nationale" id="men" target="_blank"><img src="{{ asset('images/design/2019_logoMENESR_web.jpg') }}" alt="Ministère de l'éducation nationale" width="91" height="150" /></a>
+					<h1 class="{{ app.environment }}">ECECA</h1>
+					<h2>{% block h2 %}Élections Conseil d'École et Conseil d'Administration{% endblock %}</h2>
+			</header>
+			{% block menu_left %}
+                {{ include('menu_left.html.twig') }}
+            {% endblock %}
+                {% block contentPage %}{% endblock %}
+            {% block footer %}
+                {{ include('footer.html.twig') }}
+            {% endblock %}
+
+		</div>
+
+	</body>
+</html>

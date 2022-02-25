@@ -1,0 +1,42 @@
+<h3>Liste des établissements</h3>
+<table>
+	<tr>
+		<th scope="col" abbr="Établissement"><abbr
+			title="Unité Administrative Immatriculée">UAI</abbr> - Nom
+			d'établissement</th>
+		<th scope="col" abbr="Commune"> Commune (<abbr title="code postal">CP</abbr>)
+        {# {% if app.user.profil.code != constant('\\EPLE\\ElectionBundle\\Entity\\RefProfil::CODE_PROFIL_IEN')%} {% else %} Circonscription {% endif %}#} 
+		</th>
+		<th scope="col">Catégorie</th> {% if codeUrlTypeEtab is not defined %}
+		<th scope="col">Type d'établissement</th>{% endif %}
+		<th scope="col">Avancement de la saisie</th>
+	</tr>
+	{% for eltEleEtab in lst_electEtab %}
+	<tr>
+		<td><a
+			href="
+				{% if eltEleEtab['sousTypeElectionId'] != null %}
+					{{ path('EPLEElectionBundle_resultats_etablissement', { 'codeUrlTypeElect':eltEleEtab['codeUrlSousTypeElect'], 'uai':eltEleEtab['uai'], 'retourLstRech': 1 }) }}
+				{% else %}
+					{{ path('EPLEElectionBundle_resultats_etablissement', { 'codeUrlTypeElect':typeElect.codeUrlById, 'uai':eltEleEtab['uai'], 'retourLstRech': 1  }) }}
+				{% endif %}
+				
+				">
+				{{eltEleEtab['uai'] ~ " - "~ eltEleEtab['nomEtab']|title }}{% if eltEleEtab['sousTypeElectionId'] != null %}{{ " - "~ eltEleEtab['sousTypeElectionCode'] }}{% endif %}</a>
+			{%  if  eltEleEtab['actif'] == null %} (fermé) {% endif %}</td>
+		<td>
+		{# {% if app.user.profil.code != constant('\\EPLE\\ElectionBundle\\Entity\\RefProfil::CODE_PROFIL_IEN')	%}{% else %}Affichage pour la circonscription {{ eltEleEtab['nomCommune']|title }}{% endif %}#} 
+		{{ eltEleEtab['nomCommune']|title }} ({{ eltEleEtab['codePostal'] }})</td>
+		<td>{{ eltEleEtab['typePrioritaire'] }}</td> {% if codeUrlTypeEtab is
+		not defined %}
+		<td>{{ eltEleEtab['nomTypeEtab']|title }}</td>{% endif %}
+		<td>{% if eltEleEtab['validation'] == 'S' %}Saisie{% endif %} {% if
+			eltEleEtab['validation'] == 'T' %}Transmise{% endif %} {% if
+			eltEleEtab['validation'] == 'V' %}Validée{% endif %}</td>
+	</tr>
+	{% else %}
+	<tr>
+		<td colspan="5" class="warning">{{ warning[002] }}</td>
+	</tr>
+	{% endfor %}
+</table>

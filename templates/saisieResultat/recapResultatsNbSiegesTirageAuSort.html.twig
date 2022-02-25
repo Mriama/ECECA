@@ -1,0 +1,26 @@
+<h3>Résultats de <span>l'établissement {{ electEtablissement.etablissement.libelle }} ({{ electEtablissement.etablissement.uai }})</span>
+{%  if  electEtablissement.etablissement.actif == null %} (fermé) {% endif %}</h3>
+<h4>Rappel</h4>
+<table>
+	<tr>
+		<th scope="row">Campagne</th>
+		<td>{{ electEtablissement.campagne.anneeDebut }} - {{ electEtablissement.campagne.anneeFin }}</td>
+	</tr>
+	<tr>
+		<th scope="row">Type d'établissement</th>
+		<td>{{ electEtablissement.etablissement.typeEtablissement.libelle }}</td>
+	</tr>
+	<tr>
+		<th scope="row">Catégorie</th>
+		<td>{% if electEtablissement.etablissement.typePrioritaire.code is defined %}{{ electEtablissement.etablissement.typePrioritaire.code }}{% else %}N/A{% endif %}</td>
+	</tr>
+</table>
+
+{% if electEtablissement.participation is not empty %}
+	{% include 'EPLEElectionBundle:Resultat:consultationResultats.html.twig' with { 
+					'campagne' : electEtablissement.campagne,
+					'electEtablissement' : electEtablissement,
+					'participation' : electEtablissement.participation, 
+					'resultats' : electEtablissement.resultats,
+					'resultatsDetailles' : electEtablissement.resultatsDetailles} %}
+{% endif %}

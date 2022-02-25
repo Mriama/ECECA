@@ -1,0 +1,133 @@
+{% extends 'EPLEElectionBundle::layout.html.twig' %}
+
+{% block js %}{{ parent() }}
+	<script type="text/javascript">
+		var compt = 0;
+		function charger(){
+			if(compt == 0){
+				document.formRecap.submit();
+				compt = 1;
+			}
+		}
+	</script>
+
+{% endblock %}
+
+
+{% block title %}{{ parent() }} - Statistiques de participation
+
+	{% if niveau is defined %}
+		par
+		{% if niveau == 'academie' %}
+			académie
+		{% else %}
+			département
+		{% endif %}
+	{% endif %}
+
+{% endblock %}
+
+{% block arianeComplements %}{{ parent() }}<li>Statistiques de participation
+	{% if niveau is defined %}
+		par
+		{% if niveau == 'academie' %}
+			académie
+		{% else %}
+			département
+		{% endif %}
+	{% endif %}
+	</li>{% endblock %}
+
+{% block contentPage %}
+
+	<h3>{{ typeElect.libelle }} - Statistiques de participation
+		{% if niveau is defined %}
+			par
+			{% if niveau == 'academie' %}
+				académie
+			{% else %}
+				département
+			{% endif %}
+		{% endif %}
+	</h3>
+
+	{% if form is defined %}
+		{% include 'EPLEElectionBundle:RecapitulatifParticipation:formulaireRecapitulatifParticipation.html.twig' with { 'form' : form } %}
+	{% endif %}
+
+
+	<h3> Statistiques de participation
+		{% if niveau is defined %}
+			par
+			{% if niveau == 'academie' %}
+				académie
+			{% else %}
+				département
+			{% endif %}
+		{% endif %}
+	</h3>
+
+
+	{% if listEtabConso != null %}
+		<table>
+			<tr>
+				<th scope="col">
+					<font size ="1">
+						{% if niveau =='academie' %}
+							Académie
+						{% else %}
+							Département
+						{% endif %}
+					</font>
+				</th>
+				<th scope="col" style="text-align:center;"><font size ="1">Inscrits</font></th>
+				<th scope="col" style="text-align:center;"><font size ="1">Votants</font></th>
+				<th scope="col" style="text-align:center;"><font size ="1">Exprimés</font></th>
+				<th scope="col" style="text-align:center;"><font size ="1"><abbr title="Taux de participation campagne en cours">% N</abbr></font></th>
+				<th scope="col" style="text-align:center;"><font size ="1"><abbr title="Taux de participation campagne précédente">% N-1</abbr></font></th>
+				<th scope="col" style="text-align:center;"><font size ="1">Variation</font></th>
+				<th scope="col" style="text-align:center;"><font size ="1">Sièges à pourvoir</font></th>
+				<th scope="col" style="text-align:center;"><font size ="1">Sièges pourvus</font></th>
+				<th scope="col" style="text-align:center;"><font size ="1"><abbr title="% de sièges pourvus campagne en cours">% N</abbr></font></th>
+				<th scope="col" style="text-align:center;"><font size ="1"><abbr title="% de sièges pourvus campagne précédente">% N-1</abbr></font></th>
+				<th scope="col" style="text-align:center;"><font size ="1">Variation</font></th>
+				<th scope="col" style="text-align:center;"><font size ="1"><abbr title="Nombre d'établissements exprimés">Expr</abbr>/total</font></th>
+			</tr>
+
+			{# 		{% set totalNbIns,totalNbVotants,totalNbEtabExpr,totalPourcent1,totalPourcent1Prec,totalVariation1,totalNbSiegePourvoir,totalNbSiegePourvus,totalPourcent2,totalPourcent2Prec,totalVariation2,totalNbEtabExprimes,totalNbEtabTotal=0,0,0,0,0,0,0,0,0,0,0,0,0%}#}
+			{%  for libelle, zone in listEtabConso %}
+				{% if libelle is not empty%}
+					<tr {% if libelle == 'TOTAL' %} class="total" {% endif %}>
+						<td>{{ libelle }}</td>
+						<td align="center">{{ zone.inscrits }}</td>
+						<td align="center">{{ zone.votants }}</td>
+						<td align="center">{{ zone.exprimes }}</td>
+						<td align="center">{{ zone.p1 }}</td>
+						<td align="center">{% if acadHideRappelAnterieur[libelle] is defined and acadHideRappelAnterieur[libelle] == true %}-{% else %} {{ zone.rappel1 }}{% endif %}</td>
+						<td align="center">{% if acadHideRappelAnterieur[libelle] is defined and acadHideRappelAnterieur[libelle] == true %}-{% else %} {{ zone.variation1 }}{% endif %}</td>
+						<td align="center">{{ zone.siegesPourvoir }}</td>
+						<td align="center">{{ zone.siegesPourvus }}</td>
+						<td align="center">{{ zone.p2 }}</td>
+						<td align="center"> {% if acadHideRappelAnterieur[libelle] is defined and acadHideRappelAnterieur[libelle] == true %}-{% else %}{{ zone.rappel2 }}{% endif %}</td>
+						<td align="center"> {% if acadHideRappelAnterieur[libelle] is defined and acadHideRappelAnterieur[libelle] == true %}-{% else %}{{ zone.variation2 }}{% endif %}</td>
+						<td align="center">{{ zone.etabExprimes }}/{{ zone.etabTotal }}</td>
+					</tr>
+				{% endif%}
+			{% endfor %}
+		</table>
+	{% else %}
+		<p class="message erreur">Aucun résultat disponible</p>
+	{% endif %}
+
+	<script type="text/javascript">
+		//document.onload=charger();
+	</script>
+	{% if listEtabConso != null %}
+		<div class="pageactions">
+			<a class="xls" href="{{ path('EPLEElectionBundle_recapitulatif_participation_export_XLS', { 'codeUrlTypeElect': typeElect.codeUrlById }) }}">Export XLS</a>
+		</div>
+	{% endif %}
+	<div class="pageactions">
+		<a href="{{ path('EPLEElectionBundle_homepage') }}" class="retour">Retour</a>
+	</div>
+{% endblock %}

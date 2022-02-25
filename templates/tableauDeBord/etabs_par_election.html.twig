@@ -1,0 +1,57 @@
+{% extends 'EPLEElectionBundle::layout.html.twig' %}
+
+{% block title %}{{ parent() }} - Tableau de bord{% endblock %}
+
+{% block arianeComplements %}{{ parent() }}<li>Écoles ou Établissements</li>{% endblock %}
+
+{% block contentPage %}
+
+	{% include "EPLEElectionBundle:TableauDeBord:rappel_dates_campagne.html.twig" %}
+
+	<h3>{{ campagne.typeElection.libelle }} - Avancement des saisies</h3>
+	{% if form is defined %}
+		{% include 'EPLEElectionBundle:TableauDeBord:formulaireTableauDeBord.html.twig' with { 'form' : form} %}
+	{% endif %}
+	<table class="tdb_ce">
+		<tr>
+			<th scope="col" abbr="École"><abbr title="Unité Administrative Immatriculée">UAI</abbr> - Nom d'école</th>
+			<th scope="col">Commune</th>
+			<th scope="col">Avancement de la saisie</th>
+			<th scope="col" colspan="2" class="actions" >Actions</th>
+		</tr>
+		{% if tabBordEtab is defined %}
+			{% for etab in tabBordEtab %}
+				<tr>
+					<td>{{ etab['Etab'].uai }} - {{ etab['Etab'].libelle }}</td>
+					<td>{{ etab['Etab'].commune.libelle }}</td>
+					<td>
+						{% for eleEtab in etab['EleEtab'] %}
+							{% include 'EPLEElectionBundle:TableauDeBord:etabs_avancement.html.twig' with { 'eleEtablissement' : eleEtab['eleEtablissement'], 'campagne' : campagne, 'nouvelleElection' : eleEtab['canSaisieNouvelleElection'] } %}
+						{% endfor %}
+					</td>
+					<td class="actionsAlerte">
+						{% for eleEtab in etab['EleEtab'] %}
+							{% if eleEtab['Carence'] %}
+								<img src="{{ asset('images/pictos/exclamation.png') }}" alt="absence de candidats" title="absence de candidats"/>
+							{% endif %}
+							{% if eleEtab['Deficit'] %}
+								<img src="{{ asset('images/pictos/deficit.png') }}" alt="déficit de candidats" title="déficit de candidats"/>
+							{% endif %}
+							{#018E - IEN ne gere plus les tirages au sort -> le DE obtient ce role#}
+							{#{% if eleEtab['saisiePVTirageAuSortPossible'] %}
+                        <a href="{{ path('EPLEElectionBundle_saisie_nb_sieges_tirage_sort', { 'uai': etab['Etab'].uai, 'codeUrlTypeElect': eleEtab['typeElection'].getCodeUrlById() }) }}"><img src="{{ asset('images/pictos/edit.png') }}" alt="Saisir ou modifier les résultats" title="Saisir ou modifier les résultats"/></a> 
+                    {% endif %}#}
+							{% if eleEtab['eleEtablissement'] is not empty %}
+								<a href="{{ path('EPLEElectionBundle_resultats_etablissement', { 'codeUrlTypeElect':(eleEtab['typeElection'].getCodeUrlById()), 'uai':etab['Etab'].uai }) }}"><img src="{{ asset('images/pictos/consultation.png') }}" alt="Consulter les résultats" title="Consulter les résultats"/></a>
+							{% endif %}
+						{% endfor %}
+					</td>
+				</tr>
+			{% else %}
+				<tr>
+					<td colspan="3" class="message erreur">{{ warning[006] }}</td>
+				</tr>
+			{% endfor %}
+		{% endif %}
+	</table>
+{% endblock %}

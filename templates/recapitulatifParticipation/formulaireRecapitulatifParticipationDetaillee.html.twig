@@ -1,0 +1,12 @@
+<form action="{{ path('EPLEElectionBundle_recapitulatif_participation_detaillee', { 'codeUrlTypeElect': typeElect.codeUrlById }) }}" method="post" accept-charset="UTF-8">
+	<p class="note">Un astérisque * marque un champ obligatoire</p>
+	<div id="form">	
+		{{ form_errors(form) }}
+		<div>{{ form_label(form['campagne']) }}{{ form_widget(form['campagne']) }}</div>
+ 		<div> {{ form_label(form['niveau']) }}{{ form_widget(form['niveau']) }}</div>
+ 		<div>{{ form_label(form['typeEtablissement']) }}{{ form_widget(form['typeEtablissement']) }}</div>
+		{{ form_rest(form) }}			
+	</div>	
+	<div class="boutons"><input type="submit" value="Rechercher" title="Rechercher les statistiques" /></div>
+	
+</form>

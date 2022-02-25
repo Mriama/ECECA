@@ -1,0 +1,154 @@
+{% extends 'EPLEElectionBundle::layout.html.twig' %}
+
+{% block js %}{{ parent() }}
+	<script src="{{ asset('js/etabElectionParents.js') }}"></script>
+	{% if typeElect.getId == 3 %}
+		<script src="{{ asset('js/consultationStatistiquesParents.js') }}"></script>
+	{% else %}
+		<script src="{{ asset('js/consultationStatistiques.js') }}"></script>
+	{% endif %}
+{% endblock %}
+
+
+{% block title %}{{ parent() }} - Statistiques
+	{% if electEtablissement is defined %} d'un établissement
+	{% elseif nationale is defined %} nationales
+		{# 	{% elseif circons is defined %} circonscription#}
+	{% elseif commune is defined %} par {{ "commune" }}
+	{% else %} par {{ (dept is defined) ? "département" : "academie" }}{% endif %}
+{% endblock %}
+
+{% block arianeComplements %}{{ parent() }}<li>Statistiques
+	{% if electEtablissement is defined %} d'un établissement
+	{% elseif nationale is defined %} nationales
+		{# 	{% elseif circons is defined %} circonscription#}
+	{% elseif commune is defined %} par {{ "commune" }}
+	{% else %} par {{ (dept is defined) ? "département" : "académie" }}{% endif %}
+	</li>{% endblock %}
+
+{% block contentPage %}
+
+	<h3>{{ typeElect.libelle }} - Statistiques
+		{% if electEtablissement is defined %} de l'établissement {{ etablissement.libelle }} ({{ etablissement.uai }})
+		{% elseif nationale is defined %} nationales
+			{# 	{% elseif circons is defined %} circonscription#}
+		{% elseif commune is defined %} par {{ "commune" }}
+		{% else %} par {{ (dept is defined) ? "département" : "académie" }}
+		{% endif %}
+	</h3>
+
+	{# {% include 'EPLEElectionBundle:Statistiques:alerte.html.twig' %} #}
+
+	<p>Il est possible de consulter les statistiques sur toute la France, par académie et par département.
+		Il est également possible de consulter les statistiques pour un établissement en particulier.
+	</p>
+
+	{% if form is defined %}
+		{% if typeElect.getId == 3 %}
+			{% include 'EPLEElectionBundle:Statistiques:formulaireParentsStatistiques.html.twig' with { 'form' : form, 'typeElect' : typeElect } %}
+		{% else %}
+			{% include 'EPLEElectionBundle:Statistiques:formulaireStatistiques.html.twig' with { 'form' : form, 'typeElect' : typeElect } %}
+		{% endif %}
+	{% endif %}
+	{% if info is defined %}
+		<p class="message info">{{ info[003] }} {{ typeElectCode }}.</p>
+	{% endif %}
+	{% if electEtablissement is defined %}
+		{# Zone = Etablissement #}
+		{% include "EPLEElectionBundle:Statistiques:tableau_description_etab.html.twig" %}
+		{% if electEtablissement is not null or electEtablissementPrec is not null %}
+			{% include "EPLEElectionBundle:Statistiques:tableau_participation.html.twig" with {
+				'zone' :  false,
+				'dateActivationAcad' :  (acad_date_activation is defined) ? acad_date_activation : null,
+				'campagne' : (campagne is defined) ? campagne : null,
+				'departementType' : (dept is defined) ? dept : null,
+				'elect' : (electEtablissement is defined) ? electEtablissement : null,
+				'electPrec' : (electEtablissementPrec is defined) ? electEtablissementPrec : null,
+				'electEtab' : (electEtablissement is defined) ? true : false,
+				'participation' : (electEtablissement.participation is defined) ? electEtablissement.participation : null,
+				'participationPrec' : (electEtablissementPrec.participation is defined) ? electEtablissementPrec.participation : null,
+				'eclair' : (electEtablissement.typeEtablissement.hasEclair is defined
+				and typeElect.codeUrlById == constant('\\EPLE\\ElectionBundle\\Entity\\RefTypeElection::CODE_URL_PARENT')
+				) ? true : false } %}
+			{% include "EPLEElectionBundle:Statistiques:tableau_resultat.html.twig" with {
+				'elect' : electEtablissement,
+				'totalDetails' : totalSiegeElect,
+				'totalDetailsPrec' : totalSiegeElectPrec,
+				'hidePrecResult': (acad_date_activation is defined
+				and campagne is defined
+				and acad_date_activation == campagne.anneeDebut
+				and dept is not defined
+				) ? true : false,
+				'electPrec' : electEtablissementPrec } %}
+		{% else %}
+			<p class="message erreur">{{ warning[002] }}</p>
+		{% endif %}
+	{% else %}
+		{# Zone = Académie/Département/Nationale/Circonscription #}
+		{% if nationale is not defined%}
+			{% if commune is defined %}
+				<h3>{% autoescape false %}
+						{{"Commune <span>: "~commune.libelle~"</span>"}}
+					{% endautoescape %}</h3>
+			{% else %}
+				<h3>{% autoescape false %}
+						{{ (dept is defined) ? "Département <span>: "~dept.libelle~"</span>" : "Académie <span>: "~aca.libelle~"</span>" }}
+					{% endautoescape %}</h3>
+			{% endif %}
+			{# 	{% else %}#}
+			{# 			{% if  circons is defined %}#}
+			{# 				<h3> {{ "Circonscription : "~circons }} </h3>#}
+			{# 			{% endif %}#}
+		{% endif %}
+		{# Les deux tableaux: Participation et Résultats #}
+		{% if electZone is not null %}
+			{% if electZone.participation is not null or electZonePrec.participation is not null %}
+				{% include "EPLEElectionBundle:Statistiques:tableau_participation.html.twig" with {
+					'zone' :  true,
+					'campagne' : (campagne is defined) ? campagne : null,
+					'elect' : (electZone is defined) ? electZone : null,
+					'dateActivationAcad' :  (acad_date_activation is defined) ? acad_date_activation : null,
+					'departementType' : (dept is defined) ? dept : null,
+					'electPrec' : (electZonePrec is defined) ? electZonePrec : null,
+					'participation' : (electZone.participation is defined) ? electZone.participation : null,
+					'participationPrec' : (electZonePrec.participation is defined) ? electZonePrec.participation : null,
+					'eclair' : (electZone.typeEtablissement.hasEclair is defined
+					and typeElect.codeUrlById == constant('\\EPLE\\ElectionBundle\\Entity\\RefTypeElection::CODE_URL_PARENT')
+					) ? true : false } %}
+
+				{% include "EPLEElectionBundle:Statistiques:tableau_resultat.html.twig" with {
+					'elect' : electZone,
+					'totalDetails' : totalSiegeElect,
+					'totalDetailsPrec' : totalSiegeElectPrec,
+					'hidePrecResult': (acad_date_activation is defined
+					and campagne is defined
+					and acad_date_activation == campagne.anneeDebut
+					and dept is not defined
+					) ? true : false,
+					'electPrec' : electZonePrec } %}
+			{% else %}
+				<p class="message erreur">{{ warning[002] }}</p>
+			{% endif %}
+		{% else %}
+			<p class="message erreur">{{ warning[002] }}</p>
+		{% endif %}
+	{% endif %}
+	<div class="pageactions">
+		<a href="{{ path('EPLEElectionBundle_homepage') }}" class="retour">Retour</a>
+		{# 	<a class="pdf" href="{{ path('EPLEElectionBundle_statistiques_export_PDF', { 'codeUrlTypeElect': typeElect.codeUrlById }) }}">Export PDF</a>#}
+		{# 	{% if app.session.get('select_departement') != '' and app.session.get('select_type_etablissement') != '' and app.session.get('select_choix_etab') == '' %}#}
+		{# 		<a class="pdf" href="{{ path('EPLEElectionBundle_statistiques_export_PDF_complet', { 'codeUrlTypeElect': typeElect.codeUrlById }) }}">Export PDF (Complet)</a>#}
+		{# 	{% endif %}	#}
+		{% if electEtablissement is defined and (electEtablissement.participation is defined or electEtablissementPrec.participation is defined) %} {# YME 0145590 #}
+			<a class="xls" href="{{ path('EPLEElectionBundle_statistiques_export_XLS', { 'codeUrlTypeElect': typeElect.codeUrlById }) }}">Export XLS</a>
+		{% endif %}
+		{% if electEtablissement is not defined and listeResultat != null %}
+			<a class="xls" href="{{ path('EPLEElectionBundle_statistiques_export_XLS', { 'codeUrlTypeElect': typeElect.codeUrlById }) }}">Export XLS</a>
+			<!-- defect #269 -->
+			{# 	{% if app.session.get('select_departement') != '' and app.session.get('select_type_etablissement') != '' and app.session.get('select_choix_etab') == '' and app.session.get('select_commune') == '' %}#}
+			{# 		 <a class="xls" href="{{ path('EPLEElectionBundle_statistiques_export_XLS_complet', { 'codeUrlTypeElect': typeElect.codeUrlById }) }}">Export XLS (Complet)</a>#}
+			{# 	{% endif %}	#}
+		{% endif %}
+
+	</div>
+{% endblock %}

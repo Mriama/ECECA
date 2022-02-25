@@ -1,0 +1,135 @@
+<h3>Résultats de <span>l'établissement {{ electEtablissement.etablissement.libelle }} ({{ electEtablissement.etablissement.uai }})</span>
+{%  if  electEtablissement.etablissement.actif == null %} (fermé) {% endif %}</h3>
+<h4>Rappel</h4>
+<table>
+	<tr>
+		<th scope="row">Campagne</th>
+		<td>{{ electEtablissement.campagne.anneeDebut }} - {{ electEtablissement.campagne.anneeFin }}</td>
+	</tr>
+	<tr>
+		<th scope="row">Type d'établissement</th>
+		<td>{{ electEtablissement.etablissement.typeEtablissement.libelle }}</td>
+	</tr>
+	<tr>
+		<th scope="row">Catégorie</th>
+		<td>{% if electEtablissement.etablissement.typePrioritaire.code is defined %}{{ electEtablissement.etablissement.typePrioritaire.code }}{% else %}N/A{% endif %}</td>
+	</tr>
+	<tr>
+ 	   {% if app.user.profil.code != constant('\\EPLE\\ElectionBundle\\Entity\\RefProfil::CODE_PROFIL_IEN') %}
+			<th scope="row">Commune (Département)</th>
+			{% if electEtablissement.etablissement.commune is not empty %}
+				<td>{{ electEtablissement.etablissement.commune.libelle }} ({{ electEtablissement.etablissement.commune.departement.libelle}})</td>
+			{% else %}
+				<td><abbr title="Non communiqué">N/C</abbr></td>
+			{% endif %}			
+ 		{% endif %}
+	</tr>
+</table>
+
+{% if electEtablissement.participation is not empty %}
+	{% include 'EPLEElectionBundle:Resultat:consultationResultats.html.twig' with { 
+					'campagne' : electEtablissement.campagne,
+		            'typeEtab' : electEtablissement.etablissement.typeEtablissement,
+					'electEtablissement' : electEtablissement,
+					'participation' : electEtablissement.participation, 
+					'resultats' : electEtablissement.resultats,
+					'resultatsDetailles' : electEtablissement.resultatsDetailles,
+					'isDSDENorRect' : (isDSDENorRect is defined) ? isDSDENorRect : false} %}
+{% else %}
+	<p class="message erreur">{{ erreurs[002] }}</p>
+{% endif %}
+
+<form id="form_edit_resultats" method="post" accept-charset="UTF-8">
+	<div class="boutons">
+		{%  if electEtablissement.isTransmis and accesValidation is defined and accesValidation and electEtablissement.etablissement.actif == true %}
+			<input type="submit" id="retourAnomalie" value="Retour pour anomalie" />
+			{% if accessDevalidationSort is defined and accessDevalidationSort %}
+				<input type="submit" id="DevaliderSort" value="Dévalider le tirage au sort" data-info-submit="false"/>
+			{% endif %}
+			<input type="submit" id="validerResultats" value="Valider les résultats" />
+		{% endif %}
+		{%  if electEtablissement.isValide and accesDevalidation is defined and electEtablissement.etablissement.actif == true %}
+			<input type="submit" id="devaliderResultats" value="Dévalider les résultats" />
+		{% endif %}
+		{% if electEtablissement.isSaisi and accesSaisie is defined and electEtablissement.etablissement.actif == true %}
+			<input type="button" id="retourSaisie" value="Saisir ou modifier les résultats" />
+		{% endif %}
+		{% if electEtablissement.isSaisi and accesTransmission is defined and electEtablissement.etablissement.actif == true %}
+			<input type="submit" id="transmettrePourValidation" value="Transmettre pour validation" />
+		{% endif %}
+	</div>
+</form>
+
+<script type='text/javascript'>
+$('#retourAnomalie').click(function() {
+	{% if sousTypeElect is defined %}
+		$('#form_edit_resultats').attr('action','{{ path('EPLEElectionBundle_change_statut_resultats_etab', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': sousTypeElect.getCodeUrlById(), 'etat':saisi, 'retourLstRech':retourLstRech }) }}');
+	{% else %}
+		$('#form_edit_resultats').attr('action','{{ path('EPLEElectionBundle_change_statut_resultats_etab', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': typeElect.getCodeUrlById(), 'etat':saisi, 'retourLstRech':retourLstRech }) }}');
+	{% endif %}
+});
+$('#DevaliderSort').click(function(event) {
+    event.preventDefault();
+    var isSubmit = $('#DevaliderSort').attr("data-info-submit");
+    if(isSubmit == 'false'){
+        $('#DevaliderSort').val("Valider le tirage au sort");
+        $('#DevaliderSort').attr("data-info-submit", 'true');
+        $('#nbSiegesSort').css("display", 'none');
+        $('#form_saisie_ts').css("display", 'block');
+        $('#validerResultats').css("display", 'none');
+        $('#retourAnomalie').css("display", 'none');
+    } else if(isSubmit == 'true'){
+        $('#form_saisie_ts').attr('action','{{ path('EPLEElectionBundle_devalider_tirage_sort_resultats_etab', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': typeElect.getCodeUrlById(), 'retourLstRech':retourLstRech }) }}');
+        $( "#form_saisie_ts" ).submit();
+    }
+
+
+});
+
+$('#validerResultats').click(function() {
+	{% if sousTypeElect is defined %}
+		$('#form_edit_resultats').attr('action','{{ path('EPLEElectionBundle_change_statut_resultats_etab', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': sousTypeElect.getCodeUrlById(), 'etat':valide, 'retourLstRech':retourLstRech }) }}');
+	{% else %}
+		$('#form_edit_resultats').attr('action','{{ path('EPLEElectionBundle_change_statut_resultats_etab', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': typeElect.getCodeUrlById(), 'etat':valide, 'retourLstRech':retourLstRech }) }}');
+	{% endif %}
+});
+$('#devaliderResultats').click(function() {
+	{% if sousTypeElect is defined %}
+		$('#form_edit_resultats').attr('action','{{ path('EPLEElectionBundle_devalid_change_statut_resultats_etab', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': sousTypeElect.getCodeUrlById(), 'etat':transmis, 'retourLstRech':retourLstRech }) }}');
+	{% else %}
+		$('#form_edit_resultats').attr('action','{{ path('EPLEElectionBundle_devalid_change_statut_resultats_etab', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': typeElect.getCodeUrlById(), 'etat':transmis, 'retourLstRech':retourLstRech }) }}');
+	{% endif %}
+});
+$('#retourSaisie').click(function() {
+	{% if sousTypeElect is defined %}
+		document.location.href="{{ path('EPLEElectionBundle_saisie_resultats_etab', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': sousTypeElect.getCodeUrlById(), 'retourLstRech':retourLstRech }) }}";
+	{% else %}
+		document.location.href="{{ path('EPLEElectionBundle_saisie_resultats_etab', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': typeElect.getCodeUrlById(), 'retourLstRech':retourLstRech }) }}";
+	{% endif %}
+});
+$('#transmettrePourValidation').click(function() {
+	{% if sousTypeElect is defined %}
+		$('#form_edit_resultats').attr('action','{{ path('EPLEElectionBundle_change_statut_resultats_etab', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': sousTypeElect.getCodeUrlById(), 'etat':transmis, 'retourLstRech':retourLstRech }) }}');
+	{% else %}
+		$('#form_edit_resultats').attr('action','{{ path('EPLEElectionBundle_change_statut_resultats_etab', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': typeElect.getCodeUrlById(), 'etat':transmis, 'retourLstRech':retourLstRech }) }}');
+	{% endif %}
+});
+
+$(document).ready(function() {
+    {% if fromEdit is defined and fromEdit %}
+	    // RDE 015E EXG-005
+	    // 	0239775: Pop up invalide lors d'une saisie suite à un retour pour anomalie (saisie post éditable)
+	    {% if app.user.profil.code == constant('\\EPLE\\ElectionBundle\\Entity\\RefProfil::CODE_PROFIL_DSDEN') or app.user.profil.code == constant('\\EPLE\\ElectionBundle\\Entity\\RefProfil::CODE_PROFIL_RECT') %}
+	    	{% if accesValidation is defined and accesValidation %}
+	    		alert("Vous avez enregistré votre saisie, vous pouvez maintenant valider les résultats");
+	    	{% else %}
+	    		alert("Vous avez enregistré votre saisie");
+	    	{% endif %}
+	    {% else %}
+	    	alert("Vous avez enregistré votre saisie, cliquez maintenant sur « transmettre pour validation »");
+	    {% endif %}
+    {% endif %}
+});
+
+
+</script>

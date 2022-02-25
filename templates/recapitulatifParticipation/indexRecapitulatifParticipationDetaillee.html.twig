@@ -1,0 +1,114 @@
+{% extends 'EPLEElectionBundle::layout.html.twig' %}
+
+{% block title %}{{ parent() }} - Statistiques de participation
+
+	{% if niveau is defined %}
+		par
+		{% if niveau == 'academie' %}
+			académie
+		{% else %}
+			département
+		{% endif %}
+	{% endif %}
+
+{% endblock %}
+
+{% block arianeComplements %}{{ parent() }}<li>Statistiques de participation
+	{% if niveau is defined %}
+		par
+		{% if niveau == 'academie' %}
+			académie
+		{% else %}
+			département
+		{% endif %}
+	{% endif %}
+	</li>{% endblock %}
+
+{% block contentPage %}
+
+	<h3>{{ typeElect.libelle }} - Statistiques de participation (détail éducation prioritaire)
+		{% if niveau is defined %}
+			par
+			{% if niveau == 'academie' %}
+				académie
+			{% else %}
+				département
+			{% endif %}
+		{% endif %}
+	</h3>
+
+	{% if form is defined %}
+		{% include 'EPLEElectionBundle:RecapitulatifParticipation:formulaireRecapitulatifParticipationDetaillee.html.twig' with { 'form' : form } %}
+	{% endif %}
+
+	<h3> Statistiques de participation (détail éducation prioritaire)
+		{% if niveau is defined %}
+			par
+			{% if niveau == 'academie' %}
+				académie
+			{% else %}
+				département
+			{% endif %}
+		{% endif %}
+	</h3>
+
+
+	{% if listEtabConso != null %}
+		<table>
+			<tr>
+				<th scope="col" id="libelle_org">{% if niveau =='academie' %}Académie{% else %}Département{% endif %}</th>
+				<th scope="col" class="resultats" id="libelle_res">Prioritaire</th>
+				<th scope="col" class="resultats" id="libelle_res">Inscrits</th>
+				<th scope="col" class="resultats" id="libelle_res">Votants</th>
+				<th scope="col" class="resultats" id="libelle_res">Exprimés</th>
+				<th scope="col" class="resultats" id="libelle_res"><abbr title="Rapport Votants/Inscrits">%</abbr></th>
+				<th scope="col" class="resultats" id="libelle_res">Rappel<br/>{{ campagne.anneeDebut-1 }} - {{ campagne.anneeFin-1 }}</th>
+				<th scope="col" class="resultats" id="libelle_res">Variation</th>
+			</tr>
+			{%  for zone, etabConso in listEtabConso %}
+				<tr>
+					<td rowspan="{{ etabConso | length + 2}}">
+						{{ zone }}
+					</td>
+				<tr>
+				{%  for prioritaire, data in etabConso %}
+					<tr>
+						<td>{{ prioritaire }}</td>
+						<td align="right">{{ data.inscrits }}</td>
+						<td align="right">{{ data.votants }}</td>
+						<td align="right">{{ data.exprimes }}</td>
+						<td align="right">{{ data.p }}</td>
+						<td align="center">
+							{% if acadHideRappelAnterieur[zone] is defined and acadHideRappelAnterieur[zone] == true  %}
+								-
+							{% else %}
+								{{ data.rappel }}
+							{% endif %}
+						</td>
+						<td align="center">
+							{% if acadHideRappelAnterieur[zone] is defined and acadHideRappelAnterieur[zone] == true  %}
+								-
+							{% else %}
+								{{ data.variation }}
+							{% endif %}
+						</td>
+					</tr>
+				{% endfor %}
+			{% endfor %}
+		</table>
+	{% else %}
+		<p class="message erreur">Aucun résultat disponible</p>
+	{% endif %}
+
+	{% if listEtabConso != null %}
+		<div class="pageactions">
+			<a class="xls" href="{{ path('EPLEElectionBundle_recapitulatif_participation_detaillee_export_XLS', { 'codeUrlTypeElect': typeElect.codeUrlById }) }}">Export XLS</a>
+		</div>
+	{% endif %}
+	<div class="pageactions">
+		<a href="{{ path('EPLEElectionBundle_homepage') }}" class="retour">Retour</a>
+	</div>
+
+
+{% endblock %}
+

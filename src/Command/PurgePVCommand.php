@@ -1,0 +1,73 @@
+<?php
+
+namespace App\Command;
+
+use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
+use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
+
+class PurgePVCommand extends ContainerAwareCommand {
+		
+	protected function configure() {
+		$this->setName("pv:purge")->setDescription("Purge les PVs obsolètes");
+	}
+	
+	protected function execute(InputInterface $input, OutputInterface $output) {
+		
+	    $logger = $this->getContainer()->get("purge_logger");
+	    
+		// Récupération des paramètres
+		$documentsDir = $this->getContainer()->getParameter('documents_dir');
+		$yearsToPurge = $this->getContainer()->getParameter('purge_years');
+		
+		$logger->info("Debut purge PVs");
+		
+		$logger->info('Purge des PVs de plus de '.$yearsToPurge.' an(s) du répertoire '.$this->getRootDir().$documentsDir);
+				
+		$em = $this->getContainer()->get("doctrine")->getManager();
+		
+		// Récupération des établissements dont les PVs sont obsolètes
+		$listEleEtab = $em->getRepository('EPLEElectionBundle:EleEtablissement')->findObsoletePVs($yearsToPurge);
+		
+		$logger->info(count($listEleEtab). ' PVs à purger');
+		
+		$nbEtabPurges = 0;
+		
+		foreach($listEleEtab as $eleEtab){
+			
+			// Suppression du fichier dans le système de fichiers
+			unlink($this->getRootDir().$documentsDir.$eleEtab->getFichier()->getUrl());
+			
+			$eleEtab->setFichier(null);
+			$em->persist($eleEtab);
+			
+			$nbEtabPurges++;
+		}
+		
+		$nbFichiersNettoyes = 0;
+		
+		// Purge de la table des PVs
+		$listEleFichier = $em->getRepository('EPLEElectionBundle:EleFichier')->findObsolete($yearsToPurge);
+		foreach($listEleFichier as $eleFichier){
+			
+			// Suppression du fichier dans le système de fichiers
+			unlink($this->getRootDir().$documentsDir.$eleFichier->getUrl());
+			
+			// Suppression du fichier en base
+			$em->remove($eleFichier);
+			
+			$nbFichiersNettoyes++;
+		}
+
+		$em->flush();
+		
+		$logger->info('Traitement terminé : '.$nbEtabPurges.' résultats dont le PV a été purgé, '.$nbFichiersNettoyes. ' fichiers nettoyés de la base.');
+		
+	}
+	
+	protected function getRootDir() {
+		return __DIR__ . "/../../../../web/";
+	}
+	
+}

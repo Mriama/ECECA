@@ -1,0 +1,17 @@
+{% if eleEtablissement is null %}
+	{% if campagne.archivee %}
+		<p class="avancement info">Pas de données</p>
+	{% else %}
+		<p class="avancement warning">La saisie n'a pas encore été effectuée.</p>
+	{% endif %}
+{% else %}
+	{% if eleEtablissement.isSaisi %}
+		<p class="avancement warning">La saisie n'a pas encore été transmise.</p>
+	{% endif %}
+	{% if eleEtablissement.isTransmis %}
+		<p class="avancement wait">Transmis à DSDEN / RECTORAT pour validation.</p>
+	{% endif %}
+	{% if eleEtablissement.isValide %}
+		<p class="avancement ok">La saisie est validée.</p>
+	{% endif %}
+{% endif %}

@@ -1,0 +1,172 @@
+{% extends 'EPLEElectionBundle::layout.html.twig' %}
+
+{% block js %}{{ parent() }}
+	<script src="{{ asset('js/saisieResultats.js') }}"></script>
+	<script src="{{ asset('js/showEtabsByDept.js') }}"></script>
+{% endblock %}
+
+{% block title %}{{ parent() }} - Tableau de bord{% endblock %}
+
+{% block arianeComplements %}
+	{{ parent() }}<li>{{ zone }}</li>
+	{% if zone != 'Nationale' and zone != 'Départements' %}<li>{{ zoneUser.libelle }}</li>{% endif %}
+{% endblock %}
+
+{% block contentPage %}
+
+	{% include "EPLEElectionBundle:TableauDeBord:rappel_dates_campagne.html.twig" %}
+
+	<div class="notification_mass_validation"></div>
+	<h3>Tableau de bord{% if zoneUser is not empty %} - {{ zoneUser.libelle }}{% endif %}</h3>
+
+	{% if form is defined %}
+		{% include 'EPLEElectionBundle:TableauDeBord:formulaireTableauDeBord.html.twig' with { 'form' : form } %}
+	{% endif %}
+	{% if info is defined %}
+		<p class="message info">{{ info[004] }}</p>
+	{% endif %}
+	{% if zone == 'Nationale' or zone == 'Académie' %}
+		{% if zone == 'Nationale' %}
+			{% set idZone = 'nationale' %}
+		{% else %}
+			{% set idZone = zoneUser.code %}
+		{% endif %}
+
+		<table class="tdb_national">
+			<tr>
+				<th scope="col" class="campagne">Election</th>
+				<th scope="col">Avancement des saisies</th>
+				<th scope="col" colspan="2" class="actions">Actions</th>
+			</tr>
+			{% for tabBord in tabBordGeneral %}
+				<tr>
+				{% if loop.index0 != 0 %}<tr>{% endif %}
+				<td>{% if tabBord['sousTypeElection'] is defined %}{{ tabBord['sousTypeElection'].code }}{% else %}{{ tabBord['typeElection'].code }}{% endif %}{% if tabBord['campagne'] is not empty %} {{ tabBord['campagne'].anneeDebut }}-{{ tabBord['campagne'].anneeFin }} {% if tabBord['campagne'].archivee %}<span class="archivee">(fermée)</span>{% endif %} {% endif %}</td>
+				{% if tabBord['campagne'] is not empty %}
+					{% if tabBord['aucuneDonnee'] is not defined %}
+						{% if tabBord['nbEtabExpr'] is defined %}
+							<td>{{ tabBord['nbEtabExpr'] }} établissements exprimés (sur {{ tabBord['nbEtabTotal'] }})</td>
+						{% else %}
+							<td>{{ tabBord['nbEtabAucunEnr'] }} aucun enregistrement, {{ tabBord['nbEtabSaisie'] }} saisies enregistrées, {{ tabBord['nbEtabTransmis'] }} transmises et {{ tabBord['nbEtabValide'] }} validées (sur {{ tabBord['nbEtabTotal'] }})</td>
+						{% endif %}
+					{% else %}
+						<td>{{ erreurs[004] }}</td>
+					{% endif %}
+					<td class="actions">
+						{% if tabBord['validationPossible'] %}
+							<a href="{{ path('EPLEElectionBundle_resultats_transmis', { 'codeUrlTypeElect': tabBord['typeElection'].getCodeUrlById, 'numDept' : 0 }) }}"><img src="{{ asset('images/pictos/accept.png') }}" alt="Valider les résultats" title="Valider les résultats" /></a>
+						{% endif %}
+					</td>
+					<td class="actions">
+						{% if tabBord['campagneOpenSaisie'] %}
+							<a href="{{ path('EPLEElectionBundle_relance_courriel', { 'idZone':idZone, 'typeElectionId':tabBord['typeElection'].id()}) }}">
+								<img src="{{ asset('images/pictos/email.png') }}" alt="Contacter les établissements" title="Contacter les établissements" />
+							</a>
+						{% endif %}
+					</td>
+				{% else %}
+					<td colspan="2">{{ erreurs[005] }}</td>
+					<td class="actions" colspan="2"></td>
+				{% endif %}
+				{% if loop.index0 != 0 %}</tr>{% endif %}
+				</tr>
+			{% endfor %}
+
+		</table>
+		<div id="liens_detail" style="display:none">
+			<p class="no-print"><a id="choix_tabBordZone" href="#" >Afficher le détail par {% if zone == 'Nationale' %}académie{% elseif zone == 'Académie' %}département{% endif %}</a></p>
+			<p class="no-print"><a id="masquer_tabBordZone" href="#" >Masquer le détail par {% if zone == 'Nationale' %}académie{% elseif zone == 'Académie' %}département{% endif %}</a></p>
+		</div>
+	{% endif %}
+
+	{# Tableau de bord par zone pour académie, département et DGESCO #}
+	<div id="tabBordZone">
+		{% if zone == 'Nationale' or zone == 'Académie' %}
+			<h3>Tableau de bord par {% if zone == 'Académie' %}département {% else %}académie {% endif %}</h3>
+		{% endif %}
+		<table class="tdb_zone">
+			<tr>
+				<th scope="col" class="zone">{% if zone == 'Académie' %}Département {% elseif zone == 'Départements' %}Départements {% else %}Académie {% endif %}</th>
+				<th scope="col" class="campagne">Campagne</th>
+				<th scope="col">Avancement des saisies</th>
+				<th scope="col" colspan="2" class="actions">Actions</th>
+			</tr>
+			{% if dept_num is defined %}<input type="hidden" id="dept_num" value="{{ dept_num }}"/>{% endif %}
+			{% if tdbDeplieRetour is defined %}<input type="hidden" id="tdbDeplieRetour" value="{{ tdbDeplieRetour }}"/>{% endif %}
+			{% for tabBord in tabBordZone %}
+				{% if zone == 'Nationale' %}
+					{% set idZone = tabBord['zone'].code %}
+				{% else %}
+					{% set idZone = tabBord['zone'].numero %}
+				{% endif %}
+
+				{% if loop.index0%2 == 1 %}
+					{% set couleur = "even" %}
+				{% else %}
+					{% set couleur = "odd" %}
+				{% endif %}
+			<tr class="{{ couleur }}">
+				<td scope="rowgroup" rowspan="{{ tabBord['resultats']| length }}">
+					{% if zone == 'Départements' or zone == 'Académie' %}
+						<a href="#" id="lien_departement_{{ tabBord['zone'].numero}}">{{ tabBord['zone'].libelle }}</a>
+					{% else %}
+						{{ tabBord['zone'].libelle }}
+					{% endif %}
+				</td>
+				{% for eleRes in tabBord['resultats'] %}
+					{% if loop.index0 != 0 %}<tr class="{{ couleur }}">{% endif %}
+					<td>{% if tabBord['sousTypeElection'] is defined %}{{ tabBord['sousTypeElection'].code }}{% else %}{{ eleRes['typeElection'].code }}{% endif %}{% if eleRes['campagne'] is not empty %} {{ eleRes['campagne'].anneeDebut }}-{{ eleRes['campagne'].anneeFin }} {% if eleRes['campagne'].archivee %}<span class="archivee">(fermée)</span>{% endif %} {% endif %}</td>
+					{% if eleRes['campagne'] is not empty %}
+						{% if eleRes['aucuneDonnee'] is not defined %}
+							{% if eleRes['nbEtabExpr'] is defined %}
+								<td>{{ eleRes['nbEtabExpr'] }} établissements exprimés (sur {{ eleRes['nbEtabTotal'] }})</td>
+							{% else %}
+								<td>{{ eleRes['nbEtabAucunEnr'] }} aucun enregistrement, {{ eleRes['nbEtabSaisie'] }} saisies enregistrées, {{ eleRes['nbEtabTransmis'] }} transmises et {{ eleRes['nbEtabValide'] }} validées (sur {{ eleRes['nbEtabTotal'] }})</td>
+							{% endif %}
+						{% else %}
+							<td>{{ erreurs[004] }}</td>
+						{% endif %}
+						<td class="actions">
+							{% if eleRes['validationPossible'] %}
+								{# 							BBL commente: à la consultation des résultats par établissement, la zone est tjrs département#}
+								{# 							{% if zone == 'Départements' %}#}
+								{# 								<a href="{{ path('EPLEElectionBundle_resultats_transmis', { 'codeUrlTypeElect': eleRes['typeElection'].getCodeUrlById, 'numDept' : tabBord['zone'].numero }) }}"><img src="{{ asset('images/pictos/accept.png') }}" alt="Valider les résultats" title="Valider les résultats" /></a>#}
+								{# 							{% else %}#}
+								{# 								<a href="{{ path('EPLEElectionBundle_resultats_transmis', { 'codeUrlTypeElect': eleRes['typeElection'].getCodeUrlById, 'numDept' : 0 }) }}"><img src="{{ asset('images/pictos/accept.png') }}" alt="Valider les résultats" title="Valider les résultats" /></a>#}
+								{# 							{% endif %}#}
+								<a href="{{ path('EPLEElectionBundle_resultats_transmis', { 'codeUrlTypeElect': eleRes['typeElection'].getCodeUrlById, 'numDept' : tabBord['zone'].numero }) }}"><img src="{{ asset('images/pictos/accept.png') }}" alt="Valider les résultats" title="Valider les résultats" /></a>
+							{% endif %}
+						</td>
+						<td class="actions">
+							{% if eleRes['campagneOpenSaisie'] %}
+								<a href="{{ path('EPLEElectionBundle_relance_courriel', { 'idZone':idZone, 'typeElectionId':eleRes['typeElection'].id()}) }}">
+									<img src="{{ asset('images/pictos/email.png') }}" alt="Contacter les établissements" title="Contacter les établissements" />
+								</a>
+							{% endif %}
+						</td>
+					{% else %}
+						<td colspan="2">{{ erreurs[005] }}</td>
+						<td class="actions" colspan="2"></td>
+					{% endif %}
+					{% if loop.index0 != 0 %}</tr>{% endif %}
+				{% endfor %}
+				</tr>
+			{% endfor %}
+		</table>
+		<div id="etablissements_by_dept"></div>
+	</div>
+
+	<script type="text/javascript">
+		{% if zone is defined %}
+		{% if zone == 'Nationale' or zone == 'Académie' %}
+		$('#liens_detail').show();
+		$('#tabBordZone').hide();
+		$('#masquer_tabBordZone').hide();
+		{% endif %}
+		{% endif %}
+		var getRechercheEtablissementsByNumDepartementAjaxPath = "{{ path('EPLEElectionBundle_ajax_getRechercheEtablissementsByNumDepartement') }}";
+		var getEtablissementsByNumDepartementAjaxPath = "{{ path('EPLEElectionBundle_ajax_getEtablissementsByNumDepartement') }}";
+
+	</script>
+
+{% endblock %}

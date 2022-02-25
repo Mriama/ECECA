@@ -1,0 +1,46 @@
+{% extends 'EPLEElectionBundle::layout.html.twig' %} 
+
+{% block stylesheets %}
+	{{ parent() }}
+	<link type="text/css" href="{{ asset('js/jquery_ui/themes/base/jquery-ui.css') }}" rel="stylesheet"  />
+	<link type="text/css" href="{{ asset('js/jquery_ui/themes/base/jquery.ui.autocomplete.css') }}" rel="stylesheet"  />
+	<link type="text/css" href="{{ asset('js/jquery_ui/themes/base/jquery.ui.menu.css') }}" rel="stylesheet"  />
+{% endblock %}
+
+{% block js %}
+	{{ parent() }}
+	<script type="text/javascript" src="{{ asset('js/jquery_ui/jquery.ui.core.min.js') }}"></script>
+	<script type="text/javascript" src="{{ asset('js/jquery_ui/jquery.ui.widget.js') }}"></script>
+	<script type="text/javascript" src="{{ asset('js/jquery_ui/jquery.ui.menu.js') }}"></script>
+	<script type="text/javascript" src="{{ asset('js/jquery_ui/jquery.ui.position.js') }}"></script>
+	<script type="text/javascript" src="{{ asset('js/jquery_ui/jquery.ui.autocomplete.js') }}"></script>
+	<script type="text/javascript" src="{{ asset('js/courrielLibre.js') }}"></script>
+{% endblock %} 
+
+{% block title %}
+	{{ parent() }} - Envoi de courriel libre
+{% endblock %} 
+
+{% block arianeComplements %}
+	{{ parent() }} <li>Envoi de courriel libre</li>
+
+{% endblock %}
+
+{% block contentPage %}
+	<h3>Envoi de courriel</h3>
+	{% if courriel_envoye is defined %}
+		<div class="message ok">{{ courriel_envoye }}</div>
+	{% endif %}
+	{% if courriel_non_envoye is defined %}
+		<div class="message erreur">{{ courriel_non_envoye }}</div>
+	{% endif %}
+	{% if form is defined and pasEnSaisie is not defined and pasEnValidation is not defined %}
+		{% include 'EPLEElectionBundle:Courriel:formCourrielLibre.html.twig' with { 'form' : form } %}
+	{% endif %}
+	{% if pasEnSaisie is defined %}
+		<div class="message erreur">{{ pasEnSaisie }}</div>
+	{% endif %}
+	{% if pasEnValidation is defined %}
+		<div class="message erreur">{{ pasEnValidation }}</div>
+	{% endif %}
+{% endblock %}

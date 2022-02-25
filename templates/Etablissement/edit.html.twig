@@ -1,0 +1,51 @@
+{% extends 'EPLEAdminBundle::layout.html.twig' %}
+
+{% block js %}{{ parent() }}<script src="{{ asset('js/etab.js') }}"></script>{% endblock %}
+
+{% block title %}{{ parent() }} - {% if form.vars.value.etab.uai == '0' %}Ajouter{% else %}Modifier{% endif %} un établissement{% endblock %}
+
+{% block arianeComplements %}{{ parent() }}<li>{% if form.vars.value.etab.uai == '0' %}Ajout{% else %}Modification{% endif %} d'un établissement</li>{% endblock %}
+
+{% block h3 %}<h3>{% if form.vars.value.etab.uai == '0' %}Ajouter{% else %}Modifier{% endif %} un établissement</h3>{% endblock %}	
+
+{% block content %}
+
+<form id="form_etab_edit" action="{{ path('EPLEAdminBundle_etablissement_modifier',  { 'etablissementUai': form.vars.value.etab.uai }) }}" method="post" accept-charset="UTF-8" {{ form_enctype(form) }}>
+		
+	<p class="note">Un astérisque * marque un champ obligatoire</p>
+		
+	<div id="etabtype">	
+		{{ form_errors(form) }}
+		<div>{{ form_label(form['etab.uai']) }}{{ form_widget(form['etab.uai']) }}</div>
+		<div>{{ form_label(form['etab.libelle']) }}{{ form_widget(form['etab.libelle']) }}</div>
+		<div>{{ form_label(form['etab.typeEtablissement']) }}{{ form_widget(form['etab.typeEtablissement']) }}</div>
+		<div>{{ form_label(form['etab.eclair']) }}{{ form_widget(form['etab.eclair']) }}</div>		
+		<div id="cp">{{ form_label(form['etab.commune'].codePostal) }}{{ form_widget(form['etab.commune'].codePostal) }}</div>
+		<div id="nouvelle_commune">{{ form_label(form['etab.commune'].libelle) }}{{ form_widget(form['etab.commune'].libelle) }}
+			<a href="#" id="liste_commune">Liste de communes</a>	  
+		</div>
+		<div id="choix_commune">{{ form_label(form.commune) }}{{ form_widget(form.commune) }}
+			<a href="#" id="new_commune">Ajouter une nouvelle commune</a>
+		</div>
+		<div>{{ form_label(form['etab.commune'].departement) }}{{ form_widget(form['etab.commune'].departement) }}</div>		
+		<div>{{ form_label(form['etab.contact']) }}{{ form_widget(form['etab.contact']) }}</div>	
+		{{ form_rest(form) }}
+	</div>
+	
+	<input type="hidden" value="" id="contact_change" />
+	
+	<script type="text/javascript">
+		//var getCommuneParCpAjaxPath = "{{ path('EPLEAdminBundle_ajax_getCommuneByCp') }}";
+		//var getCodeMailParCommuneAjaxPath = "{{ path('EPLEAdminBundle_ajax_getCodeMailByCommune') }}";
+		afficherCommuneEtab();
+		genereSelectCommunesParCp();
+		ajouterIndicatorChargementCommune('etabtype');
+	</script>
+		
+    <div class="boutons"><input type="submit" value="Valider" /></div>
+</form>  
+
+<div class="pageactions">
+	<a href="{{ path('EPLEAdminBundle_etablissement', {'page' : current_page}) }}" class="retour">Retour</a>
+</div>
+{% endblock %}

@@ -1,0 +1,92 @@
+{% extends 'EPLEAdminBundle::layout.html.twig' %}
+
+{% block title %}{{ parent() }} - Résultats de recherche{% endblock %}
+
+{% block arianeComplements %}{{ parent() }}
+	<li>
+		<a href="{{ path('EPLEAdminBundle_page_formulaire_recherche_etablissement') }}">Recherche d'établissements</a>
+	</li>
+{% endblock %}
+
+{% block h3 %}
+	<h3>Recherche d'un établissement</h3>
+{% endblock %}
+
+{% block content %}
+
+	<form action="{{ path('EPLEAdminBundle_affichage_resultat_recherche_etablissements') }}" method="post" accept-charset="UTF-8" {{ form_enctype(form) }}>
+		<p class="note">Un astérisque * marque un champ obligatoire</p>
+		{{ form_widget(form) }}
+		<div class="boutons"><input type="submit" value="Rechercher" /></div>
+	</form>
+
+	{# 	old IE n'interprete pas la propriété required	#}
+	{% if messageUaiVide is defined %}
+		<div class="message erreur">Le champ UAI/RNE est obligatoire</div>
+	{% else %}
+		{% if etablissement is not defined or etablissement is null %}
+			<div class="message erreur">Aucun établissement trouvé</div>
+		{% elseif dansPerimetre is defined and dansPerimetre == false %}
+			<div class="message erreur">Vous n'êtes pas habilité à consulter cet établissement</div>
+		{% else %}
+			<table>
+				<caption> <strong>Description de l'école ou de l'établissement</strong> </caption>
+
+				<tr>
+					<th scope="col">UAI/RNE</th>
+					<td>{% autoescape false %}{{ etablissement.uai }}{% endautoescape %}</td>
+				</tr>
+
+				<tr>
+					<th scope="col">Libellé</th>
+					<td>{% autoescape false %}{{ etablissement.libelle }}{% endautoescape %}</td>
+				</tr>
+
+				<tr>
+					<th scope="col">Type d'établissement</th>
+					<td>{% autoescape false %}{{ etablissement.typeEtablissement.libelle }}{% endautoescape %}</td>
+				</tr>
+
+				<tr>
+					<th scope="col">Nature d'établissement</th>
+					<td>{% autoescape false %}{% if etablissement.UaiNature.getLibelleLong is defined %}{{ etablissement.UaiNature.getLibelleLong }}{% endif %}{% endautoescape %}</td>
+				</tr>
+
+				<tr>
+					<th scope="col">Commune (Département)</th>
+					<td>{% autoescape false %}{% if etablissement.commune.libelle is defined %}{{ etablissement.commune.libelle }} ({{ etablissement.commune.departement.libelle }}){% else %} {% endif %} {% endautoescape %}</td>
+				</tr>
+
+				<tr>
+					<th scope="col">Code INSEE</th>
+					<td>{% autoescape false %}{% if etablissement.commune.codeInsee is defined %}{{ etablissement.commune.codeInsee }}{% else %} {% endif %} {% endautoescape %}</td>
+				</tr>
+
+				<tr>
+					<th scope="col">Etat (Actif / Non actif)</th>
+					<td>{% autoescape false %}{% if etablissement.actif == 1 %} Actif {% elseif etablissement.actif == 0 %} Non actif {% endif %}  {% endautoescape %}</td>
+				</tr>
+
+				<tr>
+					<th scope="col">Date de fermeture</th>
+					<td>{% autoescape false %}{% if etablissement.DateFermeture is null %}{% else %}{{ etablissement.dateFermeture|date("d/m/Y") }}{% endif %}{% endautoescape %}</td>
+				</tr>
+			</table>
+			{% if canDisableEtab is defined and canDisableEtab == true %}
+				<form action="{{ path('EPLEAdminBundle_ouvrir_fermer_etablissement') }}" method="post" accept-charset="UTF-8">
+					<input type="hidden" name="uai" value="{{ etablissement.uai }}">
+					{% if etablissement.actif == 1 %}
+						<div class="boutons"><input type="submit" value="Désactiver l'établissement" /></div>
+					{% elseif etablissement.actif == 0 %}
+						<div class="boutons"><input type="submit" value="Activer l'établissement" /></div>
+					{% endif %}
+				</form>
+			{% endif %}
+		{% endif %}
+		<br/>
+		<div class="pageactions">
+			<a href="{{ path('EPLEAdminBundle_page_formulaire_recherche_etablissement') }}" class="retour">Retour</a>
+		</div>
+	{% endif %}
+
+{% endblock %}

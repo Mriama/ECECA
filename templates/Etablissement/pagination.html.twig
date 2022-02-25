@@ -1,0 +1,48 @@
+{% if last_page > 1 %}
+  	<div class="pagination">
+		<span>Page : </span>
+		<ul role="navigation">
+			{% if last_page < 15 %}
+				{% for i in 1..last_page %}
+					{% if (i == current_page) %}
+					<li class="courant">{{ i }}</li>
+					{% else %}
+					<li><a href="{{ path('EPLEAdminBundle_etablissement', {'page': i}) }}" title="Résultats de la recherche : page {{ i }}">{{ i }}</a></li>
+					{% endif %}
+				{% endfor %}
+			{% else %}
+				{% if (current_page < 6 or current_page > (last_page - 5)) %}
+					{% for i in 1..6 %}
+						{% if (i == current_page) %}
+						<li class="courant">{{ i }}</li>
+						{% else %}
+						<li><a href="{{ path('EPLEAdminBundle_etablissement', {'page': i}) }}" title="Résultats de la recherche : page {{ i }}">{{ i }}</a></li>
+						{% endif %}
+					{% endfor %}
+					<li class="separator">…</li>
+					{% for i in (last_page-5)..last_page %}
+						{% if (i == current_page) %}
+						<li class="courant">{{ i }}</li>
+						{% else %}
+						<li><a href="{{ path('EPLEAdminBundle_etablissement', {'page': i}) }}" title="Résultats de la recherche : page {{ i }}">{{ i }}</a></li>
+						{% endif %}
+					{% endfor %}
+					
+				{% else %}
+					<li><a href="{{ path('EPLEAdminBundle_etablissement', {'page': 1}) }}" title="Résultats de la recherche : page 1">1</a></li>
+					<li class="separator">…</li>
+					{% for i in (current_page-3)..(current_page + 3) %}
+						{% if (i == current_page) %}
+						<li class="courant">{{ i }}</li>
+						{% else %}
+						<li><a href="{{ path('EPLEAdminBundle_etablissement', {'page': i}) }}" title="Résultats de la recherche : page {{ i }}">{{ i }}</a></li>
+						{% endif %}
+					{% endfor %}
+					<li class="separator">…</li>
+					<li><a href="{{ path('EPLEAdminBundle_etablissement', {'page': last_page}) }}" title="Résultats de la recherche : page {{ last_page }}">{{ last_page }}</a></li>
+				{% endif %}
+			{% endif %}
+			</ul>
+		</ul>
+  	</div>
+{% endif %}
