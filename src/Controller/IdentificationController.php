@@ -39,7 +39,7 @@ class IdentificationController extends AbstractController {
 	 * @Method("POST")
 	 */
 	public function loginAction(Request $request, LoggerInterface $logger, ClearTrustService $clearTrustService) {
-
+		//dd($request);
 		$logger->info('IdentificationController.loginAction - DEBUT');
 
 		$tblSSO = array();

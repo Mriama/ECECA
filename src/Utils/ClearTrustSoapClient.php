@@ -151,7 +151,7 @@ class ClearTrustSoapClient
 	 * @return getVersionResponse
 	 */
 	public function getVersion(getVersion $parameters) {
-		$client = new \SoapClient;
+		$client = new \SoapClient($this->wsdl_uri);
 		return $client->__soapCall ( 'getVersion', array (
 				$parameters
 		), array (
@@ -166,7 +166,7 @@ class ClearTrustSoapClient
 	 * @return getEtablissementsDelegResponse
 	 */
 	public function getEtablissementsDeleg(getEtablissementsDeleg $parameters) {
-		$client = new \SoapClient;
+		$client = new \SoapClient($this->wsdl_uri);
 		return $client->__soapCall ( 'getEtablissementsDeleg', array (
 				$parameters
 		), array (
@@ -181,7 +181,7 @@ class ClearTrustSoapClient
 	 * @return getEtablissementsRespResponse
 	 */
 	public function getEtablissementsResp(getEtablissementsResp $parameters) {
-		$client = new \SoapClient;
+		$client = new \SoapClient($this->wsdl_uri);
 		return $client->__soapCall ( 'getEtablissementsResp', array (
 				$parameters
 		), array (
@@ -196,7 +196,7 @@ class ClearTrustSoapClient
 	 * @return getEtablissementsGestResponse
 	 */
 	public function getEtablissementsGest(getEtablissementsGest $parameters) {
-		$client = new \SoapClient;
+		$client = new \SoapClient($this->wsdl_uri);
 		return $client->__soapCall ( 'getEtablissementsGest', array (
 				$parameters
 		), array (
@@ -211,7 +211,7 @@ class ClearTrustSoapClient
 	 * @return getUtilisateurResponse
 	 */
 	public function getUtilisateur(getUtilisateur $parameters) {
-		$client = new \SoapClient;
+		$client = new SoapClient($this->wsdl_uri);
 		return $client->__soapCall ( 'getUtilisateur', array (
 				$parameters
 		), array (
@@ -226,7 +226,7 @@ class ClearTrustSoapClient
 	 * @return getProxyResponse
 	 */
 	public function getProxy(getProxy $parameters) {
-		$client = new \SoapClient;
+		$client = new \SoapClient($this->wsdl_uri);
 		return $client->__soapCall ( 'getProxy', array (
 				$parameters
 		), array (
