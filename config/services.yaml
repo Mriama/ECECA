@@ -6,6 +6,10 @@
 parameters:
     wsdl_location: http://55.7.158.171:9180/cpsws/services/composantsecurite?wsdl
     wsdl_uri: http://55.7.158.171:9180/
+    liste_code_aca_dgesco: 18_45_33 #liste de codes académies séparés par _ reconnus comme un profil DGESCO
+    liste_mail_dgesco: Alexandrine.Voisin@ac-orleans-tours.fr,Frederic.Roy2@ac-orleans-tours.fr,bernard.roulier@ac-orleans-tours.fr #liste d'adresses mail séparées par virgule reconnues comme un profil DGESCO
+    default_url_return: ZZ_URL_RETOUR
+
 
 services:
     # default configuration for services in *this* file

@@ -3,10 +3,16 @@
 namespace App\Utils;
 
 use DateTime;
-use Doctrine\ORM\Mapping as ORM;
 use App\Entity\RefUser;
 use App\Entity\RefProfil;
+use App\Entity\RefCommune;
+use App\Entity\RefContact;
+use App\Entity\EleCampagne;
+use App\Entity\RefAcademie;
+use App\Entity\RefDepartement;
 use App\Entity\RefTypeElection;
+use App\Entity\RefEtablissement;
+use Doctrine\ORM\Mapping as ORM;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -78,17 +84,17 @@ class RefUserPerimetre {
      * @return RefUserPerimetre (self)
      */
     public function setPerimetreForUser(RefUser $user, $lst_uai = array(), $type_elec = array(), $lst_numero_departement = array()) {
-        !        $typeElectionParents = $this->doctrine->getRepository('EPLEElectionBundle:RefTypeElection')->find(RefTypeElection::ID_TYP_ELECT_PARENT);
+        $typeElectionParents = $this->doctrine->getRepository(RefTypeElection::class)->find(RefTypeElection::ID_TYP_ELECT_PARENT);
         $typesElections = array();
-        $campagne = $this->doctrine->getRepository('EPLEElectionBundle:EleCampagne')->getLastCampagne(RefTypeElection::ID_TYP_ELECT_PARENT);
+        $campagne = $this->doctrine->getRepository(EleCampagne::class)->getLastCampagne(RefTypeElection::ID_TYP_ELECT_PARENT);
 
         // Restriction périmètre utilisateur
         if (!empty($type_elec)) {
             foreach ($type_elec as $id) {
-                array_push($typesElections, $this->doctrine->getRepository('EPLEElectionBundle:RefTypeElection')->find($id));
+                array_push($typesElections, $this->doctrine->getRepository(RefTypeElection::class)->find($id));
             }
         } else {
-            $typesElections = $this->doctrine->getRepository('EPLEElectionBundle:RefTypeElection')->findAll();
+            $typesElections = $this->doctrine->getRepository(RefTypeElection::class)->findAll();
         }
 
         switch ($user->getProfil()->getCode()) {
@@ -96,44 +102,44 @@ class RefUserPerimetre {
             case RefProfil::CODE_PROFIL_DGESCO:
                 $this->setDegres(array('1', '2'));
                 $this->setTypeElections($typesElections);
-                //Charger The active academy in the current Year:$this->setAcademies($this->doctrine->getRepository('EPLEElectionBundle:RefAcademie')->findAll());
-                $this->setAcademies($this->doctrine->getRepository('EPLEElectionBundle:RefAcademie')->listeActiveAcademies($campagne));
+                //Charger The active academy in the current Year:$this->setAcademies($this->doctrine->getRepository(RefAcademie::class)->findAll());
+                $this->setAcademies($this->doctrine->getRepository(RefAcademie::class)->listeActiveAcademies($campagne));
                 break;
 
             case RefProfil::CODE_PROFIL_RECT:
 
 //                $this->setDegres(array('1', '2'));
 //                $this->setTypeElections($typesElections);
-//                $academie = $this->doctrine->getRepository('EPLEElectionBundle:RefAcademie')->find($user->getLogin());
+//                $academie = $this->doctrine->getRepository(RefAcademie::class)->find($user->getLogin());
 //                $this->addAcademie($academie);
-//                $departements = $this->doctrine->getRepository('EPLEElectionBundle:RefDepartement')->findBy(array('academie' => $academie->getCode()));
+//                $departements = $this->doctrine->getRepository(RefDepartement::class)->findBy(array('academie' => $academie->getCode()));
 //                $this->setDepartements($departements);
 
 
 //                 v3:
                 $this->setDegres(array('1', '2'));
                 $this->setTypeElections($typesElections);
-                $academie = $this->doctrine->getRepository('EPLEElectionBundle:RefAcademie')->find($user->getLogin());
+                $academie = $this->doctrine->getRepository(RefAcademie::class)->find($user->getLogin());
                 $this->addAcademie($academie);
-                $checkChildAcad = $this->doctrine->getRepository('EPLEElectionBundle:RefAcademie')->countchildAcademies($academie->getCode());
+                $checkChildAcad = $this->doctrine->getRepository(RefAcademie::class)->countchildAcademies($academie->getCode());
                 $getYearDisactivationAcad =  $academie->getDateDesactivation();
                 $dateCampagneDebut = new Datetime($campagne->getAnneeDebut() . '-01-01');
                 if($getYearDisactivationAcad  <= $dateCampagneDebut){
                     if (null != $academie->getAcademieFusion()){
-                        $departements = $this->doctrine->getRepository('EPLEElectionBundle:RefDepartement')->findBydepartementAdademiefusionner( $academie->getAcademieFusion()->getCode());
-                        $newAcademies = $this->doctrine->getRepository('EPLEElectionBundle:RefAcademie')->getchildnewAcademies( $academie->getAcademieFusion()->getCode());
+                        $departements = $this->doctrine->getRepository(RefDepartement::class)->findBydepartementAdademiefusionner( $academie->getAcademieFusion()->getCode());
+                        $newAcademies = $this->doctrine->getRepository(RefAcademie::class)->getchildnewAcademies( $academie->getAcademieFusion()->getCode());
                         $this->setAcademies(   $newAcademies);
                         $this->setDepartements($departements);
                         $user->setIdZone($academie->getAcademieFusion()->getCode());
                     }
                 }elseif($checkChildAcad > 0){
-                    $departements = $this->doctrine->getRepository('EPLEElectionBundle:RefDepartement')->findBydepartementAdademiefusionner( $academie->getCode());
-                    $newAcademies = $this->doctrine->getRepository('EPLEElectionBundle:RefAcademie')->getchildnewAcademies( $academie->getCode());
+                    $departements = $this->doctrine->getRepository(RefDepartement::class)->findBydepartementAdademiefusionner( $academie->getCode());
+                    $newAcademies = $this->doctrine->getRepository(RefAcademie::class)->getchildnewAcademies( $academie->getCode());
                     $this->setAcademies( $newAcademies);
                     $this->setDepartements($departements);
 
                 }else{
-                    $departements = $this->doctrine->getRepository('EPLEElectionBundle:RefDepartement')->findBy(array('academie' => $academie->getCode()));
+                    $departements = $this->doctrine->getRepository(RefDepartement::class)->findBy(array('academie' => $academie->getCode()));
                     $this->setDepartements($departements);
                     // $this->addAcademie($academie);
                 }
@@ -144,13 +150,13 @@ class RefUserPerimetre {
                 $this->setTypeElections($typesElections);
                 if ($lst_numero_departement != null) {
                     foreach ($lst_numero_departement as $numero_departement) {
-                        $departement = $this->doctrine->getRepository('EPLEElectionBundle:RefDepartement')->find($numero_departement);
+                        $departement = $this->doctrine->getRepository(RefDepartement::class)->find($numero_departement);
                         if ($departement != null) {
                             $this->addDepartement($departement);
                             $academie = $departement->getAcademie();
                             $dateCampagneDebut = new Datetime($campagne->getAnneeDebut() . '-01-01');
                             if($academie->getAcademieFusion() != null && $academie->getDateDesactivation() <= $dateCampagneDebut) {
-                                $academie = $this->doctrine->getRepository('EPLEElectionBundle:RefAcademie')->find( $academie->getAcademieFusion()->getCode());
+                                $academie = $this->doctrine->getRepository(RefAcademie::class)->find( $academie->getAcademieFusion()->getCode());
                             }
                             $this->addAcademie($academie);
                             $user->setIdZone($academie->getCode());
@@ -163,7 +169,7 @@ class RefUserPerimetre {
                 $this->setDegres(array('1'));
                 $this->setTypeElections($typesElections);
                 foreach ($lst_uai as $uai) {
-                    $etab = $this->doctrine->getRepository('EPLEElectionBundle:RefEtablissement')->findOneByUai($uai);
+                    $etab = $this->doctrine->getRepository(RefEtablissement::class)->findOneBy(["uai" => $uai]);
                     if (null != $etab && null != $etab->getCommune() && $etab->getActif()){ // YME - HPQC DEFECT #220
                         $this->addEtablissement($etab);
                         $this->addCommune($etab->getCommune());
@@ -171,8 +177,8 @@ class RefUserPerimetre {
                         $academie = $etab->getCommune()->getDepartement()->getAcademie();
                         $dateCampagneDebut = new Datetime($campagne->getAnneeDebut() . '-01-01');
                         if($academie->getAcademieFusion() != null && $academie->getDateDesactivation() <= $dateCampagneDebut) {
-                            $academie = $this->doctrine->getRepository('EPLEElectionBundle:RefAcademie')->find( $academie->getAcademieFusion()->getCode());
-                            //$newAcademies = $this->doctrine->getRepository('EPLEElectionBundle:RefAcademie')->getchildnewAcademies( $academie->getAcademieFusion()->getCode());
+                            $academie = $this->doctrine->getRepository(RefAcademie::class)->find( $academie->getAcademieFusion()->getCode());
+                            //$newAcademies = $this->doctrine->getRepository(RefAcademie::class)->getchildnewAcademies( $academie->getAcademieFusion()->getCode());
                             //$this->setAcademies( $newAcademies);
                         }
                         $this->addAcademie($academie);
@@ -187,7 +193,7 @@ class RefUserPerimetre {
                 $this->setDegres(array('2'));
                 $this->setTypeElections($typesElections);
                 foreach ($lst_uai as $uai) {
-                    $etab = $this->doctrine->getRepository('EPLEElectionBundle:RefEtablissement')->findOneByUai($uai);
+                    $etab = $this->doctrine->getRepository(RefEtablissement::class)->findOneBy(["uai" => $uai]);
                     if (null != $etab && null != $etab->getCommune() && $etab->getActif()){ // YME - HPQC DEFECT #220
                         $this->addEtablissement($etab);
                         $this->addCommune($etab->getCommune());
@@ -195,7 +201,7 @@ class RefUserPerimetre {
                         $academie = $etab->getCommune()->getDepartement()->getAcademie();
                         $dateCampagneDebut = new Datetime($campagne->getAnneeDebut() . '-01-01');
                         if($academie->getAcademieFusion() != null && $academie->getDateDesactivation() <= $dateCampagneDebut) {
-                            $academie = $this->doctrine->getRepository('EPLEElectionBundle:RefAcademie')->find( $academie->getAcademieFusion()->getCode());
+                            $academie = $this->doctrine->getRepository(RefAcademie::class)->find( $academie->getAcademieFusion()->getCode());
                         }
                         $user->setIdZone($academie->getCode());
                         $this->addAcademie($academie);
@@ -208,7 +214,7 @@ class RefUserPerimetre {
                 $this->setDegres(array('1'));
                 $this->setTypeElections($typesElections);
                 foreach ($lst_uai as $uai) {
-                    $etab = $this->doctrine->getRepository('EPLEElectionBundle:RefEtablissement')->findOneByUai($uai);
+                    $etab = $this->doctrine->getRepository(RefEtablissement::class)->findOneBy(["uai" => $uai]);
                     if (null != $etab && null != $etab->getCommune()  && $etab->getActif()){ // YME - HPQC DEFECT #220
                         $this->addEtablissement($etab);
                         $this->addCommune($etab->getCommune());
@@ -216,7 +222,7 @@ class RefUserPerimetre {
                         $academie = $etab->getCommune()->getDepartement()->getAcademie();
                         $dateCampagneDebut = new Datetime($campagne->getAnneeDebut() . '-01-01');
                         if($academie->getAcademieFusion() != null && $academie->getDateDesactivation() <= $dateCampagneDebut) {
-                            $academie = $this->doctrine->getRepository('EPLEElectionBundle:RefAcademie')->find( $academie->getAcademieFusion()->getCode());
+                            $academie = $this->doctrine->getRepository(RefAcademie::class)->find( $academie->getAcademieFusion()->getCode());
                         }
                         $this->addAcademie($academie);
                         $user->setIdZone($academie->getCode());
@@ -269,17 +275,17 @@ class RefUserPerimetre {
     }
 
     public function hasElectionsASS_ATE() {
-        $typeElection = $this->doctrine->getRepository('EPLEElectionBundle:RefTypeElection')->find(RefTypeElection::ID_TYP_ELECT_ASS_ATE);
+        $typeElection = $this->doctrine->getRepository(RefTypeElection::class)->find(RefTypeElection::ID_TYP_ELECT_ASS_ATE);
         return in_array($typeElection, $this->typeElections);
     }
 
     public function hasElectionsPEE() {
-        $typeElection = $this->doctrine->getRepository('EPLEElectionBundle:RefTypeElection')->find(RefTypeElection::ID_TYP_ELECT_PEE);
+        $typeElection = $this->doctrine->getRepository(RefTypeElection::class)->find(RefTypeElection::ID_TYP_ELECT_PEE);
         return in_array($typeElection, $this->typeElections);
     }
 
     public function hasElectionsPARENTS() {
-        $typeElection = $this->doctrine->getRepository('EPLEElectionBundle:RefTypeElection')->find(RefTypeElection::ID_TYP_ELECT_PARENT);
+        $typeElection = $this->doctrine->getRepository(RefTypeElection::class)->find(RefTypeElection::ID_TYP_ELECT_PARENT);
         return in_array($typeElection, $this->typeElections);
     }
 
@@ -362,7 +368,7 @@ class RefUserPerimetre {
                 if (!empty($this->academies)) {
                     $academie = $this->academies[0];
                     if ($academie != null) {
-                        $contactsAcademie = $this->doctrine->getRepository('EPLEElectionBundle:RefContact')->findContactsByIdZone($academie->getCode());
+                        $contactsAcademie = $this->doctrine->getRepository(RefContact::class)->findContactsByIdZone($academie->getCode());
                         if ($contactsAcademie != null && sizeof($contactsAcademie) > 0) {
                             $contactAcademie = $contactsAcademie[0];
                             $email = $contactAcademie->getEmail1();
@@ -380,8 +386,8 @@ class RefUserPerimetre {
                     if (sizeof($this->departements) == 1) {
                         $departement = $this->departements[0];
                         if ($departement != null) {
-                            $typeElectionParents = $this->doctrine->getRepository('EPLEElectionBundle:RefTypeElection')->find(RefTypeElection::ID_TYP_ELECT_PARENT);
-                            $contactsDepartement = $this->doctrine->getRepository('EPLEElectionBundle:RefContact')->findRefContactsByIdZoneTypeElection($departement->getNumero(), $typeElectionParents);
+                            $typeElectionParents = $this->doctrine->getRepository(RefTypeElection::class)->find(RefTypeElection::ID_TYP_ELECT_PARENT);
+                            $contactsDepartement = $this->doctrine->getRepository(RefContact::class)->findRefContactsByIdZoneTypeElection($departement->getNumero(), $typeElectionParents);
                             if ($contactsDepartement != null && sizeof($contactsDepartement) > 0) {
                                 $contactDepartement = $contactsDepartement[0];
                                 $email = $contactDepartement->getEmail1();
@@ -399,7 +405,7 @@ class RefUserPerimetre {
                     if (sizeof($this->departements) == 1) {
                         $departement = $this->departements[0];
                         if ($departement != null) {
-                            $contactsDepartement = $this->doctrine->getRepository('EPLEElectionBundle:RefContact')->findContactsByIdZone($departement->getNumero());
+                            $contactsDepartement = $this->doctrine->getRepository(RefContact::class)->findContactsByIdZone($departement->getNumero());
                             foreach ($contactsDepartement as $contactDepartement) {
                                 if($contactDepartement->getTypeElection()->getId() == RefTypeElection::ID_TYP_ELECT_PARENT){
                                     $email[] = $contactDepartement->getEmail2();
@@ -420,7 +426,7 @@ class RefUserPerimetre {
                     if (!empty($this->academies)) {
                         $academie = $this->academies[0];
                         if ($academie != null) {
-                            $contactsAcademie = $this->doctrine->getRepository('EPLEElectionBundle:RefContact')->findContactsByIdZone($academie->getCode());
+                            $contactsAcademie = $this->doctrine->getRepository(RefContact::class)->findContactsByIdZone($academie->getCode());
                             foreach ($contactsAcademie as $contactAcademie) {
                                 $email[] = $contactAcademie->getEmail1();
                             }

@@ -710,10 +710,17 @@ class RefUser implements UserInterface, \Serializable
         return $granted;
     }
 
-    public function getSalt() { }
+    /**
+     * @return ?string
+     */
+    public function getSalt() {
+        return null;
+    }
+
     public function eraseCredentials() { }
+
     public function equals(UserInterface $user) {
-        return ($this->id === $user->getId()) ? true : false;
+        return ($this->login === $user->getUserIdentifier()) ? true : false;
     }
 
     public function serialize() {
@@ -728,5 +735,12 @@ class RefUser implements UserInterface, \Serializable
             $this->id,
             $this->login
             ) = \json_decode($serialized);
+    }
+
+    /**
+     * @return string
+     */
+    public function getUserIdentifier() {
+        return $this->login;
     }
 }

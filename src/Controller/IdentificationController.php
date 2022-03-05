@@ -36,7 +36,7 @@ class IdentificationController extends AbstractController {
 	
 	/**
 	 * @Route("/integ_ececa", name="login")
-	 * @Method("POST")
+	 * @Method("GET")
 	 */
 	public function loginAction(Request $request, LoggerInterface $logger, ClearTrustService $clearTrustService) {
 		//dd($request);
@@ -73,7 +73,7 @@ class IdentificationController extends AbstractController {
 		$url_retour = $tblSSO[4];
 		if ( null == $url_retour || 0 == strcmp('', $url_retour))
 		{
-			$url_retour = $this->container->getParameter("default_url_return");
+			$url_retour = $this->getParameter("default_url_return");
 		}
 		$request->getSession()->set('url_retour', $url_retour);
 
@@ -87,7 +87,7 @@ class IdentificationController extends AbstractController {
 
 		// Point d'entrée de l'application
 		// YME - 167304
-		return $this->redirect($this->generateUrl('EPLEElectionBundle_homepage'));
+		return $this->redirect($this->generateUrl('HOMEPAGE'));
 
 	}
 	

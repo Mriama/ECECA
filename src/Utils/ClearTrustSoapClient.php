@@ -1,6 +1,8 @@
 <?php
 
 namespace App\Utils;
+
+
 class getEtablissementsGest {
 	public $httpHeaders; // headersWrapper
 	public $typeExtraction; // gestExtractEnum
@@ -142,7 +144,7 @@ class ClearTrustSoapClient
 				$options ['classmap'] [$key] = $value;
 			}
 		}
-		parent::__construct ( $wsdl_location, $options );
+		//parent::__construct ( $wsdl_location, $options );
 	}
 	
 	/**
@@ -211,7 +213,8 @@ class ClearTrustSoapClient
 	 * @return getUtilisateurResponse
 	 */
 	public function getUtilisateur(getUtilisateur $parameters) {
-		$client = new SoapClient($this->wsdl_uri);
+		$client = new \SoapClient($this->wsdl_uri, ["trace" => 1]);
+		dd($client);
 		return $client->__soapCall ( 'getUtilisateur', array (
 				$parameters
 		), array (

@@ -1,4 +1,4 @@
-{% extends '::base.html.twig' %}
+{% extends 'base.html.twig' %}
 
 {% block title %}
 	{{ parent() }}{% if sousTypeElect is defined %} {{ sousTypeElect.code }} {% elseif typeElect is defined %}{{ typeElect.code }} {% endif %}

@@ -127,11 +127,24 @@ class ClearTrustService{
 					$httpHeader->value = $value;
 					$utilisateur->httpHeaders [] = $httpHeader;
 				};
-				 
-				$utilisateurWrapper = $soapClient->getUtilisateur($utilisateur)->utilisateur;
-				 
-				foreach($utilisateurWrapper->groupes as $groupe)
-				{
+				
+				//$utilisateurWrapper = $soapClient->getUtilisateur($utilisateur)->utilisateur;
+				
+				$utilisateurWrapper = (object) [
+					"academie" => "",
+					"etabFrEduRne" => [],
+					"etabFrEduRneResp" => [],
+					"groupes" => ["groupe" => ["ECECA-ADC", "GAIA-GEST", "GAIA-BO-BRD"]]
+				 ];
+
+				// $utilisateurWrapper = (object) [
+				// 	"academie" => "BOR",
+				// 	"etabFrEduRne" => [],
+				// 	"etabFrEduRneResp" => [],
+				// 	"groupes" => ["groupe" => ["ECECA_ACA"]]
+				// ];
+
+				foreach($utilisateurWrapper->groupes as $groupe) {
 					// si le ctgrps est multivalué
 					if (is_array($groupe)) {
 						foreach($groupe as $grp)
@@ -141,7 +154,7 @@ class ClearTrustService{
 								// Recuperer les liste codes aca et mails depuis parameters.yml
 								$listeCodesAca = explode("_", $this->container->getParameter('liste_code_aca_dgesco'));
 								$listeMailsDgesco = explode(",", $this->container->getParameter('liste_mail_dgesco'));
-									
+								error_log("MMMAMAQQQMMPPAPAPPAPAPPAPMAA".$listeMailsDgesco);
 								// 0170915 si le grp est code aca et le codaca dans la liste des codes aca et le ctemail dans la liste des mails DGESCO alors le compte prend le profil d'administrateur DGESCO
 								if (in_array(substr($codaca, 1), $listeCodesAca) && in_array($ctemail, $listeMailsDgesco))
 									$login = self::ADMIN_LOGIN;
@@ -171,7 +184,7 @@ class ClearTrustService{
 						} else if(0 == strcmp(self::ECECA_ADC, $groupe)) {
 							
 							$login = self::ADMIN_LOGIN;
-							
+
 						}
 					}
 				}
@@ -179,7 +192,7 @@ class ClearTrustService{
 			
 			
 			// Cas d’un chef d’établissement et de son adjoint (FrEduFonctAdm = DIR et FrEduResp contient $PU$)
-			if(null != $FrEduFonctAdm && 0 == strcmp(self::FONCT_ADM_DIR, $FrEduFonctAdm)){
+			if(null != $FrEduFonctAdm && 0 == strcmp(self::FONCT_ADM_DIR, $FrEduFonctAdm)) {
 				 
 				$login = self::CE_LOGIN;
 				 
@@ -204,8 +217,31 @@ class ClearTrustService{
 					$etab->nomApp = self::APP_NAME;
 					$etab->typeExtraction = self::ETAB_N_UAJ;
 			
-					$etablissementWrapper = $soapClient->getEtablissementsResp($etab)->etablissements;
-			
+					//$etablissementWrapper = $soapClient->getEtablissementsResp($etab)->etablissements;
+					$etablissementWrapper = [
+						"etablissement" => (object) [
+							["activité" => "N",
+							"appliDelegation" =>"",
+							"codeRne" => "0640042Y",
+							"codeRneRattachement" => "",
+							"codeTNA" => "320",
+							"codeTTY" => "LP",
+							"secteur" => "PU",
+							"typeEtablissement" => "T3",
+							"uaaUaj" => "UAJ"],
+
+							["activité" => "N",
+							"appliDelegation" =>"",
+							"codeRne" => "0641391P",
+							"codeRneRattachement" => "",
+							"codeTNA" => "340",
+							"codeTTY" => "CLG",
+							"secteur" => "PU",
+							"typeEtablissement" => "T3",
+							"uaaUaj" => "UAJ"]
+							
+					  ]
+					];
 					foreach($etablissementWrapper as $tabEtablissement)
 					{
 						 
@@ -253,7 +289,7 @@ class ClearTrustService{
 				};
 				$etab->typeExtraction = self::ETAB_N_UAJ;
 				 
-				$etablissementWrapper = $soapClient->getEtablissementsDeleg($etab)->etablissements;
+				//	$etablissementWrapper = $soapClient->getEtablissementsDeleg($etab)->etablissements;
 				 
 				foreach($etablissementWrapper as $tabEtablissement)
 				{
@@ -312,7 +348,31 @@ class ClearTrustService{
 					$etab->nomApp = self::APP_NAME;
 					$etab->typeExtraction = self::ETAB_N_UAJ;
 					 
-					$etablissementWrapper = $soapClient->getEtablissementsResp($etab)->etablissements;
+					//$etablissementWrapper = $soapClient->getEtablissementsResp($etab)->etablissements;
+					$etablissementWrapper = [
+						"etablissement" => (object) [
+							["activité" => "N",
+							"appliDelegation" =>"",
+							"codeRne" => "0310190N",
+							"codeRneRattachement" => "",
+							"codeTNA" => "151",
+							"codeTTY" => "1ORD",
+							"secteur" => "PU",
+							"typeEtablissement" => "T1",
+							"uaaUaj" => "UAJ"],
+
+							["activité" => "N",
+							"appliDelegation" =>"DEC",
+							"codeRne" => "0500517R1",
+							"codeRneRattachement" => "",
+							"codeTNA" => "151",
+							"codeTTY" => "1ORD",
+							"secteur" => "PU",
+							"typeEtablissement" => "T1",
+							"uaaUaj" => "UAJ"]							
+							
+					  ]
+					];
 					 
 					foreach($etablissementWrapper as $tabEtablissement)
 					{
@@ -360,8 +420,41 @@ class ClearTrustService{
     			$etab->nomApp = self::APP_NAME;
     			$etab->typeExtraction = self::ETAB_N_UAJ;
     			
-    			$etablissementWrapper = $soapClient->getEtablissementsDeleg($etab)->etablissements;
-    			
+    			//$etablissementWrapper = $soapClient->getEtablissementsDeleg($etab)->etablissements;
+    			$etablissementWrapper = [
+					"etablissement" => (object) [
+						["activité" => "N",
+						"appliDelegation" =>"DEC",
+						"codeRne" => "0330310H",
+						"codeRneRattachement" => "",
+						"codeTNA" => "151",
+						"codeTTY" => "1ORD",
+						"secteur" => "PU",
+						"typeEtablissement" => "T1",
+						"uaaUaj" => "UAJ"],
+
+						["activité" => "N",
+						"appliDelegation" =>"DEC",
+						"codeRne" => "0330315N",
+						"codeRneRattachement" => "",
+						"codeTNA" => "151",
+						"codeTTY" => "1ORD",
+						"secteur" => "PU",
+						"typeEtablissement" => "T1",
+						"uaaUaj" => "UAJ"],
+
+						["activité" => "N",
+						"appliDelegation" =>"DEC",
+						"codeRne" => "0331634X",
+						"codeRneRattachement" => "",
+						"codeTNA" => "151",
+						"codeTTY" => "1ORD",
+						"secteur" => "PU",
+						"typeEtablissement" => "T1",
+						"uaaUaj" => "UAJ"]
+						
+				  ]
+				];
     			$isDE = false;
     			
     			foreach($etablissementWrapper as $tabEtablissement)
@@ -459,8 +552,21 @@ class ClearTrustService{
     				$etab->nomGroupe = self::APP_NAME;
     				$etab->typeExtraction = self::ETAB_DSDEN;
     				
-    				$etablissementWrapper = $soapClient->getEtablissementsGest($etab)->etablissements;
-    				 
+    				//$etablissementWrapper = $soapClient->getEtablissementsGest($etab)->etablissements;
+    				 $etablissementWrapper = [
+						  "etablissement" => (object) [
+								"activité" => "N",
+								"appliDelegation" =>"",
+								"codeRne" => "0331617D",
+								"codeRneRattachement" => "",
+								"codeTNA" => "805",
+								"codeTTY" => "SADM",
+								"secteur" => "PU",
+								"typeEtablissement" => "T8",
+								"uaaUaj" => "UAJ"
+						  ]
+
+						];
     				foreach($etablissementWrapper as $tabEtablissement)
     				{
     					// YME - 167107
@@ -495,7 +601,7 @@ class ClearTrustService{
     	}
     	catch(ComposantSecuriteException $e)
     	{
-    		throw new \Exception("Erreur du composant de sécurité : ".$e->getMessage());
+    		throw new \Exception("Erreur du composant de sécurité : ".$e->message);
     	}
     	catch(\SoapFault $s)
     	{
@@ -516,9 +622,11 @@ class ClearTrustService{
     	
     	// Création de l'entité utilisateur
     	// YME - 167107 - Rectorat
-    	$utilisateur = $this->em->getRepository('EPLEElectionBundle:RefUser')->findOneByLogin($this->mapCodeAcademie($login));
-    	
-    	if(null === $utilisateur){
+    	$utilisateur = $this->em->getRepository(RefUser::class)->findOneBy(["login" => $this->mapCodeAcademie($login)]);
+
+    	$this->logger->info('CleartrustService.login() - utilisateur trouvé : '.null === $utilisateur);
+
+    	if(null === $utilisateur) {
     		
     		$message = 'CleartrustService.login() - Utilisateur '.$login.' non trouvé en base';
     		$this->logger->error($message);
@@ -615,7 +723,7 @@ class ClearTrustService{
     
     /**
      * vérification des dates dans le FrEduResDel
-     * @param unknown $FrEduResDel
+     * @param string $FrEduResDel
      * @return boolean
      */
     private function checkDateFrEduResDel($FrEduResDel) {
@@ -639,7 +747,8 @@ class ClearTrustService{
     /**
      *
      * @param unknown $FrEduResDel
-     *
+     */
+	/*
     private function getUaisFromFrEduResDel($FrEduResDel){
     	$result = array();
     	$FrEduResDel = explode ( 'FrEduRneResp=' , $FrEduResDel);
@@ -655,7 +764,8 @@ class ClearTrustService{
     /**
      *
      * @param unknown $FrEduRneResp
-     *
+     */
+	/*
     private function getUaisFromFrEduRneResp($FrEduRneResp){
     	$result = array();
     	$uaiArray = explode ( '|' , $FrEduRneResp);
@@ -670,7 +780,8 @@ class ClearTrustService{
      * @param unknown $haystack
      * @param unknown $needle
      * @return multitype:string
-     *
+     */
+	/*
     private function split($haystack, $needle){
 
     	$sentences = array();

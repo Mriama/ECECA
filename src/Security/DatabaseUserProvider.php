@@ -48,16 +48,16 @@ class DatabaseUserProvider implements UserProviderInterface
     
     public function loadUserByUsername($username)
     {		
-        $user = $this->doctrine->getRepository('EPLEElectionBundle:RefUser')->findOneByLogin($username);
+        $user = $this->doctrine->getRepository(RefUser::class)->findOneBy(["login" => $username]);
         if (null == $user) {
             // try to find him in RefEtablissement
-            $etab = $this->doctrine->getRepository('EPLEElectionBundle:RefEtablissement')->findOneByUai($username);
+            $etab = $this->doctrine->getRepository(RefEtablissement::class)->findOneBy(["uai" => $username]);
             if (null != $etab) {
                 $user = new RefUser();
                 $user->setLogin($username);
                 $user->setPassword($username);
                 
-                $profil = $this->doctrine->getRepository('EPLEElectionBundle:RefProfil')->findOneByCode(RefProfil::CODE_PROFIL_CE);
+                $profil = $this->doctrine->getRepository(RefProfil::class)->findOneBy(["code" => RefProfil::CODE_PROFIL_CE]);
                 $user->setProfil($profil);
                 
                 $lst_uai = array($etab->getUai());
@@ -93,6 +93,21 @@ class DatabaseUserProvider implements UserProviderInterface
         }
         
         return $user;
+    }
+
+    /**
+     * The loadUserByIdentifier() method was introduced in Symfony 5.3.
+     * In previous versions it was called loadUserByUsername()
+     *
+     * Symfony calls this method if you use features like switch_user
+     * or remember_me. If you're not using these features, you do not
+     * need to implement this method.
+     *
+     * @throws UserNotFoundException if the user is not found
+     */
+    public function loadUserByIdentifier(string $identifier): UserInterface
+    {
+        return $this->loadUserByUsername($identifier);
     }
 
     public function refreshUser(UserInterface $user)
