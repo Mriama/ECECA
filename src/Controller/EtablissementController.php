@@ -1,28 +1,27 @@
 <?php
 namespace App\Controller;
 
+use App\Form\EtablissementType;
+use App\Model\EtablissementModel;
+use App\Form\EtablissementHandler;
+use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
-use App\Form\EtablissementType;
-use App\Form\EtablissementHandler;
-use App\Model\EtablissementModel;
 
 class EtablissementController extends AbstractController
 {
 
     /**
-     * Affiche le formulaire d'Import de fichier
-     *
-     * @param \Symfony\Component\HttpFoundation\Request $request            
-     */
+      * @Route("import-ramesese", name="import_ramesese")
+      */
     public function importRamseseAction(\Symfony\Component\HttpFoundation\Request $request)
     {
-        $user = $this->get('security.context')->getToken()->getUser();
+        $user = $this->getUser();
         if (! $user->canImportRamsese()) {
             throw new AccessDeniedException();
         }
         
-        $uploadDir = $this->container->getParameter('ramsese_upload_dir');
+        $uploadDir = $this->getParameter('ramsese_upload_dir');
         $logger = $this->get("import_logger");
         
         $em = $this->getDoctrine()->getManager();
@@ -54,7 +53,7 @@ class EtablissementController extends AbstractController
              }
         }
         $params['form'] = $form->createView();
-        return $this->render('EPLEAdminBundle:Etablissement:importFichier.html.twig', $params);
+        return $this->render('Etablissement/importFichier.html.twig', $params);
     }
 
     /**

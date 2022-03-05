@@ -2,27 +2,26 @@
 
 namespace App\Security;
 
-use Symfony\Component\Security\Core\User\UserProviderInterface;
-use Symfony\Component\Security\Core\User\UserInterface;
-use Symfony\Component\Security\Core\Exception\UsernameNotFoundException;
-use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
-use Symfony\Component\Security\Core\SecurityContext;
-
 use App\Entity\RefUser;
 use App\Entity\RefProfil;
+use App\Entity\RefTypeElection;
 use App\Utils\RefUserPerimetre;
 
+use Doctrine\Persistence\ManagerRegistry;
+use Symfony\Component\HttpFoundation\Session\SessionInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
+
 /**** cleartrust ***/
-use App\Entity\RefTypeElection;
-use Monolog\Logger;
+use Symfony\Component\Security\Core\User\UserProviderInterface;
+use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
+use Symfony\Component\Security\Core\Exception\UsernameNotFoundException;
 
 
-class DatabaseUserProvider implements UserProviderInterface
+class UserProvider implements UserProviderInterface
 {
     protected $doctrine;
     private $refUserPerimetreService;
     private $session;
-    private $container;
     
     // Type d'élection
     const ECECA = 'ECECA';
@@ -39,11 +38,10 @@ class DatabaseUserProvider implements UserProviderInterface
     const FR_EDU_RES_DEL = '|/redirectionhub';
     const UAI_LENGTH = 8;
     
-    public function __construct($doctrine, $refUserPerimetreService, $session, $container) {
+    public function __construct(ManagerRegistry $doctrine, RefUserPerimetre $refUserPerimetreService, SessionInterface $session) {
         $this->doctrine = $doctrine;
         $this->refUserPerimetreService = $refUserPerimetreService;
         $this->session = $session;
-        $this->container = $container;
     }
     
     public function loadUserByUsername($username)

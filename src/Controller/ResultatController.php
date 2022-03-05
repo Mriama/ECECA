@@ -4,31 +4,32 @@
 namespace App\Controller;
 
 use DateTime;
-use App\Entity\RefModaliteVote;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\Security\Core\Exception\AccessDeniedException;
-use Symfony\Component\HttpFoundation\Response;
-use App\Entity\EleCampagne;
-use App\Entity\EleEtablissement;
-use App\Entity\RefAcademie;
-use App\Entity\RefCommune;
-use App\Entity\RefDepartement;
-use App\Entity\RefEtablissement;
-use App\Entity\RefProfil;
-use App\Entity\RefSousTypeElection;
-use App\Entity\RefTypeElection;
-use App\Entity\RefTypeEtablissement;
-use App\Form\NbSiegesTirageAuSortType;
 use App\Entity\RefUser;
 use App\Utils\EpleUtils;
-use App\Utils\EcecaExportUtils;
-use App\Form\ResultatZoneEtabType;
+use App\Entity\RefProfil;
+use App\Entity\RefCommune;
+use App\Entity\EleCampagne;
+use App\Entity\RefAcademie;
+use App\Entity\RefDepartement;
 use App\Form\TypeElectionType;
+use App\Entity\RefModaliteVote;
+use App\Entity\RefTypeElection;
+use App\Utils\EcecaExportUtils;
+use App\Entity\EleEtablissement;
+use App\Entity\RefEtablissement;
+use App\Entity\RefAcademieFusion;
+use App\Form\ResultatZoneEtabType;
+use App\Entity\RefSousTypeElection;
+use App\Entity\RefTypeEtablissement;
+use App\Form\NbSiegesTirageAuSortType;
 use App\Form\ParticipationZoneEtabType;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Validator\Constraints\Date;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Finder\Comparator\DateComparator;
-use Symfony\Component\Validator\Constraints\Date;
-use App\Entity\RefAcademieFusion;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 class ResultatController extends AbstractController {
 
@@ -38,6 +39,7 @@ class ResultatController extends AbstractController {
      * @param Request $request
      * @param String $codeUrlTypeElect
      *            : code type élection
+     * @Route("{codeUrlTypeElect}/resultats", name="resultats")
      */
     public function indexAction(\Symfony\Component\HttpFoundation\Request $request, $codeUrlTypeElect) {
         $em = $this->getDoctrine()->getManager();
@@ -53,7 +55,7 @@ class ResultatController extends AbstractController {
         $request->getSession()->remove('select_etatSaisie');
         $request->getSession()->remove('dept_num');
 
-        $user = $this->get('security.context')->getToken()->getUser();
+        $user = $this->getUser();
         $profilsLimitEtab = array(RefProfil::CODE_PROFIL_IEN, RefProfil::CODE_PROFIL_CE, RefProfil::CODE_PROFIL_DE);
 
         $typeElectionId = RefTypeElection::getIdRefTypeElectionByCodeUrl($codeUrlTypeElect);
