@@ -1,19 +1,21 @@
 <?php
 namespace App\Form;
 
+use Doctrine\ORM\EntityRepository;
+use App\Form\ParticipationZoneEtabType;
+use App\Entity\RefUser;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\OptionsResolver\OptionsResolverInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
-use App\Form\ParticipationZoneEtabType;
 
 class RecapitulatifParticipationEtabType extends ParticipationZoneEtabType{
 	
 	protected $user;
 	public function __construct(TokenStorageInterface $tokenStorage) {
+		parent::__construct($tokenStorage);
 		$this->user = $tokenStorage->getToken()->getUser();
-		parent::__construct($user);
-		$this->user = $user;
 
 	}
 	
@@ -25,11 +27,11 @@ class RecapitulatifParticipationEtabType extends ParticipationZoneEtabType{
 		//$datas = $options['data'];
 		//$refTypeElection = $datas->getTypeElection();
 		
-		$builder->add('typeEtablissement', 'entity', array(
+		$builder->add('typeEtablissement', EntityType::class, array(
 			'label' => 'Type d\'établissement',
 			'multiple' => false,
-			'class' => 'EPLEElectionBundle:RefTypeEtablissement',
-			'query_builder' => function(\Doctrine\ORM\EntityRepository $er) use ($degres) {
+			'class' => RefTypeEtablissement::class,
+			'query_builder' => function(EntityRepository $er) use ($degres) {
 				$qb = $er->createQueryBuilder('t');
 				if (!empty($degres)) {
 					$qb->where('t.degre in (:degres)')
@@ -40,7 +42,7 @@ class RecapitulatifParticipationEtabType extends ParticipationZoneEtabType{
 			},
 			'required' => false,
 			'property' => 'code',
-			'empty_value' => 'Tous'));
+			'empty_data' => 'Tous'));
 		
 	}
 	

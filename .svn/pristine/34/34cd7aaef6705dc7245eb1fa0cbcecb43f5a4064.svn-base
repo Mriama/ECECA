@@ -1,0 +1,54 @@
+<html>
+	{% block stylesheets %}
+		<link href="css/eple_pdf.css" type="text/css" rel="stylesheet" />
+	{% endblock %}		
+	<body>
+		{% block contentPage %}
+			<h3>{{ typeElect.libelle }} - Archives
+				{% if electEtablissement is defined %} de l'établissement {{ etablissement.libelle }} ({{ etablissement.uai }})
+				{% elseif nationale is defined %} nationales
+				{% else %} par {{ (dept is defined) ? "département" : "académie" }}{% endif %}
+			</h3>
+			{% include "EPLEElectionBundle:Archives:alerte.html.twig" %}
+			{% if electEtablissement is defined %}
+			{# Zone = Etablissement #}
+				{% include "EPLEElectionBundle:Archives:tableau_description_etab.html.twig" %} 
+					{% if electEtablissement is not null or electEtablissementPrec is not null %}
+						{% include "EPLEElectionBundle:Archives:tableau_participation.html.twig" with { 
+								'campagne' : (campagne is defined) ? campagne : null,
+								'elect' : (electEtablissement is defined) ? electEtablissement : null,
+								'electPrec' : (electEtablissementPrec is defined) ? electEtablissementPrec : null,
+								'electEtab' : (electEtablissement is defined) ? true : false,
+								'participation' : (electEtablissement.participation is defined) ? electEtablissement.participation : null,
+								'participationPrec' : (electEtablissementPrec.participation is defined) ? electEtablissementPrec.participation : null,
+								'eclair' : (electEtablissement.typeEtablissement.hasEclair is defined 
+												and typeElect.codeUrlById == constant('\\App\\Entity\\RefTypeElection::CODE_URL_PARENT')
+											) ? true : false } %}
+						{% include "EPLEElectionBundle:Archives:tableau_resultat.html.twig" with { 
+								'elect' : electEtablissement,
+								'electPrec' : electEtablissementPrec } %}
+					{% else %}
+						<p class="message erreur">{{ warning[002] }}</p>
+					{% endif %}
+				{% else %}
+			{# Zone = Département/Académie/Nationale #}
+			{% if electZone.participation is not null or electZonePrec.participation is not null %}
+					{% include "EPLEElectionBundle:Archives:tableau_participation.html.twig" with { 
+							'campagne' : (campagne is defined) ? campagne : null,
+							'elect' : (electZone is defined) ? electZone : null,
+							'electPrec' : (electZonePrec is defined) ? electZonePrec : null,
+							'participation' : (electZone.participation is defined) ? electZone.participation : null,
+							'participationPrec' : (electZonePrec.participation is defined) ? electZonePrec.participation : null,
+							'eclair' : (electZone.typeEtablissement.hasEclair is defined 
+											and typeElect.codeUrlById == constant('\\App\\Entity\\RefTypeElection::CODE_URL_PARENT')
+										) ? true : false } %}
+					{% include "EPLEElectionBundle:Archives:tableau_resultat.html.twig" with { 
+							'elect' : electZone,
+							'electPrec' : electZonePrec } %} 
+				{% else %}
+					<p class="message erreur">{{ warning[002] }}</p>
+				{% endif %}
+			{% endif %}
+		{% endblock %}
+	</body>
+</html>

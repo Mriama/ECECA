@@ -1,0 +1,26 @@
+<?php
+
+namespace App\Controller;
+use Symfony\Component\Routing\Annotation\Route;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Security\Core\Exception\AccessDeniedException;
+
+class AdminController extends AbstractController {
+
+	/**
+	 * @Route("/admin", name="HOMEPAGE")
+	 */
+	public function indexAction() {
+		//exit('okh');
+		if (false === $this->container->get('security.authorization_checker')->isGranted('ROLE_GEST_CAMP') &&
+			false === $this->container->get('security.authorization_checker')->isGranted('ROLE_GEST_CONTACT') &&
+			false === $this->container->get('security.authorization_checker')->isGranted('ROLE_GEST_ETAB') &&
+			false === $this->container->get('security.authorization_checker')->isGranted('ROLE_GEST_FEDE') &&
+			false === $this->container->get('security.authorization_checker')->isGranted('ROLE_GEST_ORG')) {
+			throw new AccessDeniedException();
+		}
+		return $this->render('layout.html.twig', []);
+	}
+
+}

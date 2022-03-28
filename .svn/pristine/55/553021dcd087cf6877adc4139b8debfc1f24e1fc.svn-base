@@ -1,0 +1,53 @@
+{% block js %}
+	<script src="{{ asset('js/tdbEtab.js') }}"></script>
+{% endblock %}
+<form action="{{ path('EPLEElectionBundle_recherche_TableauDeBord') }}" method="post" accept-charset="UTF-8" {{ form_enctype(form) }}>
+	<div id="form">	
+		{{ form_errors(form) }}		
+		<div id="academie">{{ form_label(form['academie']) }}{{ form_widget(form['academie']) }}</div>
+		<div id="departement">{{ form_label(form['departement']) }}{{ form_widget(form['departement']) }}</div>
+		<div id="typeEtab">{{ form_label(form['typeEtablissement']) }}{{ form_widget(form['typeEtablissement']) }}</div>
+		<div id="natureEtab">{{ form_label(form['natureEtablissement']) }}{{ form_widget(form['natureEtablissement']) }}</div>	
+		<div id="typeElect">{{ form_label(form['typeElection']) }}{{ form_widget(form['typeElection']) }}</div>	
+		<div id="sousTypeElect">{{ form_label(form['sousTypeElection']) }}{{ form_widget(form['sousTypeElection']) }}</div>		
+        {{ form_rest(form) }}
+	</div>
+    <input type="hidden" value="{{ app.session.get('select_aca') }}" id="academie_selectionne" />
+	<input type="hidden" value="{{ app.session.get('select_dept') }}" id="departement_selectionne" />
+	<input type="hidden" value="{{ app.session.get('select_typeEtablissement') }}" id="typeEtablissement_selectionne" />
+	<input type="hidden" value="{{ app.session.get('select_natureEtablissement') }}" id="natureEtablissement_selectionne" />
+	<input type="hidden" value="{{ app.session.get('select_typeElection') }}" id="typeElection_selectionne" />
+	<input type="hidden" value="{{ app.session.get('select_sousTypeElection') }}" id="sousTypeElection_selectionne" />
+	
+	<div class="boutons"><input id="submit" type="submit" onclick="return formTdbSubmit('tdbEtabType');" value="Rechercher" title="Rechercher" /></div>
+</form>
+
+<script type="text/javascript">
+    {% if app.user.profil.code == constant('\\EPLE\\ElectionBundle\\Entity\\RefProfil::CODE_PROFIL_IEN') %}
+    $("#academie").hide();
+    $("#typeEtab").hide();
+    $("#natureEtab").hide();
+    $("#typeElect").hide();
+    $("#sousTypeElect").hide();
+    {% elseif app.user.profil.code == constant('\\EPLE\\ElectionBundle\\Entity\\RefProfil::CODE_PROFIL_DSDEN') %}
+    $("#academie").hide();
+    {% elseif app.user.profil.code == constant('\\EPLE\\ElectionBundle\\Entity\\RefProfil::CODE_PROFIL_RECT') %}
+    $("#academie").hide();
+    {% elseif app.user.profil.code == constant('\\EPLE\\ElectionBundle\\Entity\\RefProfil::CODE_PROFIL_DGESCO') %}
+    $("#departement").hide();
+    $("#typeEtab").hide();
+    $("#natureEtab").hide();
+    {% endif %} 
+
+	var ID_TYP_1ER_DEGRE = "{{ constant('\\EPLE\\ElectionBundle\\Entity\\RefTypeEtablissement::ID_TYP_1ER_DEGRE') }}";
+	var ID_TYP_EREA_ERPD = "{{ constant('\\EPLE\\ElectionBundle\\Entity\\RefTypeEtablissement::ID_TYP_EREA_ERPD') }}";
+	var ID_TYP_2ND_DEGRE = "{{ constant('\\EPLE\\ElectionBundle\\Entity\\RefTypeEtablissement::ID_TYP_2ND_DEGRE') }}";
+
+	var CODE_PE = "{{ constant('\\EPLE\\ElectionBundle\\Entity\\RefTypeElection::CODE_PE') }}";
+	var CODE_RP = "{{ constant('\\EPLE\\ElectionBundle\\Entity\\RefTypeElection::CODE_RP') }}";
+
+	var ID_TYP_ELECT_ASS_ATE = "{{ constant('\\EPLE\\ElectionBundle\\Entity\\RefTypeElection::ID_TYP_ELECT_ASS_ATE') }}";
+	
+	var ID_TYP_ELECT_A_ATTE = "{{ constant('\\EPLE\\ElectionBundle\\Entity\\RefSousTypeElection::ID_TYP_ELECT_A_ATTE') }}";
+	var ID_TYP_ELECT_SS = "{{ constant('\\EPLE\\ElectionBundle\\Entity\\RefSousTypeElection::ID_TYP_ELECT_SS') }}";
+</script>

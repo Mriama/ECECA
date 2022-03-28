@@ -1,0 +1,117 @@
+# This file is the entry point to configure your own services.
+# Files in the packages/ subdirectory configure your dependencies.
+
+# Put parameters here that don't need to change on each machine where the app is deployed
+# https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
+parameters:
+    database_user_provider.class: App\Security\DatabaseUserProvider
+    ref_user_perimetre.class: App\Utils\RefUserPerimetre
+
+    database_driver: pdo_mysql
+    database_host: ZZ_MYSQL_HOST
+    database_port: ZZ_MYSQL_PORT
+    database_name: ZZ_MYSQL_DBNAME
+    database_user: ZZ_MYSQL_USER
+    database_password: ZZ_MYSQL_PASSWORD
+    mailer_transport: smtp
+    mailer_host: ZZ_SMTP_HOST
+    mailer_user: ~
+    mailer_password: ~
+    mailer_from: ZZ_MAIL_FROM
+    mailer_admin: ZZ_MAIL_ADMIN
+    mailer_port: ~
+    ramsese_ftp_server: ZZ_RAMS_FTP_HOST
+    ramsese_ftp_port: ZZ_RAMS_FTP_PORT
+    ramsese_ftp_user: ZZ_RAMS_FTP_USER
+    ramsese_ftp_password: ZZ_RAMS_FTP_PASSWORD
+    ramsese_ftp_path: ZZ_RAMS_FTP_PATH
+    ramsese_file_delimiter: '|'
+    ref_commune_file_delimiter: ';'
+    ramsese_upload_dir: uploads/ramsese/
+    ramsese_traite_dir: uploads/traite/
+    ramsese_etab_pattern: uais
+    ramsese_comm_pattern: uairatt
+    communes_refcom_pattern: COMMUNES_laposte_
+    max_mass_validation_select: 100
+    documents_dir: uploads/documents/
+    purge_years: 2 # variable pour la purge des PV
+    jours_calendaires: 14 #nombre de jours calendaires pour le décalage des périodes d'ouverture et de fermeture (Mayotte et La Réunion)
+    jours_calendaires_ien: 5 #nombre de jours calendaires pour le décalage de la période de fermeture de saisie du tirage au sort par l'ien
+    locale: fr
+    secret: fcyeple55
+    default_url_return: ZZ_URL_RETOUR
+  #security.http_utils.class: EPLE\ElectionBundle\Utils\EcecaHttpUtils
+    url_eduscol: http://eduscol.education.fr/cid48223/elections-des-representants-des-parents-d-eleves.html
+    url_documentation: ZZ_URL_DOCUMENTATION  # pour l'url de la documentation A définir
+    url_documentation_ce: ZZ_URL_DOCUMENTATION_CE # pour l'url de la documentation pour les CE A définir
+    url_documentation_de: ZZ_URL_DOCUMENTATION_DE # pour l'url de la documentation pour les DE A définir
+    purge_years_campagne_archiver: 10 # pour la suppression des résultats consolidés de plus de X ans
+    liste_code_aca_dgesco: 18_45_33 #liste de codes académies séparés par _ reconnus comme un profil DGESCO
+    liste_mail_dgesco: Alexandrine.Voisin@ac-orleans-tours.fr,Frederic.Roy2@ac-orleans-tours.fr,bernard.roulier@ac-orleans-tours.fr #liste d'adresses mail séparées par virgule reconnues comme un profil DGESCO
+    version: 20.1.0.5 # version actuelle de l'application
+    wsdl_location: ZZ_WSDL_LOCATION #Url complète d'accès au wsdl du composant de sécurité
+    wsdl_uri: ZZ_WSDL_URI #URI du serveur qui héberge le composant de sécurité
+    nombre_limite_ecole: 35
+    rgaa_status: non conforme
+    rgaa_declaration_link: https://conformite.education.fr/?appli=ececa
+    erreurs:
+      001: La taille du fichier ne doit pas dépasser 250Ko.
+      002: Aucun résultat.
+      003: Aucune campagne ouverte.
+      004: Aucune donnée disponible pour cette zone.
+      005: Aucune campagne ouverte.
+      006: Identification échouée.
+      007: Un fichier du même nom existe déjà.
+    warning:
+      001: Aucun détail sur l'établissement.
+      002: Aucun résultat disponible.
+      003: Répartition non disponible.
+      004: Aucune campagne disponible.
+      005: Répartition non disponible.
+      006: Aucun établissement trouvé.
+    alert:
+      001: Veuillez remplir et valider le formulaire.
+      002: Valeur invalide.
+      003: Etablissement invalide.
+      004: Veuillez saisir un destinataire.
+      005: Académie invalide.
+      006: Département invalide.
+      007: Pas de concordance entre les valeurs saisies.
+    info:
+      001: Le fichier est importé avec succès.
+      002: Echec d'import, voir le fichier de log.
+      003: ATTENTION - Les établissements de type EREA et ERPD ne sont pas pris en compte dans les résultats
+      004: ATTENTION - Les établissements de type EREA et ERPD ne sont pas pris en compte dans les tableaux de bord pour les élections ASS et ATE, et PEE.
+
+    perimetre_vide_message: Votre établissement n'est pas référencé dans cette application concernant les élections aux conseils d'écoles et aux conseils d'administration (ECECA). Pour toute question complémentaire, vous pouvez contacter les correspondants ECECA de votre académie, dont vous trouverez les adresses mèls sur le site de diffusion d'Orléans
+    perimetre_vide_lien_site: http://diff.in.ac-orleans-tours.fr/diff/t3/index.php?id=718
+    message_deficit_confirm: Une ou plusieurs liste(s) a(ont) droit à un nombre de sièges supérieur au nombre de candidats qu'elle(s) a(ont) présentés :\n- dans le premier degré, un tirage au sort peut être organisé par le directeur d'école dans les 5 jours ouvrables qui suivent la proclamation des résultats \n- dans le second degré, les sièges demeurés vacants sont pourvus par des élections intervenant dans les mêmes conditions et dans un délai n'excédant pas quinze jours.
+    message_candidat_titulaire: Par liste, le nombre total de candidats titulaires doit être inférieur ou égal au nombre de sièges à pourvoir.
+
+services:
+    # default configuration for services in *this* file
+    _defaults:
+        autowire: true      # Automatically injects dependencies in your services.
+        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+
+    # makes classes in src/ available to be used as services
+    # this creates a service per class whose id is the fully-qualified class name
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/Entity/'
+            - '../src/Kernel.php'
+            - '../src/Tests/'
+
+    App\Form\EleParticipationType:
+        arguments: 
+            $class: 'App\Entity\RefTypeElection'
+    
+    ref_user_perimetre:
+        class: "%ref_user_perimetre.class%"
+        arguments: ['@doctrine', '@service_container']
+        
+    database_user_provider:
+        class: "%database_user_provider.class%"
+        arguments: ['@doctrine.orm.default_entity_manager', '@ref_user_perimetre', '@session']

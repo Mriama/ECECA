@@ -1,33 +1,39 @@
 <?php
 namespace App\Controller;
 
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use App\Entity\EleCampagne;
+use App\Entity\RefEtablissement;
+use App\Controller\BaseController;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\Form\FormBuilderInterface;
-
 use Symfony\Component\BrowserKit\Response;
 use Doctrine\Tests\DBAL\Types\VarDateTimeTest;
-
+use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Core\SecurityContext;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
 use \App\Entity\RefUser;
 use \App\Entity\RefTypeElection;
 use \App\Entity\RefProfil;
 
 
-class RechercheEtablissementController extends AbstractController{
+class RechercheEtablissementController extends BaseController{
 
     //Creation du formulaire de recherche
+    /**
+     *
+     *@Route("/rechercheEtablissements", name="rechercheEtablissements")
+     */
     public function indexAction(){
         //Verification de droit d'acces (Si ce Role est attribue)
-        if (false === $this->get('security.context')->isGranted('ROLE_RECH_UAI')) {
-            throw new AccessDeniedException();
-        }
-
+        // if (false === $this->get('security.authorization_checker')->isGranted('ROLE_RECH_UAI')) {
+        //     throw new AccessDeniedException();
+        // }
+        $user = $this->getUser();
         $form = $this->creationFormulaire();
 
-        return $this->render('EPLEAdminBundle:RechercheEtablissement:indexRechercheEtablissement.html.twig',
+        return $this->render('RechercheEtablissement/indexRechercheEtablissement.html.twig',
             array('form' => $form->createView()
             ));
 
@@ -47,8 +53,8 @@ class RechercheEtablissementController extends AbstractController{
         $form = $this->creationFormulaire();
 
         if($request->getMethod() == 'POST'){
-            $form->bind($request);
-            if($form->isValid()){
+            $form->handleRequest($request);
+            if($form->isSubmitted() && $form->isValid()){
                 $donneesTransmies = $form->getData();
 
                 // old IE n'interprete pas la propriété required
@@ -64,27 +70,27 @@ class RechercheEtablissementController extends AbstractController{
         //Recherche etablissement
         $user = $this->get('security.context')->getToken()->getUser();
         $em = $this->getDoctrine()->getManager();
-        $repository = $em->getRepository('EPLEElectionBundle:RefEtablissement');
+        $repository = $em->getRepository(RefEtablissement::class);
         $etablissementTrouve = $repository->findOneBy(array('uai' => $donneesTransmies));
 
 
         /*Verification de l'UAI saisie*/
         if(!$etablissementTrouve){
-            return $this->render('EPLEAdminBundle:RechercheEtablissement:resultatRecherche.html.twig', array(
+            return $this->render('rechercheEtablissement/resultatRecherche.html.twig', array(
                 'form' => $form->createView()
             ));
         } else {
             $dansPerimetre = $user->isEtabInScopeForRechercheUAI($etablissementTrouve);
             if($dansPerimetre == true){
 
-                return $this->render('EPLEAdminBundle:RechercheEtablissement:resultatRecherche.html.twig', array(
+                return $this->render('rechercheEtablissement/resultatRecherche.html.twig', array(
                     'form' 			=> $form->createView(),
                     'etablissement' => $etablissementTrouve,
                     'canDisableEtab' => $isDegesco,
                 ));
 
             } else {
-                return $this->render('EPLEAdminBundle:RechercheEtablissement:resultatRecherche.html.twig', array(
+                return $this->render('rechercheEtablissement/resultatRecherche.html.twig', array(
                     'form' 		    => $form->createView(),
                     'etablissement' => $etablissementTrouve,
                     'dansPerimetre'  => $dansPerimetre,
@@ -96,11 +102,10 @@ class RechercheEtablissementController extends AbstractController{
 
     public function creationFormulaire(){
         $form = $this->createFormBuilder()
-            ->add('uai', 'text', array(
+            ->add('uai', TextType::class, array(
                 'label' => '*Numéro UAI/RNE',
                 'required' => true,
                 'trim' => true,
-                'max_length' => '8'
             ))->getForm();
         return $form;
 
@@ -126,13 +131,13 @@ class RechercheEtablissementController extends AbstractController{
 
         $form = $this->creationFormulaire();
         $form->setData(array('uai' => $uai));
-        $etablissementTrouve = $em->getRepository('EPLEElectionBundle:RefEtablissement')->findOneBy(array('uai' => $uai));
+        $etablissementTrouve = $em->getRepository(RefEtablissement::class)->findOneBy(array('uai' => $uai));
         $inScope =  $user->isEtabInScopeForRechercheUAI($etablissementTrouve);
 
         if ($etablissementTrouve && $inScope) {
             //Fermeture etablissement
             if ($etablissementTrouve->getActif()) {
-                $campagne = $em->getRepository('EPLEElectionBundle:EleCampagne')->getLastCampagne(RefTypeElection::ID_TYP_ELECT_PARENT);
+                $campagne = $em->getRepository(EleCampagne::class)->getLastCampagne(RefTypeElection::ID_TYP_ELECT_PARENT);
                 $etablissementTrouve->setActif(false);
                 $etablissementTrouve->setDateFermeture(new \DateTime($campagne->getAnneeDebut() . "-08-31"));
             }
@@ -146,7 +151,7 @@ class RechercheEtablissementController extends AbstractController{
             $em->flush();
         }
 
-        return $this->render('EPLEAdminBundle:RechercheEtablissement:resultatRecherche.html.twig', array(
+        return $this->render('rechercheEtablissement/resultatRecherche.html.twig', array(
             'form' 			=> $form->createView(),
             'etablissement' => $etablissementTrouve,
             'dansPerimetre'  => $inScope,

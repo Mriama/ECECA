@@ -1,0 +1,54 @@
+{% if nationale is not defined %}
+	<h3>{% autoescape false %}
+		{{ (dept is defined) ? "Département <span>: "~dept.libelle~"</span>" : "Académie <span>: "~aca.libelle~"</span>" }}
+		{% endautoescape %}</h3>
+{% else %}
+{# 	{% if circons is defined %}#}
+{# 		<h3>{% autoescape false %}#}
+{# 		  {{ "Circonscription : "~circons}}#}
+{# 		{% endautoescape %}</h3>#}
+{# 	{% endif %}#}
+{% endif %}
+
+<h4>Rappel</h4>
+<table>
+	<tr>
+		<th scope="row">Campagne</th>
+		<td>{{ electZone.campagne.anneeDebut }} - {{ electZone.campagne.anneeFin }}</td>
+	</tr>
+	<tr>
+		<th scope="row">Nombre total d'écoles ou d'établissements</th>
+		<td>{{ electZone.nbEtabTotal }}</td>
+	</tr>
+	<tr>
+		<th scope="row">
+		{% if etatSaisieTxt is defined %}
+			Nombre d'établissements  {{ etatSaisieTxt }}
+		{% endif %}
+		</th>
+		<td>
+			{% if electZone.nbEtabExprimes is not empty %}
+
+				{{ electZone.nbEtabExprimes~" ("~electZone.pourcentageNbEtabsExprimes|number_format(2, '.', ',')~"%)" }} 
+				{% for detailNbEtab in nbEtabExprDetailles %}
+					{% if loop.first %}:{% endif %}
+					{{ detailNbEtab['nbEtabExpr'] ~ ' ' ~ detailNbEtab['libTypeEtab']|lower }}
+					{% if not loop.last %}, {% endif %}
+				{% endfor %}
+			{% endif %}
+		</td>
+	</tr>
+</table>
+
+{% if electZone.nbEtabExprimes != 0 %}
+	{% include 'EPLEElectionBundle:Resultat:consultationResultats.html.twig' with { 
+			'campagne' : electZone.campagne,
+			'participation' : electZone.participation, 
+			'resultats' : electZone.resultats,
+			'typeEtab' : electZone.typeEtablissement,
+			'eclair' : (electZone.typeEtablissement.hasEclair is defined 
+							and typeElect.codeUrlById == constant('\\App\\Entity\\RefTypeElection::CODE_URL_PARENT')
+						) ? true : false } %}
+{% else %}
+	<p class="message erreur">{{ warning[002] }}</p>
+{% endif %}

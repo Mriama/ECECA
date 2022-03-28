@@ -1,0 +1,20 @@
+{% extends 'EPLEAdminBundle::layout.html.twig' %}
+
+{% block title %}{{ parent() }} - Éditer une fédération{% endblock %}
+
+{% block arianeComplements %}{{ parent() }}<li>Éditer une fédération</li>{% endblock %}
+
+{% block h3 %}<h3>{% if form.vars.value.id == 0 %}Ajouter{% else %}Modifier{% endif %} une fédération</h3>{% endblock %}
+
+{% block content %}
+<form action="{{ path('EPLEAdminBundle_federation_modifier', { 'federationId':form.vars.value.id }) }}" method="post" accept-charset="UTF-8" {{ form_enctype(form) }}>
+	<p class="note">Un astérisque * marque un champ obligatoire</p>
+	
+	{{ form_widget(form) }}
+	
+	<div class="boutons"><input type="submit" value="Valider" /></div>
+</form>
+<div class="pageactions">
+	<a href="{{ path('EPLEAdminBundle_federations') }}" class="retour">Retour</a>
+</div>
+{% endblock %}

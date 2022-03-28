@@ -1,33 +1,42 @@
 <?php
 namespace App\Controller;
 
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use App\Entity\EleResultat;
+use App\Entity\RefFederation;
+use App\Entity\RefOrganisation;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Routing\Annotation\Route;
+use App\Controller\BaseController;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
-class FederationController extends AbstractController
+class FederationController extends BaseController
 {
 
-    public function indexAction()
+    /**
+     * @Route("federations", name="federations")
+     */
+    
+    public function indexAction(ParameterBagInterface $parameters)
     {
-        if (false === $this->get('security.context')->isGranted('ROLE_GEST_FEDE')) {
-            throw new AccessDeniedException();
-        }
-        
-        $lstFederations = $this->getDoctrine()
-            ->getManager()
-            ->getRepository('EPLEElectionBundle:RefFederation')
+        // if (false === $this->get('security.authorization_checker')->isGranted('ROLE_GEST_FEDE')) {
+        //     throw new AccessDeniedException();
+        // }
+        $user = $this->getUser();
+        $lstFederations = $this->getDoctrine()->getManager()
+            ->getRepository(RefFederation::class)
             ->findBy(array(), array(
             "libelle" => "ASC"
         ));
-        $mess_warning = $this->container->getParameter('mess_warning');
+        $mess_warning = $parameters->get('mess_warning');
         
-        return $this->render('EPLEAdminBundle:Federation:index.html.twig', array(
+        return $this->render('Federation/index.html.twig', array(
             'federations' => $lstFederations,
             'mess_warning' => $mess_warning
         ));
     }
 
-    public function modifierFederationAction(\Symfony\Component\HttpFoundation\Request $request, $federationId = 0)
+    public function modifierFederationAction(Request $request, $federationId = 0)
     {
         if (false === $this->get('security.context')->isGranted('ROLE_GEST_FEDE')) {
             throw new AccessDeniedException();
@@ -36,9 +45,9 @@ class FederationController extends AbstractController
         $em = $this->getDoctrine()->getManager();
         
         if ($federationId == 0) {
-            $f_defaultValues = new \App\Entity\RefFederation();
+            $f_defaultValues = new RefFederation();
         } else {
-            $f_defaultValues = $em->getRepository('EPLEElectionBundle:RefFederation')->find($federationId);
+            $f_defaultValues = $em->getRepository(RefFederation::class)->find($federationId);
         }
         
         if ($f_defaultValues == null) {
@@ -68,7 +77,7 @@ class FederationController extends AbstractController
             }
         }
         
-        return $this->render('EPLEAdminBundle:Federation:edit.html.twig', array(
+        return $this->render('federation/edit.html.twig', array(
             'form' => $form->createView()
         ));
     }
@@ -80,20 +89,20 @@ class FederationController extends AbstractController
 		}
 
 		$em = $this->getDoctrine()->getManager();
-		$federation = $em->getRepository('EPLEElectionBundle:RefFederation')->find($federationId);
+		$federation = $em->getRepository(RefFederation::class)->find($federationId);
 		
 		if (null == $federation) {
 			throw $this->createNotFoundException('La fédération n\'a pas été trouvée.');
 		}
 
 		// Récupération de la liste des organisations rattachées à la fédération
-		$liste_organisations = $em->getRepository('EPLEElectionBundle:RefOrganisation')->findBy(array('federation' => $federation->getId()));
+		$liste_organisations = $em->getRepository(RefOrganisation::class)->findBy(array('federation' => $federation->getId()));
 		
 		//Indique si l'on peut supprimer la fédération ou pas
 		$canSupprimer = true;
 		foreach($liste_organisations as $org){		  
 		    // Recherche de résultats
-		    if (count($em->getRepository('EPLEElectionBundle:EleResultat')->findBy(array('organisation' => $org->getId()))) > 0){
+		    if (count($em->getRepository(EleResultat::class)->findBy(array('organisation' => $org->getId()))) > 0){
 		        $canSupprimer = false;
 		        break;
 		    }

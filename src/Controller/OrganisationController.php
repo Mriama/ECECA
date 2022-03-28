@@ -2,28 +2,40 @@
 
 namespace App\Controller;
 
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use App\Entity\RefFederation;
+use App\Form\TypeElectionType;
+use App\Entity\RefOrganisation;
+use App\Entity\RefTypeElection;
+use App\Form\TypeElectionHandler;
+use Doctrine\ORM\EntityRepository;
+use App\Controller\BaseController;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
-class OrganisationController extends AbstractController {
+class OrganisationController extends BaseController {
 
-	public function indexAction(\Symfony\Component\HttpFoundation\Request $request) {
-		if (false === $this->get('security.context')->isGranted('ROLE_GEST_ORG')) {
-			throw new AccessDeniedException();
-		}
-		
+	/**
+	 *
+	 *@Route("/organisations",name="organisations")
+	 */
+	public function indexAction(Request $request, ParameterBagInterface $parameters) {
+		// if (false === $this->get('security.context')->isGranted('ROLE_GEST_ORG')) {
+		// 	throw new AccessDeniedException();
+		// }
+		$user = $this->getUser();
 		$em = $this->getDoctrine()->getManager();
 		
 		$typeElectIdSession = $request->getSession()->get('typeElectIdSession');
-		
-		$te_defaultValue = $em->getRepository('EPLEElectionBundle:RefTypeElection')->find($typeElectIdSession);
-		if (empty($te_defaultValue)) {
-			$te_defaultValue = $em->getRepository('EPLEElectionBundle:RefTypeElection')->find(1);
+		if($typeElectIdSession != null){
+			$te_defaultValue = $em->getRepository(RefTypeElection::class)->find($typeElectIdSession);
+		}else{
+			$te_defaultValue = $em->getRepository(RefTypeElection::class)->find(1);
 		}
 		
-		
-		$form = $this->createForm(new \App\Form\TypeElectionType(), (empty($te_defaultValue)? null : array('typeElection' => $te_defaultValue)) );
-		$formHandler = new \App\Form\TypeElectionHandler($form, $request, $em);
+		$form = $this->createForm(TypeElectionType::class, (empty($te_defaultValue)? null : array('typeElection' => $te_defaultValue)) );
+		$formHandler = new TypeElectionHandler($form, $request, $em);
 		
 		if ($formHandler->process()) {
 			$te_defaultValue = $formHandler->getTeDefaultValue();
@@ -31,7 +43,7 @@ class OrganisationController extends AbstractController {
 		$params['form'] =  $form->createView();
 						
 		if ($te_defaultValue !=null) {
-			$params['organisations'] = $em->getRepository('EPLEElectionBundle:RefOrganisation')->findOrganisationsByRefTypeElection($te_defaultValue->getId());
+			$params['organisations'] = $em->getRepository(RefOrganisation::class)->findOrganisationsByRefTypeElection($te_defaultValue->getId());
 		} else {
 			$this->get('session')->getFlashBag()->set('info', 'Aucune organisation proposée car il n\'existe pas de type d\'élection');
 			$params['organisations'] = array();
@@ -41,19 +53,19 @@ class OrganisationController extends AbstractController {
 		$params['isTypeElectionParent'] = ($te_defaultValue!=null and 
 												$te_defaultValue->getId()==\App\Entity\RefTypeElection::ID_TYP_ELECT_PARENT) 
 													? true : false;
-		$params['mess_warning']= $this->container->getParameter('mess_warning');
+		$params['mess_warning']= $parameters->get('mess_warning');
 		
-		return $this->render('EPLEAdminBundle:Organisation:index.html.twig', $params);
+		return $this->render('organisation/index.html.twig', $params);
 	}
 
-	public function modifierOrganisationAction(\Symfony\Component\HttpFoundation\Request $request, $organisationId = 0) {
+	public function modifierOrganisationAction(Request $request, $organisationId = 0) {
 		if (false === $this->get('security.context')->isGranted('ROLE_GEST_ORG')) {
 			throw new AccessDeniedException();
 		}
 		
 		$em = $this->getDoctrine()->getManager();
 		$typeElectIdSession = $this->get('session')->get('typeElectIdSession');
-		$te_defaultValue = $em->getRepository('EPLEElectionBundle:RefTypeElection')->find($typeElectIdSession);
+		$te_defaultValue = $em->getRepository(RefTypeElection::class)->find($typeElectIdSession);
 		
 		if ($te_defaultValue == null) {
 			$messageErreur_te = 'L\'ajout ou la modification d\'une organisation n\'est possible';
@@ -64,7 +76,7 @@ class OrganisationController extends AbstractController {
 		if ($organisationId == 0) {
 			$o_defaultValues = new \App\Entity\RefOrganisation($te_defaultValue);
 		} else {
-			$o_defaultValues = $em->getRepository('EPLEElectionBundle:RefOrganisation')->find($organisationId);
+			$o_defaultValues = $em->getRepository(RefOrganisation::class)->find($organisationId);
 		}
 		
 		if ($o_defaultValues == null) {
@@ -86,8 +98,8 @@ class OrganisationController extends AbstractController {
 						->add('federation', 'entity', array(
 								'label' => 'Fédération',
 								'multiple' => false,
-								'class' => 'EPLEElectionBundle:RefFederation',
-								'query_builder' => function(\Doctrine\ORM\EntityRepository $er) {
+								'class' => RefFederation::class,
+								'query_builder' => function(EntityRepository $er) {
 														return $er->createQueryBuilder('f')->orderBy('f.libelle', 'ASC');
 													},
 								'required' => false,
@@ -106,8 +118,8 @@ class OrganisationController extends AbstractController {
 						->getForm();
 		
 		if ($request->getMethod() == 'POST') {
-			$form->bind($request);
-			if ($form->isValid()) {
+			$form->handleRequest($request);
+			if ($form->isSubmitted() && $form->isValid()) {
 				$organisationEnCours = $form->getData();
 				$em->persist($organisationEnCours);
 				$em->flush();
@@ -118,7 +130,7 @@ class OrganisationController extends AbstractController {
 			}
 		}
 		$this->get('session')->set('typeElectIdSession', ( ($o_defaultValues->getTypeElection()==null) ? null : $o_defaultValues->getTypeElection()->getId() ));
-		return $this->render('EPLEAdminBundle:Organisation:edit.html.twig', array('form' => $form->createView()));
+		return $this->render('organisation/edit.html.twig', array('form' => $form->createView()));
 	}
 
 }

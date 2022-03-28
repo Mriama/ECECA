@@ -2,48 +2,49 @@
 namespace App\Controller;
 
 use DateTime;
-use App\Entity\RefModaliteVote;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\Security\Core\Exception\AccessDeniedException;
-use Symfony\Component\HttpFoundation\Response;
-use App\Entity\EleConsolidation;
+use App\Utils\EpleUtils;
+use App\Entity\RefProfil;
+use App\Entity\RefCommune;
 use App\Entity\EleCampagne;
-use App\Entity\EleParticipation;
-use App\Entity\EleEtablissement;
-use App\Entity\EleResultat;
 use App\Entity\RefAcademie;
 use App\Entity\RefDepartement;
-use App\Entity\RefCommune;
-use App\Entity\RefEtablissement;
+use App\Entity\RefModaliteVote;
 use App\Entity\RefTypeElection;
-use App\Entity\RefTypeEtablissement;
-use App\Entity\RefProfil;
-use App\Utils\EpleUtils;
 use App\Utils\EcecaExportUtils;
-use App\Form\ArchiveCampagneZoneEtabType;
+use App\Entity\EleEtablissement;
+use App\Entity\RefEtablissement;
+use App\Entity\RefUser;
+use App\Utils\RefUserPerimetre;
+use App\Entity\RefTypeEtablissement;
 use App\Model\CampagneZoneEtabModel;
+use App\Form\ArchiveCampagneZoneEtabType;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use App\Controller\BaseController;
+use Symfony\Component\Security\Core\Exception\AccessDeniedException;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
+use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
 
-class ArchiveController extends AbstractController
+class ArchiveController extends BaseController
 {
 
     /**
      * Fonction permettant d'afficher les statistiques d'une année n et n-1 en
      * fonction des données sélectionnées par l'utilisateur dans le formulaire associé
      *
-     * @param \Symfony\Component\HttpFoundation\Request $request            
-     * @param string $codeUrlTypeElect            
+     * @param Request $request
+     * @param string $codeUrlTypeElect
      * @throws AccessDeniedException
      */
-    public function indexAction(\Symfony\Component\HttpFoundation\Request $request, $codeUrlTypeElect)
+
+    public function indexAction(Request $request, $codeUrlTypeElect, RefUserPerimetre $refUserPerimetre, ParameterBagInterface $parameters)
     {
-        $user = $this->get('security.context')
-            ->getToken()
-            ->getUser();
-        
+        $em = $this->getDoctrine()->getManager();
+        $user = $this->getUser();
+
         if ($user->getProfil()->getCode() != RefProfil::CODE_PROFIL_DGESCO) { // archive disponible uniquement pour l'administration centrale
             throw new AccessDeniedException();
         }
-        
         // reset session
         $request->getSession()->remove('campagne_annee_deb');
         $request->getSession()->remove('select_campagne');
@@ -55,27 +56,27 @@ class ArchiveController extends AbstractController
         $request->getSession()->remove('select_type_etablissement');
 
         $params = $this->getParametresStatistiques($request, $user, $codeUrlTypeElect);
-        $params['warning'] = $this->container->getParameter('warning');
-        
-        return $this->render('EPLEElectionBundle:Archives:index.html.twig', $params);
+        $params['warning'] = $this->getParameter('warning');
+
+        return $this->render('archives/index.html.twig', $params);
     }
-    
-    public function rechercheAction(\Symfony\Component\HttpFoundation\Request $request, $codeUrlTypeElect)
+
+    public function rechercheAction(Request $request, $codeUrlTypeElect, ParameterBagInterface $parameters)
     {
-    	$user = $this->get('security.context')->getToken()->getUser();
-    
-    	$params = $this->getParametresStatistiques($request, $user, $codeUrlTypeElect);
-    	$params['warning'] = $this->container->getParameter('warning');
-    
-    	return $this->render('EPLEElectionBundle:Archives:index.html.twig', $params);
+        $user = $this->get('security.context')->getToken()->getUser();
+
+        $params = $this->getParametresStatistiques($request, $user, $codeUrlTypeElect);
+        $params['warning'] = $this->getParameter('warning');
+
+        return $this->render('archives/index.html.twig', $params);
     }
 
     /**
      * Récupère les données pour l'affichage des statistiques
      *
-     * @param \Symfony\Component\HttpFoundation\Request $request            
-     * @param unknown $user            
-     * @param unknown $codeUrlTypeElect            
+     * @param \Symfony\Component\HttpFoundation\Request $request
+     * @param unknown $user
+     * @param unknown $codeUrlTypeElect
      * @return multitype:boolean NULL Ambigous <\App\Entity\RefDepartement, \App\Entity\RefAcademie> unknown \App\Entity\RefDepartement Ambigous <NULL, unknown>
      */
     private function getParametresStatistiques(\Symfony\Component\HttpFoundation\Request $request, $user, $codeUrlTypeElect)
@@ -85,71 +86,92 @@ class ArchiveController extends AbstractController
         $campagneAnneeDeb = $request->getSession()->get('campagne_annee_deb');
         $codeUrlTypeEtab = 'tous';
 
-        $typeElection = $em->getRepository('EPLEElectionBundle:RefTypeElection')->find(RefTypeElection::getIdRefTypeElectionByCodeUrl($codeUrlTypeElect));
+        $typeElection = $em->getRepository(RefTypeElection::class)->find(RefTypeElection::getIdRefTypeElectionByCodeUrl($codeUrlTypeElect));
         if (empty($typeElection)) {
             throw $this->createNotFoundException('Le type d\'élection n\'a pas été trouvé.');
         }
         $params['typeElect'] = $typeElection;
-                
+        if($request->getSession()->get('select_type_etablissement') != null){
+            $typeEtab = $em->getRepository(RefTypeEtablissement::class)->find($request->getSession()->get('select_type_etablissement'));
+        }else{
+            $typeEtab = null;
+        }
+        if($request->getSession()->get('select_commune') != null){
+            $commune = $em->getRepository(RefCommune::class)->find($request->getSession()->get('select_commune'));
+        }else{
+            $commune = null;
+        }
+        if($request->getSession()->get('select_etablissement') != null){
+            $refEtab = $$em->getRepository(RefEtablissement::class)->find($request->getSession()->get('select_etablissement'));
+        }else{
+            $refEtab = null;
+        }
         $cze_current = new CampagneZoneEtabModel(
-        		$typeElection, 
-        		$em->getRepository('EPLEElectionBundle:RefTypeEtablissement')->find($request->getSession()->get('select_type_etablissement')),
-        		$request->getSession()->get('select_choix_etab'), 
-        		$em->getRepository('EPLEElectionBundle:RefCommune')->find($request->getSession()->get('select_commune')),
-        		$em->getRepository('EPLEElectionBundle:RefEtablissement')->find($request->getSession()->get('select_etablissement')));
-        
-        // Données par défaut
-        $cze_current->setAcademie($em->getRepository('EPLEElectionBundle:RefAcademie')->find($request->getSession()->get('select_academie')));
-        $cze_current->setDepartement($em->getRepository('EPLEElectionBundle:RefDepartement')->find($request->getSession()->get('select_departement')));
-        
+            $typeElection,
+            $typeEtab,
+            $request->getSession()->get('select_choix_etab'),
+            $commune,
+            $refEtab
+        );
+        // Données par défaut commenter par faky
+        // $cze_current->setAcademie($em->getRepository(RefAcademie::class)->find($request->getSession()->get('select_academie')));
+        // $cze_current->setDepartement($em->getRepository(RefDepartement::class)->find($request->getSession()->get('select_departement')));
+
         // Type établissement
         $codeUrlTypeEtab = (null == $cze_current->getTypeEtablissement() ? 'Tous' : $cze_current->getTypeEtablissement()->getCodeUrlById());
-     
-        $datasSearch = array();
-        
-        $datasSearch['typeElect'] = $typeElection;
-        $datasSearch['campagne'] =  $em->getRepository('EPLEElectionBundle:EleCampagne')->find($request->getSession()->get('select_campagne'));
-        $datasSearch['academie'] = $em->getRepository('EPLEElectionBundle:RefAcademie')->find($request->getSession()->get('select_academie'));
-        $datasSearch['departement'] = $em->getRepository('EPLEElectionBundle:RefDepartement')->find($request->getSession()->get('select_departement'));
-        $datasSearch['typeEtablissement'] = $em->getRepository('EPLEElectionBundle:RefTypeEtablissement')->find($request->getSession()->get('select_type_etablissement'));
-        $datasSearch['choix_etab'] = $request->getSession()->get('select_choix_etab');
-        $datasSearch['commune'] = $em->getRepository('EPLEElectionBundle:RefCommune')->find($request->getSession()->get('select_commune'));
-        $datasSearch['etablissement'] = $em->getRepository('EPLEElectionBundle:RefEtablissement')->find($request->getSession()->get('select_etablissement'));
 
-        $form = $this->createForm(new ArchiveCampagneZoneEtabType($user), $datasSearch);
-                
+        $datasSearch = array();
+
+        $datasSearch['typeElect'] = $typeElection;
+        // $datasSearch['campagne'] =  $em->getRepository(EleCampagne::class)->find($request->getSession()->get('select_campagne'));
+        // $datasSearch['academie'] = $em->getRepository(RefAcademie::class)->find($request->getSession()->get('select_academie'));
+        // $datasSearch['departement'] = $em->getRepository(RefDepartement::class)->find($request->getSession()->get('select_departement'));
+        // $datasSearch['typeEtablissement'] = $em->getRepository(RefTypeEtablissement::class)->find($request->getSession()->get('select_type_etablissement'));
+        // $datasSearch['choix_etab'] = $request->getSession()->get('select_choix_etab');
+        // $datasSearch['commune'] = $em->getRepository(RefCommune::class)->find($request->getSession()->get('select_commune'));
+        // $datasSearch['etablissement'] = $em->getRepository(RefEtablissement::class)->find($request->getSession()->get('select_etablissement'));
+        $datasSearch['campagne'] = null;
+        $datasSearch['academie'] = null;
+        $datasSearch['departement'] = null;
+        $datasSearch['typeEtablissement'] = null;
+        $datasSearch['choix_etab'] = null;
+        $datasSearch['commune'] = null;
+        $datasSearch['etablissement'] = null;
+        $datasSearch["user"] = $user;
+        $form = $this->createForm(ArchiveCampagneZoneEtabType::class, null, $datasSearch);
+
         if ($request->getMethod() == 'POST') {
-            $form->bind($request);
-            if ($form->isValid()) {
-            	            	
+            $form->handleRequest($request);
+            if ($form->isSubmitted() && $form->isValid()) {
+
                 $datasForm = $form->getData();
-                 
-                $datasSearch['campagne'] = $datasForm['campagne'];       	
+
+                $datasSearch['campagne'] = $datasForm['campagne'];
                 $datasSearch['academie'] = $datasForm['academie'];
-                $datasSearch['departement'] = $datasForm['departement'];                
+                $datasSearch['departement'] = $datasForm['departement'];
                 $datasSearch['typeEtablissement'] = $datasForm['typeEtablissement'];
                 $datasSearch['choix_etab'] = $datasForm['choix_etab'];
                 $datasSearch['commune'] = $datasForm['commune'];
                 $datasSearch['etablissement'] = $datasForm['etablissement'];
-              
-              
+
+
             }else{
-                
+
                 // YME : rustine pour DGESCO, à corriger
                 $arrayRequest = $request->request->all();
-                 
+
                 //Contient ["academie"] (code); ["departement"] (numero); ["typeEtablissement"] (id); ["etatSaisie"]; ["choix_etab"]; ["commune"] (id); ["etablissement"] (uai); ["_token"]
                 $arrayResultatZoneEtabType = $arrayRequest['campagneZoneEtabType'];
-                $datasSearch['campagne'] = $em->getRepository('EPLEElectionBundle:EleCampagne')->find($arrayResultatZoneEtabType['campagne']);
-                $datasSearch['academie'] = $em->getRepository('EPLEElectionBundle:RefAcademie')->find($arrayResultatZoneEtabType['academie']);
-                $datasSearch['departement'] = $em->getRepository('EPLEElectionBundle:RefDepartement')->find($arrayResultatZoneEtabType['departement']);
-                $datasSearch['commune'] = $em->getRepository('EPLEElectionBundle:RefCommune')->find($arrayResultatZoneEtabType['commune']);
-                $datasSearch['typeEtablissement'] = $em->getRepository('EPLEElectionBundle:RefTypeEtablissement')->find($arrayResultatZoneEtabType['typeEtablissement']);
+                $datasSearch['campagne'] = $em->getRepository(EleCampagne::class)->find($arrayResultatZoneEtabType['campagne']);
+                $datasSearch['academie'] = $em->getRepository(RefAcademie::class)->find($arrayResultatZoneEtabType['academie']);
+                $datasSearch['departement'] = $em->getRepository(RefDepartement::class)->find($arrayResultatZoneEtabType['departement']);
+                $datasSearch['commune'] = $em->getRepository(RefCommune::class)->find($arrayResultatZoneEtabType['commune']);
+                $datasSearch['typeEtablissement'] = $em->getRepository(RefTypeEtablissement::class)->find($arrayResultatZoneEtabType['typeEtablissement']);
                 $datasSearch['choix_etab'] = (array_key_exists('choix_etab', $arrayResultatZoneEtabType) && $arrayResultatZoneEtabType['choix_etab'] == "1") ? true : false;
-                $datasSearch['etablissement'] = $em->getRepository('EPLEElectionBundle:RefEtablissement')->find($arrayResultatZoneEtabType['etablissement']);
-                
+                $datasSearch['etablissement'] = $em->getRepository(RefEtablissement::class)->find($arrayResultatZoneEtabType['etablissement']);
+
             }
-            
+
             // Année de début de la campagne
             $campagneAnneeDeb = $datasSearch['campagne']->getAnneeDebut();
 
@@ -165,31 +187,31 @@ class ArchiveController extends AbstractController
                     }
             }
         }
-                
-        if ($datasSearch['typeEtablissement'] != null && !empty($datasSearch['typeEtablissement'])) {
-        	$codeUrlTypeEtab = $datasSearch['typeEtablissement']->getCodeUrlById();
+
+        if (isset($datasSearch['typeEtablissement']) && $datasSearch['typeEtablissement'] != null && !empty($datasSearch['typeEtablissement'])) {
+            $codeUrlTypeEtab = $datasSearch['typeEtablissement']->getCodeUrlById();
         } else {
-        	$codeUrlTypeEtab = 'tous';
+            $codeUrlTypeEtab = 'tous';
         }
         $params['codeUrlTypeEtab'] = $codeUrlTypeEtab;
-                
+
         // Campagne et campagne antérieure
         if ($campagneAnneeDeb == null) {
-            $campagne = $em->getRepository('EPLEElectionBundle:EleCampagne')->getLastCampagneArchivee($typeElection);
+            $campagne = $em->getRepository(EleCampagne::class)->getLastCampagneArchivee($typeElection);
         } else {
-            $listeCampagne = $em->getRepository('EPLEElectionBundle:EleCampagne')->getCampagneParTypeElectionAnneeDebut($typeElection, $campagneAnneeDeb);
+            $listeCampagne = $em->getRepository(EleCampagne::class)->getCampagneParTypeElectionAnneeDebut($typeElection, $campagneAnneeDeb);
             $campagne = (! empty($listeCampagne)) ? $listeCampagne[0] : null;
         }
-                
+
         if (empty($campagne)) {
             throw $this->createNotFoundException('La campagne pour ce type d\'élection n\'a pas été trouvé.');
         }
         $params['campagne'] = $campagne;
-        
-        $listeCampagnePrec = $em->getRepository('EPLEElectionBundle:EleCampagne')->getCampagneParTypeElectionAnneeDebut($typeElection, $campagne->getAnneeDebut() - 1);
+
+        $listeCampagnePrec = $em->getRepository(EleCampagne::class)->getCampagneParTypeElectionAnneeDebut($typeElection, $campagne->getAnneeDebut() - 1);
         $campagnePrec = (! empty($listeCampagnePrec)) ? $listeCampagnePrec[0] : null;
         $params['campagnePrec'] = $campagnePrec;
-        
+
         // Type de zone
         if (!empty($datasSearch['departement'])) {
             $params['dept'] = $datasSearch['departement'];
@@ -201,61 +223,61 @@ class ArchiveController extends AbstractController
             $params['nationale'] = true;
             $zone = null;
         }
-                
+
         //Statistiques générales des 2 dernières campagnes
-        //$params['nbEtabExprDetailles'] = $em->getRepository('EPLEElectionBundle:EleConsolidation')->getNbEtabExprWithTypeEtabFromEleConsolidationByCampagneZoneTypeEtab($campagne, $zone, $datasSearch['typeEtablissement'], $user->getPerimetre());
-        
+        //$params['nbEtabExprDetailles'] = $em->getRepository(EleConsolidation::class)->getNbEtabExprWithTypeEtabFromEleConsolidationByCampagneZoneTypeEtab($campagne, $zone, $datasSearch['typeEtablissement'], $user->getPerimetre());
+
         //Choix par établissement : recherche dans EleEtablissement
-        if ($datasSearch['choix_etab'] && !empty($datasSearch['etablissement'])) {
-            
-            
+        if (isset($datasSearch['choix_etab']) && $datasSearch['choix_etab'] && !empty($datasSearch['etablissement'])) {
+
+
             $params['etablissement'] = $datasSearch['etablissement'];
-            $eleEtablissement = $em->getRepository('EPLEElectionBundle:EleEtablissement')->getEleEtablissementGlobale($campagne, $datasSearch['etablissement']);
-            
-            
+            $eleEtablissement = $em->getRepository(EleEtablissement::class)->getEleEtablissementGlobale($campagne, $datasSearch['etablissement']);
+
+
             if(null != $eleEtablissement && !$eleEtablissement->isValide()){ // mantis 123016
-               $eleEtablissement = null;
+                $eleEtablissement = null;
             }
-            
+
             $params['electEtablissement'] = $eleEtablissement;
-            
+
             $params['nbEtabParZone'] = sizeof($params['etablissement']);
-            
+
             if (! empty($campagnePrec)) {
-                $params['electEtablissementPrec'] = $em->getRepository('EPLEElectionBundle:EleEtablissement')->getEleEtablissementGlobale($campagnePrec, $datasSearch['etablissement']);
+                $params['electEtablissementPrec'] = $em->getRepository(EleEtablissement::class)->getEleEtablissementGlobale($campagnePrec, $datasSearch['etablissement']);
             } else {
                 $params['electEtablissementPrec'] = null;
             }
-            
+
             // Résultats de l'établissement (année n et année n-1)
             $params['listeResultat'] = $this->getListeResultatsAnneeCouranteAnneePrec($params['electEtablissement'], $params['electEtablissementPrec']);
-        
+
         } else {
 
             // Choix par zone : recherche dans EleParticipation
-            
-            $params['nbEtabParZone'] = $em->getRepository('EPLEElectionBundle:RefEtablissement')->getNbEtabParTypeEtablissementZoneCommune($datasSearch['typeEtablissement'], $zone, null, false, true, $user);
-            $params['nbEtabSaisieParZone'] = $em->getRepository('EPLEElectionBundle:EleEtablissement')->getNbEleEtabParCampagne($campagne, $zone, 'S', $datasSearch['typeEtablissement'], $user);
-            $params['nbEtabSaisieValideeParZone'] = $em->getRepository('EPLEElectionBundle:EleEtablissement')->getNbEleEtabParCampagne($campagne, $zone, 'V', $datasSearch['typeEtablissement'], $user);
-            //$params['electZone'] = $em->getRepository('EPLEElectionBundle:EleConsolidation')->getEleConsolidationGlobale($campagne, $datasSearch['typeEtablissement'], $zone, $user);
+
+            $params['nbEtabParZone'] = $em->getRepository(RefEtablissement::class)->getNbEtabParTypeEtablissementZoneCommune($datasSearch['typeEtablissement'], $zone, null, false, true, $user);
+            $params['nbEtabSaisieParZone'] = $em->getRepository(EleEtablissement::class)->getNbEleEtabParCampagne($campagne, $zone, 'S', $datasSearch['typeEtablissement'], $user);
+            $params['nbEtabSaisieValideeParZone'] = $em->getRepository(EleEtablissement::class)->getNbEleEtabParCampagne($campagne, $zone, 'V', $datasSearch['typeEtablissement'], $user);
+            //$params['electZone'] = $em->getRepository(EleConsolidation::class)->getEleConsolidationGlobale($campagne, $datasSearch['typeEtablissement'], $zone, $user);
             // mantis 0213287
-            $params['electZone'] = $em->getRepository('EPLEElectionBundle:EleEtablissement')->getConsolidationByCampagneTypeEtabZoneEtatSaisie($em, $campagne, $datasSearch['typeEtablissement'], $zone, 'V', $user);
-            
+            $params['electZone'] = $em->getRepository(EleEtablissement::class)->getConsolidationByCampagneTypeEtabZoneEtatSaisie($em, $campagne, $datasSearch['typeEtablissement'], $zone, 'V', $user);
+
             if ($params['electZone']->getNbEtabTotal() == null) {
                 $params['electZone']->setNbEtabTotal($params['nbEtabParZone']);
             }
-            
+
             if ($params['electZone']->getNbEtabExprimes() == null) {
                 $params['electZone']->setNbEtabExprimes(0);
             }
-            
+
             if (! empty($campagnePrec)) {
-                // $params['electZonePrec'] = $em->getRepository('EPLEElectionBundle:EleConsolidation')->getEleConsolidationGlobale($campagnePrec, $datasSearch['typeEtablissement'], $zone, $user);
-            	// mantis 0213287
-            	$params['electZonePrec'] = $em->getRepository('EPLEElectionBundle:EleEtablissement')->getConsolidationByCampagneTypeEtabZoneEtatSaisie($em, $campagnePrec, $datasSearch['typeEtablissement'], $zone, 'V', $user);
+                // $params['electZonePrec'] = $em->getRepository(EleConsolidation::class)->getEleConsolidationGlobale($campagnePrec, $datasSearch['typeEtablissement'], $zone, $user);
+                // mantis 0213287
+                $params['electZonePrec'] = $em->getRepository(EleEtablissement::class)->getConsolidationByCampagneTypeEtabZoneEtatSaisie($em, $campagnePrec, $datasSearch['typeEtablissement'], $zone, 'V', $user);
             } else
                 $params['electZonePrec'] = null;
-            
+
             /**
              * **** Récupération de l'ensemble des résultats par zone *****
              */
@@ -281,12 +303,12 @@ class ArchiveController extends AbstractController
         $request->getSession()->set('select_campagne', ($datasSearch['campagne'] instanceof EleCampagne) ? $datasSearch['campagne']->getId() : null);
         $request->getSession()->set('select_academie', ($datasSearch['academie'] instanceof RefAcademie) ? $datasSearch['academie']->getIdZone() : null);
         $request->getSession()->set('select_departement', ($datasSearch['departement'] instanceof RefDepartement) ? $datasSearch['departement']->getIdZone() : null);
-        
+
         $request->getSession()->set('select_type_etablissement', ($datasSearch['typeEtablissement'] instanceof RefTypeEtablissement) ? $datasSearch['typeEtablissement']->getId() : null);
         $request->getSession()->set('select_choix_etab', $datasSearch['choix_etab']);
         $request->getSession()->set('select_commune', ($datasSearch['commune'] instanceof RefCommune) ? $datasSearch['commune']->getId() : null);
         $request->getSession()->set('select_etablissement', ($datasSearch['etablissement'] instanceof RefEtablissement) ? $datasSearch['etablissement']->getUai() : null);
-        
+
         // Mantis 0213287
         // mise en session des params
         // $request->getSession()->set('params_archives', $params);
@@ -299,7 +321,7 @@ class ArchiveController extends AbstractController
             $dateDebutCampagne = $campagne != null ? new Datetime($campagne->getAnneeDebut() . "-01-01") : null;
             foreach ($user->getPerimetre()->getAcademies() as $academie) {
                 if($dateDebutCampagne!= null && $dateFinCampagne!= null && $academie->getDateActivation() > $dateDebutCampagne) {
-                    $fusionChild = $em->getRepository('EPLEElectionBundle:RefAcademie')->getchildnewAcademies($academie->getCode());
+                    $fusionChild = $em->getRepository(RefAcademie::class)->getchildnewAcademies($academie->getCode());
                     foreach ($fusionChild as $child) {
                         if(!in_array($child->getCode(), $formatAcademiesForDegesco)) {
                             $formatAcademiesForDegesco[] = $child->getCode();
@@ -310,7 +332,9 @@ class ArchiveController extends AbstractController
                 }
             }
         }
-        $form = $this->createForm(new ArchiveCampagneZoneEtabType($user,$formatAcademiesForDegesco), $datasSearch);
+        $datasSearch['user'] = $user;
+        $datasSearch['academies'] = $formatAcademiesForDegesco;
+        $form = $this->createForm(ArchiveCampagneZoneEtabType::class, null, $datasSearch);
 
         if($zone != null && $zone instanceof RefAcademie) {
             $params['hidePrecResult'] = $datasSearch['academie']->getDateActivation()->format('Y') == $datasSearch['campagne']->getAnneeDebut();
@@ -334,7 +358,7 @@ class ArchiveController extends AbstractController
     {
         $listeResultat = array();
         $resultatsAnneeCourante = false;
-        
+
         if (! empty($elect)) {
             foreach ($elect->getResultats() as $key => $resultat) {
                 //SESAM 0313887 : Calcul du nombre réel de siège attribué
@@ -349,7 +373,7 @@ class ArchiveController extends AbstractController
         /**
          * **** Comparaison des organisations de l'année antérieur si données existantes *****
          */
-        
+
         if (! empty($electPrec)) {
             foreach ($electPrec->getResultats() as $resultatPrec) {
                 $organisation_supplementaire = true;
@@ -373,16 +397,16 @@ class ArchiveController extends AbstractController
                 }
             }
         }
-        
+
         return $listeResultat;
     }
 
     /**
      * Fonction permettant la génération d'un PDF à partir du twig résultat
      *
-     * @param \Symfony\Component\HttpFoundation\Request $request            
-     * @param string $codeUrlTypeElect            
-     * @param string $anneeCampagne            
+     * @param \Symfony\Component\HttpFoundation\Request $request
+     * @param string $codeUrlTypeElect
+     * @param string $anneeCampagne
      * @throws AccessDeniedException
      * @return \Symfony\Component\HttpFoundation\Response
      */
@@ -391,15 +415,15 @@ class ArchiveController extends AbstractController
         $user = $this->get('security.context')
             ->getToken()
             ->getUser();
-        
+
         if ($user->getProfil()->getCode() != RefProfil::CODE_PROFIL_DGESCO) { // archive disponible uniquement pour l'administration centrale
             throw new AccessDeniedException();
         }
-        
+
         $params = $this->getParametresStatistiques($request, $user, $codeUrlTypeElect);
-        
+
         $fileName = EcecaExportUtils::generateFileName('Archives', $params);
-        
+
         $pdf = $this->get("white_october.tcpdf")->create('L');
         $pdf->SetAuthor('ECECA');
         $pdf->SetTitle($fileName);
@@ -408,15 +432,15 @@ class ArchiveController extends AbstractController
         $pdf->setPrintHeader(false);
         $pdf->AddPage();
         $response = new Response();
-        $params['warning'] = $this->container->getParameter('warning');
-        
-        $this->render('EPLEElectionBundle:Archives:exportPDFStatistiques.html.twig', $params, $response);
+        $params['warning'] = $this->getParameter('warning');
+
+        $this->render('archives/exportPDFStatistiques.html.twig', $params, $response);
         $html = $response->getContent();
         $pdf->writeHTML($html, true, 0, true, 0);
         $pdf->lastPage();
         $response = new Response($pdf->Output($fileName . '.pdf', 'D'));
         $response->headers->set('Content-Type', 'application/pdf');
-        
+
         return $response;
     }
 
@@ -424,9 +448,9 @@ class ArchiveController extends AbstractController
      * Fonction permettant la génération d'un PDF à partir du twig résultat
      * Export complet des établissements classés par code postal
      *
-     * @param \Symfony\Component\HttpFoundation\Request $request            
-     * @param string $codeUrlTypeElect            
-     * @param string $anneeCampagne            
+     * @param \Symfony\Component\HttpFoundation\Request $request
+     * @param string $codeUrlTypeElect
+     * @param string $anneeCampagne
      * @throws AccessDeniedException
      * @return \Symfony\Component\HttpFoundation\Response
      */
@@ -438,24 +462,24 @@ class ArchiveController extends AbstractController
         if ($user->getProfil()->getCode() != RefProfil::CODE_PROFIL_DGESCO) { // archive disponible uniquement pour l'administration centrale
             throw new AccessDeniedException();
         }
-        
+
         $em = $this->getDoctrine()->getManager();
-        
+
         $params = $this->getParametresStatistiques($request, $user, $codeUrlTypeElect);
-        
-        $typeEtabForm = $em->getRepository('EPLEElectionBundle:RefTypeEtablissement')->find($request->getSession()
+
+        $typeEtabForm = $em->getRepository(RefTypeEtablissement::class)->find($request->getSession()
             ->get('select_type_etablissement'));
-        $deptForm = $em->getRepository('EPLEElectionBundle:RefDepartement')->find($request->getSession()
+        $deptForm = $em->getRepository(RefDepartement::class)->find($request->getSession()
             ->get('select_departement'));
-        $lstElectEtab = $em->getRepository('EPLEElectionBundle:EleEtablissement')->findByCampagneTypeEtabZone($params['campagne'], $typeEtabForm, $deptForm, true);
-        
+        $lstElectEtab = $em->getRepository(EleEtablissement::class)->findByCampagneTypeEtabZone($params['campagne'], $typeEtabForm, $deptForm, true);
+
         /**
          * **** Récupération de l'ensemble des résultats par établissement *****
          */
         $params['listeResultat'] = $this->getListeResultatsAnneeCouranteAnneePrec($params['electEtablissement'], $params['electEtablissementPrec']);
-        
+
         $fileName = EcecaExportUtils::generateFileName('Archives', $params);
-        
+
         $pdf = $this->get("white_october.tcpdf")->create('L');
         $pdf->SetAuthor('ECECA');
         $pdf->SetTitle($fileName);
@@ -464,44 +488,44 @@ class ArchiveController extends AbstractController
         $pdf->setPrintHeader(false);
         $pdf->AddPage();
         $response = new Response();
-        $params['warning'] = $this->container->getParameter('warning');
-        $this->render('EPLEElectionBundle:Archives:exportPDFStatistiquesComplet.html.twig', $params, $response);
+        $params['warning'] = $this->getParameter('warning');
+        $this->render('archives/exportPDFStatistiquesComplet.html.twig', $params, $response);
         $html = $response->getContent();
         $pdf->writeHTML($html, true, 0, true, 0);
-        
+
         foreach ($lstElectEtab as $electEtab) {
-            $etab = $em->getRepository('EPLEElectionBundle:RefEtablissement')->find($electEtab['uai']);
+            $etab = $em->getRepository(RefEtablissement::class)->find($electEtab['uai']);
             $params['etablissement'] = $etab;
-            
-            $params['electEtablissement'] = $em->getRepository('EPLEElectionBundle:EleEtablissement')->getEleEtablissementGlobale($params['campagne'], $etab);
+
+            $params['electEtablissement'] = $em->getRepository(EleEtablissement::class)->getEleEtablissementGlobale($params['campagne'], $etab);
             if (! empty($params['campagnePrec'])) {
-                $params['electEtablissementPrec'] = $em->getRepository('EPLEElectionBundle:EleEtablissement')->getEleEtablissementGlobale($params['campagnePrec'], $etab);
+                $params['electEtablissementPrec'] = $em->getRepository(EleEtablissement::class)->getEleEtablissementGlobale($params['campagnePrec'], $etab);
             } else {
                 $params['electEtablissementPrec'] = null;
             }
             $params['listeResultat'] = $this->getListeResultatsAnneeCouranteAnneePrec($params['electEtablissement'], $params['electEtablissementPrec']);
-            
+
             $pdf->AddPage();
             $response = new Response();
-            $params['warning'] = $this->container->getParameter('warning');
-            $this->render('EPLEElectionBundle:Archives:exportPDFStatistiquesCompletDetailEtablissement.html.twig', $params, $response);
+            $params['warning'] = $this->getParameter('warning');
+            $this->render('archives/exportPDFStatistiquesCompletDetailEtablissement.html.twig', $params, $response);
             $html = $response->getContent();
             $pdf->writeHTML($html, true, 0, true, 0);
         }
-        
+
         $pdf->lastPage();
         $response = new Response($pdf->Output($fileName . '.pdf', 'D'));
         $response->headers->set('Content-Type', 'application/pdf');
-        
+
         return $response;
     }
 
     /**
      * Fonction permettant l'édition au format Excel des résultats d'une zone ou d'un établissement
      *
-     * @param \Symfony\Component\HttpFoundation\Request $request            
-     * @param string $codeUrlTypeElect            
-     * @param string $anneeCampagne            
+     * @param \Symfony\Component\HttpFoundation\Request $request
+     * @param string $codeUrlTypeElect
+     * @param string $anneeCampagne
      * @throws AccessDeniedException
      * @return file xls
      */
@@ -513,116 +537,28 @@ class ArchiveController extends AbstractController
         if ($user->getProfil()->getCode() != RefProfil::CODE_PROFIL_DGESCO) { // archive disponible uniquement pour l'administration centrale
             throw new AccessDeniedException();
         }
-        
+
         // Récupération des données de statistiques
         $params = $this->getParametresStatistiques($request, $user, $codeUrlTypeElect);
 
         $params['ligne'] = 1;
         $params['complet'] = false;
-        
+
         // **************** Création de l'objet Excel *********************//
         $phpExcelObject = $this->get('phpexcel')->createPHPExcelObject();
-        
+
         // Export
         $this->generateStatistiquesXLS($params, $phpExcelObject);
-        
+
         // Création du writer
         $writer = $this->get('phpexcel')->createWriter($phpExcelObject, 'Excel5');
-        
+
         // Création du nom du fichier
         $fileName = EcecaExportUtils::generateFileName('Archives', $params);
-        
+
         // Créer la réponse
         $response = $this->get('phpexcel')->createStreamedResponse($writer);
         $response->headers->set('Content-Type', 'text/vnd.ms-excel; charset=utf-8');
-        $date = $date = new \Datetime();
-        $response->headers->set('Content-Disposition', 'attachment;filename=' . $fileName . '.xls');
-        return $response;
-    }
-
-    /**
-     * Fonction permettant l'édition au format Excel des résultats d'une zone ou d'un établissement
-     * Export détaillé avec affichage des statistiques des établissements.
-     *
-     * @param \Symfony\Component\HttpFoundation\Request $request            
-     * @param string $codeUrlTypeElect            
-     * @param string $anneeCampagne            
-     * @throws AccessDeniedException
-     * @return file xls
-     */
-    public function exportStatistiquesXLSCompletAction(\Symfony\Component\HttpFoundation\Request $request, $codeUrlTypeElect)
-    {
-        $user = $this->get('security.context')
-            ->getToken()
-            ->getUser();
-        if ($user->getProfil()->getCode() != RefProfil::CODE_PROFIL_DGESCO) { // archive disponible uniquement pour l'administration centrale
-            throw new AccessDeniedException();
-        }
-        
-        $em = $this->getDoctrine()->getManager();
-        
-        // Récupération des données de statistiques
-        $params = $this->getParametresStatistiques($request, $user, $codeUrlTypeElect);
-        $params['ligne'] = 1;
-
-        $campagne = $params['campagne'];
-        $campagnePrec = $params['campagnePrec'];
-        $codeUrlTypeEtab = $params['codeUrlTypeEtab'];
-        $typeElect = $params['typeElect'];
-
-        $typeEtabForm = $em->getRepository('EPLEElectionBundle:RefTypeEtablissement')->find($request->getSession()
-            ->get('select_type_etablissement'));
-        $deptForm = $em->getRepository('EPLEElectionBundle:RefDepartement')->find($request->getSession()
-            ->get('select_departement'));
-        
-        $lstElectEtab = $em->getRepository('EPLEElectionBundle:EleEtablissement')->findByCampagneTypeEtabZone($campagne, $typeEtabForm, $deptForm, true);
-        
-        // **************** Création de l'objet Excel *********************//
-        $phpExcelObject = $this->get('phpexcel')->createPHPExcelObject();
-        
-        // Export en-tête
-        $ligne = $this->generateStatistiquesXLS($params, $phpExcelObject);
-        
-        // Parcours de la liste des établissements
-        foreach ($lstElectEtab as $electEtab) {
-            
-            $ligne += 2;
-            
-            $data = array();
-            $data['codeUrlTypeEtab'] = $codeUrlTypeEtab;
-            $data['campagne'] = $campagne;
-            $data['campagnePrec'] = $campagnePrec;
-            $data['complet'] = true;
-            
-            // Infos etablissement
-            $data['etablissement'] = $em->getRepository('EPLEElectionBundle:RefEtablissement')->find($electEtab['uai']);
-            $data['ligne'] = $ligne;
-            
-            // Récupération des statistiques établissement (campagne + campagne précédente)
-            $data['electEtablissement'] = $em->getRepository('EPLEElectionBundle:EleEtablissement')->getEleEtablissementGlobale($data['campagne'], $data['etablissement']);
-            if (! empty($campagnePrec)) {
-                $data['electEtablissementPrec'] = $em->getRepository('EPLEElectionBundle:EleEtablissement')->getEleEtablissementGlobale($data['campagnePrec'], $data['etablissement']);
-            } else {
-                $data['electEtablissementPrec'] = null;
-            }
-            
-            // Récupération des résultats
-            $data['listeResultat'] = $this->getListeResultatsAnneeCouranteAnneePrec($data['electEtablissement'], $data['electEtablissementPrec']);
-            
-            // Export de l'établissement
-            $ligne = $this->generateStatistiquesXLS($data, $phpExcelObject);
-        }
-        
-        // Création du writer
-        $writer = $this->get('phpexcel')->createWriter($phpExcelObject, 'Excel5');
-        
-        // Création du nom du fichier
-        $fileName = EcecaExportUtils::generateFileName('Archives', $params);
-        
-        // Créer la réponse
-        $response = $this->get('phpexcel')->createStreamedResponse($writer);
-        $response->headers->set('Content-Type', 'text/vnd.ms-excel; charset=utf-8');
-        $date = $date = new \Datetime();
         $response->headers->set('Content-Disposition', 'attachment;filename=' . $fileName . '.xls');
         return $response;
     }
@@ -704,7 +640,7 @@ class ArchiveController extends AbstractController
         }
         $sheet->getStyle('A' . $ligne)->applyFromArray($styleArrayTitre);
 
-            // **************** Génération du descriptif *********************//
+        // **************** Génération du descriptif *********************//
         $ligne += 2;
         $nomZone = '';
         if (! empty($data['etablissement'])) {
@@ -727,9 +663,9 @@ class ArchiveController extends AbstractController
             $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 3), $etablissement->getTypeEtablissement()
                 ->getLibelle());
             $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 4), $etablissement->getCommune()
-                ->getLibelle() . ' (' . $etablissement->getCommune()
-                ->getDepartement()
-                ->getLibelle() . ')');
+                    ->getLibelle() . ' (' . $etablissement->getCommune()
+                    ->getDepartement()
+                    ->getLibelle() . ')');
             $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 5), (null == $etablissement->getTypePrioritaire() ? 'N/A' : $etablissement->getTypePrioritaire()
                 ->getCode()));
             $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 6), $etablissement->getContact());
@@ -762,9 +698,9 @@ class ArchiveController extends AbstractController
             $ligne += 8;
 
 
-        // **************** Ligne campagne ***************************//
-        $phpExcelObject->setActiveSheetIndex(0)->setCellValue($case_libelle_campagne, 'Campagne');
-        $phpExcelObject->setActiveSheetIndex(0)->setCellValue($case_valeur_campagne, $campagne->getAnneeDebut() . '-' . $campagne->getAnneeFin());
+            // **************** Ligne campagne ***************************//
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue($case_libelle_campagne, 'Campagne');
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue($case_valeur_campagne, $campagne->getAnneeDebut() . '-' . $campagne->getAnneeFin());
         }
 
         // **************** Génération de la participation *******************//
@@ -899,7 +835,7 @@ class ArchiveController extends AbstractController
             $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . ($ligne + 2), 'Nombre de sièges pourvus');
             $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . ($ligne + 3), 'Pourcentage de sièges pourvus');
             if (! empty($data['etablissement'])) {
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . ($ligne + 4), 'Quotient électoral');
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . ($ligne + 4), 'Quotient électoral');
             }
 
             if ($participation != null) {
@@ -907,14 +843,14 @@ class ArchiveController extends AbstractController
                 $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 2), $participation->getNbSiegesPourvus());
                 $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 3), number_format($participation->getTauxSieges(), 2, '.', ',') . '%');
                 if (! empty($data['etablissement'])) {
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 4), number_format($participation->getQuotient(), 2, '.', ','));
+                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 4), number_format($participation->getQuotient(), 2, '.', ','));
                 }
             } else {
                 $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 1), '-');
                 $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 2), '-');
                 $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 3), '-');
                 if (! empty($data['etablissement'])) {
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 4), '-');
+                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 4), '-');
                 }
             }
 
@@ -923,14 +859,14 @@ class ArchiveController extends AbstractController
                 $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . ($ligne + 2), $participationPrec->getNbSiegesPourvus());
                 $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . ($ligne + 3), number_format($participationPrec->getTauxSieges(), 2, '.', ',') . '%');
                 if (! empty($data['etablissement'])) {
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . ($ligne + 4), number_format($participationPrec->getQuotient(), 2, '.', ','));
+                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . ($ligne + 4), number_format($participationPrec->getQuotient(), 2, '.', ','));
                 }
             } else {
                 $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . ($ligne + 1), '-');
                 $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . ($ligne + 2), '-');
                 $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . ($ligne + 3), '-');
                 if (! empty($data['etablissement'])) {
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . ($ligne + 4), '-');
+                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . ($ligne + 4), '-');
                 }
             }
 
@@ -939,14 +875,14 @@ class ArchiveController extends AbstractController
                 $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . ($ligne + 2), $participation->getNbSiegesPourvus() - $participationPrec->getNbSiegesPourvus());
                 $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . ($ligne + 3), number_format((number_format($participation->getTauxSieges(), 2, '.', ',') - number_format($participationPrec->getTauxSieges(), 2, '.', ',')), 2, '.', ',') . '%');
                 if (! empty($data['etablissement'])) {
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . ($ligne + 4), number_format((number_format($participation->getQuotient(), 2, '.', ',') - number_format($participationPrec->getQuotient(), 2, '.', ',')), 2, '.', ','));
+                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . ($ligne + 4), number_format((number_format($participation->getQuotient(), 2, '.', ',') - number_format($participationPrec->getQuotient(), 2, '.', ',')), 2, '.', ','));
                 }
-              } else {
+            } else {
                 $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . ($ligne + 1), '-');
                 $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . ($ligne + 2), '-');
                 $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . ($ligne + 3), '-');
                 if (! empty($data['etablissement'])) {
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . ($ligne + 4), '-');
+                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . ($ligne + 4), '-');
                 }
             }
             $ligne += 7;
@@ -958,26 +894,26 @@ class ArchiveController extends AbstractController
 
         if ($elect || $electPrec) {
             if (sizeof($data['listeResultat']) != 0){
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . ($ligne - 1), 'Répartition détaillée des sièges');
-            $phpExcelObject->setActiveSheetIndex(0)
-                ->setCellValue('A' . $ligne, 'Organisation')
-                ->setCellValue('B' . $ligne, 'Nombre de suffrages')
-                ->setCellValue('C' . $ligne, '%')
-                ->setCellValue('D' . $ligne, 'Rappel ' . ($campagne->getAnneeDebut() - 1) . ' - ' . ($campagne->getAnneeFin() - 1))
-                ->setCellValue('E' . $ligne, 'Variation')
-                ->setCellValue('F' . $ligne, 'Nb sièges')
-                ->setCellValue('G' . $ligne, '%')
-                ->setCellValue('H' . $ligne, 'Rappel ' . ($campagne->getAnneeDebut() - 1) . ' - ' . ($campagne->getAnneeFin() - 1))
-                ->setCellValue('I' . $ligne, 'Variation');
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . ($ligne - 1), 'Répartition détaillée des sièges');
+                $phpExcelObject->setActiveSheetIndex(0)
+                    ->setCellValue('A' . $ligne, 'Organisation')
+                    ->setCellValue('B' . $ligne, 'Nombre de suffrages')
+                    ->setCellValue('C' . $ligne, '%')
+                    ->setCellValue('D' . $ligne, 'Rappel ' . ($campagne->getAnneeDebut() - 1) . ' - ' . ($campagne->getAnneeFin() - 1))
+                    ->setCellValue('E' . $ligne, 'Variation')
+                    ->setCellValue('F' . $ligne, 'Nb sièges')
+                    ->setCellValue('G' . $ligne, '%')
+                    ->setCellValue('H' . $ligne, 'Rappel ' . ($campagne->getAnneeDebut() - 1) . ' - ' . ($campagne->getAnneeFin() - 1))
+                    ->setCellValue('I' . $ligne, 'Variation');
 
-            $sheet->getStyle('B' . $ligne)->applyFromArray($styleArray);
-            $sheet->getStyle('C' . $ligne)->applyFromArray($styleArray);
-            $sheet->getStyle('D' . $ligne)->applyFromArray($styleArray);
-            $sheet->getStyle('E' . $ligne)->applyFromArray($styleArray);
-            $sheet->getStyle('F' . $ligne)->applyFromArray($styleArray);
-            $sheet->getStyle('G' . $ligne)->applyFromArray($styleArray);
-            $sheet->getStyle('H' . $ligne)->applyFromArray($styleArray);
-            $sheet->getStyle('I' . $ligne)->applyFromArray($styleArray);
+                $sheet->getStyle('B' . $ligne)->applyFromArray($styleArray);
+                $sheet->getStyle('C' . $ligne)->applyFromArray($styleArray);
+                $sheet->getStyle('D' . $ligne)->applyFromArray($styleArray);
+                $sheet->getStyle('E' . $ligne)->applyFromArray($styleArray);
+                $sheet->getStyle('F' . $ligne)->applyFromArray($styleArray);
+                $sheet->getStyle('G' . $ligne)->applyFromArray($styleArray);
+                $sheet->getStyle('H' . $ligne)->applyFromArray($styleArray);
+                $sheet->getStyle('I' . $ligne)->applyFromArray($styleArray);
             }
 
             $ligne ++;
@@ -1078,12 +1014,12 @@ class ArchiveController extends AbstractController
         }
 
         if (sizeof($data['listeResultat']) != 0) {
-	        if ($totalResultat !=null) {
-		        // Ligne total
-		        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . ($ligne + 1), 'TOTAL TOUTES ORGANISATIONS');
-		        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 1), $elect->getNbVoixTotal());
-		        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('F' . ($ligne + 1), $elect->getNbSiegesTotal());
-	        }
+            if ($totalResultat !=null) {
+                // Ligne total
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . ($ligne + 1), 'TOTAL TOUTES ORGANISATIONS');
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 1), $elect->getNbVoixTotal());
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('F' . ($ligne + 1), $elect->getNbSiegesTotal());
+            }
         }
         // Activer la 1ère feuille
         $phpExcelObject->setActiveSheetIndex(0);

@@ -1,0 +1,33 @@
+<form action="{{ path('EPLEElectionBundle_envoi_courriel') }}" method="post" accept-charset="UTF-8">
+
+	<p class="note">Un astérisque * marque un champ obligatoire</p>
+
+	<div id="form_courriel_relance">
+		{{ form_errors(form) }}
+		<table>
+			<tr>
+				<td class="col">{{ form_label(form['objet']) }}</td>
+				<td>{{ form_widget(form['objet']) }}</td>
+			</tr>
+			<tr>
+				<td class="col">{{ form_label(form['message']) }}</td>
+				<td>{{ form_widget(form['message']) }}</td>
+			</tr>
+			<tr>
+				<td class="col">{{ form_label(form['choix_copies']) }}</td>
+				<td class="copie_expediteur">
+					{% if copies|length > 0 %}
+						{% for contact in form['choix_copies']%}
+							{{ form_widget(contact)}} {{ form_label(contact) }} <br>
+						{% endfor %}
+					{% else %}
+						&nbsp;
+					{% endif %}
+				</td>
+			</tr>
+		</table>
+		{{ form_rest(form) }}
+	</div>
+
+	<div class="boutons"><input type="submit" value="Envoi" title="Envoi" /></div>
+</form>

@@ -1,0 +1,369 @@
+EPLEElectionBundle_resultats:
+  path:  /{codeUrlTypeElect}/resultats/
+  controller: App\Controller\ResultatController:indexAction
+
+EPLEElectionBundle_recherche_resultats:
+  path:  /resultats/recherche/
+  controller: App\Controller\ResultatController:rechercheAction
+  requirements:
+    _method:  POST
+
+EPLEElectionBundle_retour_resultats:
+  path:  /{codeUrlTypeElect}/resultats/retourLstRech/
+  controller: App\Controller\ResultatController:retourListeEtablissementAction
+
+EPLEElectionBundle_resultats_export_PDF:
+  path:  /{codeUrlTypeElect}/resultats/exportPDF/
+  controller: App\Controller\ResultatController:exportResultatsPDFAction
+
+EPLEElectionBundle_resultats_export_XLS:
+  path:  /{codeUrlTypeElect}/{etablissementUai}/resultats/exportXLS/
+  controller: App\Controller\ResultatController:exportResultatsXLSAction
+  defaults:
+    etablissementUai: tous
+
+EPLEElectionBundle_resultats_export_PDF_complet:
+  path:  /{codeUrlTypeElect}/resultats/exportPDFComplet/
+  controller: App\Controller\ResultatController:exportResultatsPDFCompletAction
+
+EPLEElectionBundle_resultats_export_XLS_complet:
+  path:  /{codeUrlTypeElect}/resultats/exportXLSComplet/
+  controller: App\Controller\ResultatController:exportResultatsXLSCompletAction
+
+EPLEElectionBundle_resultats_export_CSV_detaille:
+  path:  /{codeUrlTypeElect}/resultats/exportCompletCSVDetaille/
+  controller: App\Controller\ResultatController:exportResultatsCSVCompletDetailleAction
+
+EPLEElectionBundle_resultats_etablissement:
+  path:  /{codeUrlTypeElect}/resultats/etablissement/{uai}/{fileUpload}/{retourLstRech}/{fromEdit}
+  controller: App\Controller\ResultatController:consultationResultatsEtablissementAction
+  defaults:
+    fileUpload: 0
+    retourLstRech: 0
+    fromEdit: 0
+
+EPLEElectionBundle_resultats_zone:
+  path:  /{codeUrlTypeElect}/resultats/zone:{idZone}/type_etab:{codeUrlTypeEtab}/
+  controller: App\Controller\ResultatController:consultationResultatsZoneAction
+  defaults:
+    idZone: nationale
+    codeUrlTypeEtab: tous
+
+EPLEElectionBundle_resultats_transmis:
+  path:  /{codeUrlTypeElect}/resultats/transmis/{numDept}/
+  controller: App\Controller\ResultatController:consultationResultatsTransmisZoneAction
+  defaults:
+    numDept: 0
+
+EPLEElectionBundle_change_statut_resultats_etab:
+  path:  /{codeUrlTypeElect}/{etablissementUai}/changeStatut/{etat}/{retourLstRech}/
+  controller: App\Controller\ResultatController:changementEtatEleEtabAction
+  defaults:
+    retourLstRech: 0
+
+EPLEElectionBundle_devalider_tirage_sort_resultats_etab:
+  path:  /{codeUrlTypeElect}/{etablissementUai}/devalidationTirageAuSort/{retourLstRech}/
+  controller: App\Controller\ResultatController:devalidationTirageAuSortEleEtabAction
+  defaults:
+    retourLstRech: 0
+
+EPLEElectionBundle_devalid_change_statut_resultats_etab:
+  path:  /{codeUrlTypeElect}/{etablissementUai}/changesStatut/{etat}/{retourLstRech}/
+  controller: App\Controller\ResultatController:changementEtatEleEtabDevalidationAction
+  defaults:
+    retourLstRech: 0
+
+EPLEElectionBundle_validation_resultats_masse:
+  path: /massValidation/
+  controller: App\Controller\ResultatController:massValidationAction
+  requirements:
+    _method:  POST
+
+EPLEElectionBundle_homepage:
+  path:  /
+  controller: App\Controller\TableauDeBord:indexAction
+
+EPLEElectionBundle_login:
+  path:  /login/
+  controller: App\Controller\Identification:loginAction
+
+EPLEElectionBundle_login_check:
+  path:  /login_check/
+
+EPLEElectionBundle_logout:
+  path:  /logout/
+  controller: App\Controller\Identification:logoutAction
+
+EPLEElectionBundle_tableau_bord:
+  path:  /tableauDeBord/
+  controller: App\Controller\TableauDeBord:indexAction
+
+EPLEElectionBundle_ajax_getEtablissementsByNumDepartement:
+  path:  /tableauDeBord/etabsByNumDept/
+  controller: App\Controller\TableauDeBord:getEtablissementsByNumDepartementAction
+  requirements:
+    _method:  POST
+
+EPLEElectionBundle_recherche_TableauDeBord:
+  path:  /tableauDeBord/rechercheTdb/
+  controller: App\Controller\TableauDeBord:rechercheAction
+
+EPLEElectionBundle_ajax_getRechercheEtablissementsByNumDepartement:
+  path:  /tableauDeBord/rechercheEtabsByNumDept/
+  controller: App\Controller\TableauDeBord:getEtablissementsByNumDepartementAction
+
+EPLEElectionBundle_statistiques:
+  path:  /{codeUrlTypeElect}/statistiques/
+  controller: App\Controller\StatistiqueController:indexAction
+
+EPLEElectionBundle_recherche_statistiques:
+  path:  /{codeUrlTypeElect}/statistiques/
+  controller: App\Controller\StatistiqueController:rechercheAction
+
+EPLEElectionBundle_statistiques_export_PDF:
+  path:  /{codeUrlTypeElect}/statistiques/exportPDF/
+  controller: App\Controller\StatistiqueController:exportStatistiquesPDFAction
+
+EPLEElectionBundle_statistiques_export_XLS:
+  path:  /{codeUrlTypeElect}/statistiques/exportXLS/
+  controller: App\Controller\StatistiqueController:exportStatistiquesXLSAction
+
+EPLEElectionBundle_statistiques_export_PDF_complet:
+  path:  /{codeUrlTypeElect}/statistiques/exportPDFComplet/
+  controller: App\Controller\StatistiqueController:exportStatistiquesPDFCompletAction
+
+EPLEElectionBundle_statistiques_export_XLS_complet:
+  path:  /{codeUrlTypeElect}/statistiques/exportXLSComplet/
+  controller: App\Controller\StatistiqueController:exportStatistiquesXLSCompletAction
+
+EPLEElectionBundle_saisie_resultats_etab:
+  path:  /saisieResultats/{codeUrlTypeElect}/{etablissementUai}/modifier/{retourLstRech}/
+  controller: App\Controller\SaisieResultat:editionAction
+  defaults:
+    retourLstRech: 0
+
+EPLEElectionBundle_aide_nb_sieges:
+  path:  /saisieResultats/aide/{typeElectionId}/{etablissementUai}
+  controller: App\Controller\SaisieResultat:aideNbSiegesAction
+
+EPLEElectionBundle_saisie_nb_sieges_tirage_sort:
+  path:  /saisieResultats/{codeUrlTypeElect}/{uai}/tirageAuSort/
+  controller: App\Controller\SaisieResultat:nbSiegesTirageAuSortAction
+
+EPLEElectionBundle_relance_courriel:
+  path:  /courriel/{typeElectionId}/{idZone}/
+  controller: App\Controller\Courriel:relance"}
+
+EPLEElectionBundle_masse_courriel:
+  path: /masseCourriel/
+  controller: App\Controller\Courriel:massRelanceAction
+  requirements:
+    _method:  POST
+
+EPLEElectionBundle_courriel_export_XLS:
+  path:  /{typeElectionId}/{idZone}/courriel/exportXLS/
+  controller: App\Controller\Courriel:exportEtablissementsSansMailXLSAction
+
+EPLEElectionBundle_courriel_masse_export_XLS:
+  path:  /courriel/exportMasseXLS/
+  controller: App\Controller\Courriel:exportMasseEtablissementsSansMailXLSAction
+
+EPLEElectionBundle_envoi_courriel:
+  path: /envoyerCourriel/
+  controller: App\Controller\Courriel:envoiAction
+
+EPLEElectionBundle_masse_envoi_courriel:
+  path: /envoyerMasseCourriel/
+  controller: App\Controller\Courriel:massEnvoiAction
+
+EPLEElectionBundle_creation_PV:
+  path:  /{codeUrlTypeElect}/{etablissementUai}/creationPV/{statut}/
+  controller: App\Controller\PV:creerPVAction
+
+EPLEElectionBundle_upload_PV:
+  path:  /{codeUrlTypeElect}/{etablissementUai}/uploadPV/
+  controller: App\Controller\PV:indexAction
+
+EPLEElectionBundle_do_upload:
+  path:  /{codeUrlTypeElect}/{etablissementUai}/upload/
+  controller: App\Controller\PV:uploadAction
+
+EPLEElectionBundle_recapitulatif_participation:
+  path: /recapitulatifParticipation/{codeUrlTypeElect}
+  controller: App\Controller\RecapitulatifParticipation:indexAction
+
+EPLEElectionBundle_recapitulatif_participation_detaillee:
+  path: /recapitulatifParticipationDetaillee/{codeUrlTypeElect}
+  controller: App\Controller\RecapitulatifParticipationDetaillee:indexAction
+
+EPLEElectionBundle_courriel_libre:
+  path: /{codeUrlTypeElect}/envoyerCourrielLibre/
+  controller: App\Controller\Courriel:envoiLibreAction
+
+EPLEElectionBundle_ajax_getAllAcademie:
+  path:  /academies/liste/
+  controller: App\Controller\Courriel:findAllAcademieAction
+  requirements:
+    _method:  POST
+
+EPLEElectionBundle_ajax_getDepartementsByCodeAcademie:
+  path:  /departements/byCodeAcademie/
+  controller: App\Controller\Courriel:findDepartementsByCodeAcademieAction
+  requirements:
+    _method:  POST
+
+EPLEElectionBundle_ajax_getEtablissementsByZoneAndUaiOrLibelle:
+  path:  /etablissements/byZoneAndUaiOrLibelle/
+  controller: App\Controller\Courriel:findEtablissementsByZoneAndUaiOrLibelleAction
+  requirements:
+    _method:  POST
+
+EPLEElectionBundle_ajax_getEtablissementByUaiOrLibelle:
+  path:  /etablissements/byUaiOrLibelle/
+  controller: App\Controller\Courriel:findEtablissementByUaiOrLibelleAction
+  requirements:
+    _method:  POST
+
+EPLEElectionBundle_archives:
+  path:  /{codeUrlTypeElect}/archives/
+  controller: App\Controller\Archive:indexAction
+
+EPLEElectionBundle_recherche_archives:
+  path:  /{codeUrlTypeElect}/archives/
+  controller: App\Controller\Archive:rechercheAction
+
+EPLEElectionBundle_archives_export_PDF:
+  path:  /{codeUrlTypeElect}/archives/exportPDF/
+  controller: App\Controller\Archive:exportStatistiquesPDFAction
+
+EPLEElectionBundle_archives_export_XLS:
+  path:  /{codeUrlTypeElect}/archives/exportXLS/
+  controller: App\Controller\Archive:exportStatistiquesXLSAction
+
+EPLEElectionBundle_archives_export_PDF_complet:
+  path:  /{codeUrlTypeElect}/archives/exportPDFComplet/
+  controller: App\Controller\Archive:exportStatistiquesPDFCompletAction
+
+EPLEElectionBundle_archives_export_XLS_complet:
+  path:  /{codeUrlTypeElect}/archives/exportXLSComplet/
+  controller: App\Controller\Archive:exportStatistiquesXLSCompletAction
+
+EPLEElectionBundle_recapitulatif_participation_export_XLS:
+  path:  /recapitulatifParticipation/{codeUrlTypeElect}/exportXLS/
+  controller: App\Controller\RecapitulatifParticipation:exportXLSAction
+
+EPLEElectionBundle_recapitulatif_participation_detaillee_export_XLS:
+  path:  /recapitulatifParticipationDetaillee/{codeUrlTypeElect}/exportXLS/
+  controller: App\Controller\RecapitulatifParticipationDetaillee:exportXLSAction
+
+EPLEAdminBundle_homepage:
+  path:  /
+  controller: App\Controller\AdminController:indexAction
+
+EPLEAdminBundle_ajax_getAcaDepComByZone:
+  path:  /etablissements/selectAcaDepCom/
+  controller: App\Controller\AjaxController:findAcademieDepartementCommuneByZoneAction
+  requirements:
+    _method:  POST
+
+EPLEAdminBundle_contacts:
+  path:  /contacts/
+  controller: App\Controller\Contact:indexAction
+
+EPLEAdminBundle_contact_ajouter:
+  path:  /contacts/ajouter/
+  controller: App\Controller\Contact:modifierContactAction
+
+EPLEAdminBundle_contact_modifier:
+  path:  /contacts/{contactId}/modifier/
+  controller: App\Controller\Contact:modifierContactAction
+
+EPLEAdminBundle_federations:
+  path:  /federations/
+  controller: App\Controller\Federation:indexAction
+
+EPLEAdminBundle_federation_ajouter:
+  path:  /federations/ajouter/
+  controller: App\Controller\Federation:modifierFederationAction
+
+EPLEAdminBundle_federation_modifier:
+  path:  /federations/{federationId}/modifier/
+  controller: App\Controller\Federation:modifierFederationAction
+
+EPLEAdminBundle_federation_supprimer:
+  path: /federations/{federationId}/supprimer/
+  controller: App\Controller\Federation:supprimerFederationAction
+  requirements:
+    _method: DELETE
+
+EPLEAdminBundle_organisations:
+  path:  /organisations/
+  controller: App\Controller\Organisation:indexAction
+
+EPLEAdminBundle_organisation_ajouter:
+  path:  /organisations/ajouter/
+  controller: App\Controller\Organisation:modifierOrganisationAction
+
+EPLEAdminBundle_organisation_modifier:
+  path:  /organisations/{organisationId}/modifier/
+  controller: App\Controller\Organisation:modifierOrganisationAction
+
+EPLEAdminBundle_etablissement:
+  path:  /etablissements/{page}/
+  controller: App\Controller\Etablissement:indexAction
+  defaults:
+    page: 1
+  requirements:
+    page:  \d*
+
+EPLEAdminBundle_etablissement_modifier:
+  path:  /etablissements/{etablissementUai}/modifier/
+  controller: App\Controller\Etablissement:modifierEtablissementAction
+
+EPLEAdminBundle_etablissement_ajouter:
+  path:  /etablissements/ajouter/
+  controller: App\Controller\Etablissement:modifierEtablissementAction
+
+EPLEAdminBundle_etablissement_supprimer:
+  path:  /etablissements/{etablissementUai}/supprimer/
+  controller: App\Controller\Etablissement:supprimerEtablissementAction
+  requirements:
+    _method: DELETE
+
+EPLEAdminBundle_campagnes:
+  path:  /campagnes/
+  controller: App\Controller\Campagne:indexAction
+
+EPLEAdminBundle_campagne_ajouter:
+  path:  /campagnes/ajouter/
+  controller: App\Controller\Campagne:modifierAction
+
+EPLEAdminBundle_campagne_modifier:
+  path:  /campagnes/{campagneId}/modifier/
+  controller: App\Controller\Campagne:modifierAction
+
+EPLEAdminBundle_campagne_archiver:
+  path:  /campagnes/{campagneId}/archiver/
+  controller: App\Controller\Campagne:archiverAction
+
+EPLEAdminBundle_statistiques:
+  path:  /statistiques/{typeElectionId}/
+  controller: App\Controller\Statistiques:indexAction
+  defaults:
+    typeElectionId: 0
+
+EPLEAdminBundle_import:
+  path:  /importRamsese/
+  controller: App\Controller\Etablissement:importRamseseAction
+
+#Page du formulaire de recherche etablissement
+EPLEAdminBundle_page_formulaire_recherche_etablissement:
+  path: /rechercheEtablissements
+  controller: App\Controller\RechercheEtablissement:indexAction
+
+#Afficher les etablissements trouves
+EPLEAdminBundle_affichage_resultat_recherche_etablissements:
+  path:  /rechercheEtablissementsResultat
+  controller: App\Controller\RechercheEtablissement:affichageEtablissementsAction
+  requirements:
+    _method:  POST

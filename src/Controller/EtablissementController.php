@@ -4,30 +4,34 @@ namespace App\Controller;
 use App\Form\EtablissementType;
 use App\Model\EtablissementModel;
 use App\Form\EtablissementHandler;
+use App\Controller\BaseController;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
+use Symfony\Component\Form\Extension\Core\Type\FileType;
+use Symfony\Component\HttpFoundation\Request;
 
-class EtablissementController extends AbstractController
+
+class EtablissementController extends BaseController
 {
 
     /**
-      * @Route("import-ramesese", name="import_ramesese")
+      * @Route("importRamsese", name="import_ramesese")
       */
-    public function importRamseseAction(\Symfony\Component\HttpFoundation\Request $request)
+    public function importRamseseAction(ParameterBagInterface $parameters,Request $request)
     {
         $user = $this->getUser();
         if (! $user->canImportRamsese()) {
             throw new AccessDeniedException();
         }
         
-        $uploadDir = $this->getParameter('ramsese_upload_dir');
-        $logger = $this->get("import_logger");
+        $uploadDir = $parameters->get('ramsese_upload_dir');
+        //$logger = $this->get("import_logger");
         
         $em = $this->getDoctrine()->getManager();
         
         $form = $this->createFormBuilder()
-            ->add('fichier', 'file', array(
+            ->add('fichier', FileType::class, array(
             'required' => true,
             'label' => 'Fichier',
             'mapped' => false
@@ -38,7 +42,7 @@ class EtablissementController extends AbstractController
 
         if ($request->getMethod() == 'POST') {
             $form->handleRequest($request);
-            if ($form->isValid()) {
+            if ($form->isSubmitted() && $form->isValid()) {
 
                 // Récupération de l'objet fichier
                 $fichier = $form['fichier']->getData();

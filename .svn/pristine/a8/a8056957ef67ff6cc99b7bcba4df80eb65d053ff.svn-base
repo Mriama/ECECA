@@ -1,0 +1,16 @@
+{% if datesElections is defined and datesElections|length > 0 %}
+    <div id="rappel_dates_campagne">
+        <p class="title">Rappel des dates de la campagne par type d'élection :</p>
+        <table>
+            {% for election in datesElections %}
+                <tr class="election">
+                    <td class="election_name">{{ election["nom"] }} : </td>
+                    <td>
+                        saisie du <b>{{ election["debutSaisie"]|date("d/m/Y") }}</b> au <b>{{ election["finSaisie"]|date("d/m/Y") }} inclus</b> -
+                        validation du <b>{{ election["debutValidation"]|date("d/m/Y") }}</b> au <b>{{ election["finValidation"]|date("d/m/Y") }} inclus</b>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+    </div>
+{% endif %}

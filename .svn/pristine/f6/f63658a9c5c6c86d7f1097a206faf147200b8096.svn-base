@@ -1,0 +1,35 @@
+<form action="{{ path('EPLEElectionBundle_courriel_libre', { 'codeUrlTypeElect': typeElect.codeUrlById } ) }}" method="post" accept-charset="UTF-8" id="form_envoi_courriel_libre">
+	
+    <div id="form">	
+		{{ form_errors(form) }}
+			<div id="bloc_contact_academie">{{ form_label(form['contacts_academie']) }}{{ form_widget(form['contacts_academie']) }}{{ form_widget(form['code_academie']) }}</div>
+			<div id="bloc_contact_departement">{{ form_label(form['contacts_departementaux']) }}{{ form_widget(form['contacts_departementaux']) }}{{ form_widget(form['numero_departement']) }}</div>
+			<div>{{ form_label(form['contacts_etablissements']) }}{{ form_widget(form['contacts_etablissements']) }}{{ form_widget(form['uai_etablissement']) }}</div>
+			<div>{{ form_label(form['objet']) }}{{ form_widget(form['objet']) }}</div>
+			<div>{{ form_label(form['message']) }}{{ form_widget(form['message']) }}</div>
+		{{ form_rest(form) }}
+	</div>
+	
+	<div class="boutons"><input type="submit" value="Envoi" title="Envoi" id="btn_envoi_courriel_libre" /></div>
+</form>
+
+<script type="text/javascript">
+	var getAllAcademieAjaxPath = "{{ path('EPLEElectionBundle_ajax_getAllAcademie') }}";
+	var getDepartementsByCodeAcademieAjaxPath = "{{ path('EPLEElectionBundle_ajax_getDepartementsByCodeAcademie') }}";
+	var getEtablissementsByZoneAndUaiOrLibelleAjaxPath = "{{ path('EPLEElectionBundle_ajax_getEtablissementsByZoneAndUaiOrLibelle') }}";
+	var getEtablissementByUaiOrLibelleAjaxPath = "{{ path('EPLEElectionBundle_ajax_getEtablissementByUaiOrLibelle') }}";
+	var getTypeElect = "{{ typeElect.id }}";
+	{% if app.user.profil.code != constant('\\EPLE\\ElectionBundle\\Entity\\RefProfil::CODE_PROFIL_DGESCO') %}
+		$("#bloc_contact_academie").hide();
+	{% endif %}
+
+	{% if app.user.profil.code != constant('\\EPLE\\ElectionBundle\\Entity\\RefProfil::CODE_PROFIL_DGESCO') and app.user.profil.code != constant('\\EPLE\\ElectionBundle\\Entity\\RefProfil::CODE_PROFIL_RECT') %}
+		$("#bloc_contact_departement").hide();
+	{% endif %}	
+
+	var alert003 = "{{ alert[003] }}";
+	var alert004 = "{{ alert[004] }}";
+	var alert005 = "{{ alert[005] }}";
+	var alert006 = "{{ alert[006] }}";
+	var alert007 = "{{ alert[007] }}";
+</script>

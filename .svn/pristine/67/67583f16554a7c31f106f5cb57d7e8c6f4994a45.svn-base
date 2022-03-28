@@ -1,0 +1,20 @@
+<?php
+
+namespace App\Controller;
+
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Security\Core\Exception\AccessDeniedException;
+
+class ElectionController extends AbstractController {
+
+	/**
+	 * @codeCoverageIgnore
+	 */
+	public function indexAction() {
+		if (!$this->get('security.context')->getToken()->isAuthenticated()) {
+			throw new AccessDeniedException();
+		}
+		return $this->render('EPLEElectionBundle:Election:index.html.twig', array());
+	}
+
+}

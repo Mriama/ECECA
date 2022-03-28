@@ -2,53 +2,65 @@
 
 namespace App\Controller;
 
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use App\Entity\EleConsolidation;
+use App\Entity\EleEtablissement;
+use App\Entity\EleParticipation;
+use App\Entity\RefEtablissement;
+use App\Controller\BaseController;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
-use Symfony\Component\Form\FormView;
-use Symfony\Component\Form\Form;
-use Symfony\Component\Finder\Comparator\DateComparator;
 use App\Entity\EleCampagne;
+use App\Entity\RefTypeElection;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Routing\Annotation\Route;
+use App\Form\TypeElectionType;
 
-class CampagneController extends AbstractController 
+
+class CampagneController extends BaseController
 {
 	/**
 	 * Fonction permettant d'afficher l'index de campagne (Page permettant de rechercher une campagne par type d'élection)
 	 * @throws AccessDeniedException
+	 * 
+	 * @Route("campagnes", name="campagnes")
 	 */
-	public function indexAction() 
+	public function indexAction(Request $request) 
 	{
-		if (false === $this->get('security.context')->isGranted('ROLE_GEST_CAMP')) {
-			throw new AccessDeniedException();
-		}
+		$em = $this->getDoctrine()->getManager();
+		// if (false === $this->container->get('security.authorization_checker')->isGranted('ROLE_GEST_CAMP')) {
+		// 	throw new AccessDeniedException();
+		// }
+		$user = $this->getUser();
 		
-		$repoCampagne = $this->getDoctrine()->getRepository("EPLEElectionBundle:EleCampagne");
-		$repoTypeElection = $this->getDoctrine()->getRepository("EPLEElectionBundle:RefTypeElection");
-		$request = $this->get('request');
+		$repoCampagne = $em->getRepository(EleCampagne::class);
+		$repoTypeElection = $em->getRepository(RefTypeElection::class);
 		
 		// Récupération du Type d'élection précédemment sélectionné
 		$typeElectIdSession = $request->getSession()->get('typeElectIdSession');
-		
-		$te_defaultValue = $repoTypeElection->find($typeElectIdSession);
+		if($typeElectIdSession != null){
+			$te_defaultValue = $repoTypeElection->find($typeElectIdSession);
+		}else{
+			$te_defaultValue = null;
+		}
+
 		if (empty($te_defaultValue)) 
 		{
 			// Choix du type d'élection 1 par défaut si aucun choix précédemment effectué ("ASS et ATE")
 			$te_defaultValue = $repoTypeElection->find(1);
 		}
 		
-		$form = $this->createForm(new \App\Form\TypeElectionType(), (empty($te_defaultValue)? null : array('typeElection' => $te_defaultValue)) );
+		$form = $this->createForm(TypeElectionType::class,$te_defaultValue );
 		
 		$params['form'] =  $form->createView();
-		
 		// Indication d'une élection de type 'Parents'
 		$params['isTypeElectionParent'] = ($te_defaultValue!=null and
-				$te_defaultValue->getId()==\App\Entity\RefTypeElection::ID_TYP_ELECT_PARENT)
+				$te_defaultValue->getId()== RefTypeElection::ID_TYP_ELECT_PARENT)
 				? true : false;
 		
 		if ($request->getMethod() == 'POST')
 		{
-			$form->bind($request);
+			$form->handleRequest($request);
 			
-			if ($form->isValid()) 
+			if ($form->isSubmitted() && $form->isValid())
 			{
 				// Récupération du type de campagne sélectionné
 				$dataRequestArray = $form->getData();
@@ -73,7 +85,7 @@ class CampagneController extends AbstractController
 			}
 		}
 		
-		return $this->render('EPLEAdminBundle:Campagne:index.html.twig', $params);
+		return $this->render('campagne/index.html.twig', $params);
 	}
 	
 	// *******************************************************************************************
@@ -92,8 +104,8 @@ class CampagneController extends AbstractController
 		}
 		
 		$em = $this->getDoctrine()->getManager();
-		$repoCampagne = $this->getDoctrine()->getRepository("EPLEElectionBundle:EleCampagne");
-		$repoTypeElection = $this->getDoctrine()->getRepository("EPLEElectionBundle:RefTypeElection");
+		$repoCampagne = $this->getDoctrine()->getRepository(EleCampagne::class);
+		$repoTypeElection = $this->getDoctrine()->getRepository(RefTypeElection::class);
 		$request = $this->get('request');
 		
 		$isClosed = false;
@@ -190,7 +202,7 @@ class CampagneController extends AbstractController
         		                             				             'invalid_message' => "La date de fin de validation n'est pas valide"));
 			
 			// On teste si il s'agit d'une élection de type parents d'élèves
-			$isTypeElectionParent = ($campagne->getTypeElection()->getId()==\App\Entity\RefTypeElection::ID_TYP_ELECT_PARENT);
+			$isTypeElectionParent = ($campagne->getTypeElection()->getId()== RefTypeElection::ID_TYP_ELECT_PARENT);
 			/* YME 013E SUPPRIME
 			if ($isTypeElectionParent)
 			{
@@ -252,8 +264,8 @@ class CampagneController extends AbstractController
 		
 		if ($request->getMethod() == 'POST' ) // Appel au controller suite au submit de la form
 		{
-			$form->bind($request);
-			if ($form->isValid()) {
+			$form->handleRequest($request);
+			if ($form->isSubmitted() && $form->isValid()) {
 				$campagneEnCours = $form->getData();
 				$em->persist($campagneEnCours);
 				$em->flush();
@@ -267,7 +279,7 @@ class CampagneController extends AbstractController
 		// Affichage de la page du formulaire (2 cas) :
 		// 1) Arrivée sur la page
 		// 2) Retour après erreur suite au submit
-		return $this->render('EPLEAdminBundle:Campagne:edit.html.twig', array("form"=>$form->createView(),
+		return $this->render('campagne/edit.html.twig', array("form"=>$form->createView(),
 				                                                              "isTypeElectionParent"=>$isTypeElectionParent,
 				                                                              "annee"=>$anneeDebutCampagne,
 				                                                              "isArchivee"=>$isArchivee,
@@ -290,11 +302,11 @@ class CampagneController extends AbstractController
 			throw new AccessDeniedException();
 		}
 		$em = $this->getDoctrine()->getManager();
-		$repoCampagne = $this->getDoctrine()->getRepository("EPLEElectionBundle:EleCampagne");
-		$repoConsolidation = $this->getDoctrine()->getRepository("EPLEElectionBundle:EleConsolidation");
-		$repoEleEtab = $this->getDoctrine()->getRepository("EPLEElectionBundle:EleEtablissement");
-		$repoElePart = $this->getDoctrine()->getRepository("EPLEElectionBundle:EleParticipation");
-		$repoRefEtab = $this->getDoctrine()->getRepository("EPLEElectionBundle:RefEtablissement");
+		$repoCampagne = $this->getDoctrine()->getRepository(EleCampagne::class);
+		$repoConsolidation = $this->getDoctrine()->getRepository(EleConsolidation::class);
+		$repoEleEtab = $this->getDoctrine()->getRepository(EleEtablissement::class);
+		$repoElePart = $this->getDoctrine()->getRepository(EleParticipation::class);
+		$repoRefEtab = $this->getDoctrine()->getRepository(RefEtablissement::class);
 
 		$campagne = $repoCampagne->find($campagneId);
 		
@@ -318,7 +330,7 @@ class CampagneController extends AbstractController
 				$anneeDebutCampagneEnCours = $campagne->getAnneeDebut();
 				
 				// Suppressions des résultats consolidés de plus de 10 ans
-				$purgeYearsCampagneArchiver = $this->container->getParameter("purge_years_campagne_archiver");
+				$purgeYearsCampagneArchiver = $this->getParameter("purge_years_campagne_archiver");
 				$anneeDebutCampagneASupprrimer = $anneeDebutCampagneEnCours - $purgeYearsCampagneArchiver;
 				// Récupération de la campagne à supprimer
 				

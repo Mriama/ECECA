@@ -1,0 +1,38 @@
+{% extends 'EPLEAdminBundle::layout.html.twig' %}
+
+{% block title %}{{ parent() }} - Liste des fédérations{% endblock %}
+
+{% block arianeComplements %}{{ parent() }}<li>Liste des fédérations</li>{% endblock %}
+
+{% block content %}
+<p>
+	Les fédérations syndicales regroupent différentes organisations pour les élections <abbr title="personnels d'enseignement et d'éducation">PEE</abbr> et 
+	<abbr title="personnels administratifs, sociaux et de santé et des agents territoriaux de l'éducation">ASS et ATE</abbr>.<br />
+	Pour une élection donnée, il sera possible d'intercaler des sous-totaux par fédération au niveau de l'affichage des résultats.
+</p>
+
+<p class="no-print"><a href="{{ path('EPLEAdminBundle_federation_ajouter') }}" class="ajouter">Ajouter une fédération</a></p>
+
+<table>
+	<tr>
+		<th scope="col">Nom</th>
+		<th scope="col" class="actions">Actions</th>
+	</tr>
+	{% for federation in federations %}
+		<tr>
+			<td>{% autoescape false %}{{ federation.libelle }}{% endautoescape %}</td>
+			<td class="actions">
+				<a href="{{ path('EPLEAdminBundle_federation_modifier', { 'federationId':federation.id }) }}"><img src="{{ asset('images/pictos/edit.png') }}" alt="Modifier" title="Modifier la fédération {{ federation.libelle }}" /></a>
+				<form action="{{ path('EPLEAdminBundle_federation_supprimer', { 'federationId':federation.id }) }}" method="post">
+					<input type="hidden" name="_method" value="DELETE" />
+					<input type="image" class="supprimer" alt="Supprimer" src="{{ asset('images/pictos/delete.png') }}" title="Supprimer la fédération {{ federation.libelle }}" />
+				</form>
+			</td>
+		</tr>
+	{% else %}
+		<tr>
+			<td colspan="2" class="warning">{{ mess_warning[002] }}</td>
+		</tr>
+	{% endfor %}
+</table>
+{% endblock %}

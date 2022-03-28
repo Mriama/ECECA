@@ -1,0 +1,377 @@
+<h4>Participation</h4>
+{% if campagne.typeElection.id == constant('\\EPLE\\ElectionBundle\\Entity\\RefTypeElection::ID_TYP_ELECT_PARENT') %}
+
+	{% if zone is defined and zone == false and elect is not empty and elect.indCarence == 0 %}
+		<table>
+			<tr>
+				<th scope="row">Modalité de vote</th>
+				<td>{% if participation is not empty %}{{ participation.modaliteVote }}{% else %}-{% endif %}</td>
+			</tr>
+		</table>
+	{% elseif zone is defined and zone == true and (elect is not empty or electPrec is not empty) %}
+		{% set totalModaVote = elect.nbEtabExprimes %}
+		{% set totalModaVotePrec = electPrec.nbEtabExprimes %}
+		<table>
+			<tr>
+				<th scope="col">&nbsp;</th>
+				<th scope="col">Modalité de vote</th>
+				<th scope="col">Rappel {{ campagne.anneeDebut-1 }} - {{ campagne.anneeFin-1 }}</th>
+				<th scope="col">Variation</th>
+			</tr>
+			<tr>
+				<th scope="row">Vote {{ constant('\\EPLE\\ElectionBundle\\Entity\\RefModaliteVote::LIBELLE_MODALITE_VOTE_URNE_CORRESPONDANCE') }}</th>
+				<td>
+					{% if participation is not empty and participation.consolidationVoteUrneCorrespondance is not null %}
+						{% if totalModaVote != 0 %}
+							{{ (participation.consolidationVoteUrneCorrespondance/totalModaVote * 100) | number_format(2, '.', ',') }}%
+						{% else %}
+							-
+						{% endif %}
+					{% else %}
+						-
+					{% endif %}
+				</td>
+				<td>
+					{% if participationPrec is not empty and participationPrec.consolidationVoteUrneCorrespondance is not null %}
+						{% if totalModaVotePrec != 0 %}
+							{{ (participationPrec.consolidationVoteUrneCorrespondance/totalModaVotePrec * 100) | number_format(2, '.', ',') }}%
+						{% else %}
+							-
+						{% endif %}
+					{% else %}
+						-
+					{% endif %}
+				</td>
+				<td>
+					{% if participation is not empty and participationPrec is not empty
+						and participation.consolidationVoteUrneCorrespondance is not null
+						and participationPrec.consolidationVoteUrneCorrespondance is not null
+						and totalModaVote != 0
+						and totalModaVotePrec != 0
+					%}
+						{{ ((participation.consolidationVoteUrneCorrespondance/totalModaVote * 100) - (participationPrec.consolidationVoteUrneCorrespondance/totalModaVotePrec * 100)) | number_format(2, '.', ',') }}%
+					{% else %}
+						-
+					{% endif %}
+				</td>
+			</tr>
+			<tr>
+				<th scope="row">Vote {{ constant('\\EPLE\\ElectionBundle\\Entity\\RefModaliteVote::LIBELLE_MODALITE_VOTE_CORRESPONDANCE') }}</th>
+				<td>
+					{% if participation is not empty and participation.consolidationVoteCorrespondance is not null %}
+						{% if totalModaVote != 0 %}
+							{{ (participation.consolidationVoteCorrespondance/totalModaVote * 100) | number_format(2, '.', ',') }}%
+						{% else %}
+							-
+						{% endif %}
+					{% else %}
+						-
+					{% endif %}
+				</td>
+				<td>
+					{% if participationPrec is not empty and participationPrec.consolidationVoteCorrespondance is not null %}
+						{% if totalModaVotePrec != 0 %}
+							{{ (participationPrec.consolidationVoteCorrespondance/totalModaVotePrec * 100) | number_format(2, '.', ',') }}%
+						{% else %}
+							-
+						{% endif %}
+					{% else %}
+						-
+					{% endif %}
+				</td>
+				<td>
+					{% if participation is not empty and participationPrec is not empty
+						and participation.consolidationVoteCorrespondance is not null
+						and participationPrec.consolidationVoteCorrespondance is not null
+						and totalModaVote != 0
+						and totalModaVotePrec != 0
+					%}
+						{{ ((participation.consolidationVoteCorrespondance/totalModaVote * 100) - (participationPrec.consolidationVoteCorrespondance/totalModaVotePrec * 100)) | number_format(2, '.', ',') }}%
+					{% else %}
+						-
+					{% endif %}
+				</td>
+			</tr>
+		</table>
+	{% endif %}
+
+{% endif %}
+
+<table>
+	{% if elect is not empty or electPrec is not empty %}
+		<tr>
+			<th scope="col">&nbsp;</th>
+			<th scope="col">Résultats bruts</th>
+			<th scope="col">Rappel {{ campagne.anneeDebut-1 }} - {{ campagne.anneeFin-1 }}</th>
+			<th scope="col">Variation</th>
+			{# 			{% if eclair %}#}
+			{# 			<th scope="col">dont Éclair</th>#}
+			{# 			<th scope="col">Rappel {{ campagne.anneeDebut-1 }} - {{ campagne.anneeFin-1 }}</th>#}
+			{# 			<th scope="col">Variation</th>#}
+			{# 			{% endif %}#}
+		</tr>
+		<tr>
+			<th scope="row">Nombre d'inscrits</th>
+			<td>{% if participation is not empty %}{{ participation.nbInscrits }}{% endif %}</td>
+			<td>{% if participationPrec is not empty %}
+					{% if hidePrecResult is defined and hidePrecResult == true %}
+						-
+					{% else %}
+						{{ participationPrec.nbInscrits }}
+					{% endif %}
+				{% endif %}
+			</td>
+			<td>{% if participation is not empty and participationPrec is not empty %}
+					{% if hidePrecResult is defined and hidePrecResult == true %}
+						-
+					{% else %}
+						{{ participation.nbInscrits - participationPrec.nbInscrits }}
+					{% endif %}
+				{% endif %}
+			</td>
+			{# 			{% if eclair %}#}
+			{# 					{% if participation is not empty %}#}
+			{# 						<td>{% if participation.nbInscrits != null %}{{ participation.nbInscrits }}{% endif %}</td>#}
+			{# 					{% else %}<td>&nbsp;</td>#}
+			{# 					{% endif %}#}
+
+			{# 				{% if participationPrec is not empty %}#}
+			{# 					<td>{% if participationPrec.nbInscrits != null %}{{ participationPrec.nbInscrits }}{% endif %}</td>#}
+			{# 					{% if participation is not empty %}#}
+			{# 						<td>{% if participation.nbInscrits != null and participationPrec.nbInscrits != null %}#}
+			{# 								{{ participation.nbInscrits - participationPrec.nbInscrits }}{% endif %}</td>#}
+			{# 					{% endif %}#}
+			{# 				{% endif %}#}
+			{# 			{% endif %}#}
+		</tr>
+		<tr>
+			<th scope="row">Nombre de votants</th>
+			<td>{% if participation is not empty %}{{ participation.nbVotants }}{% endif %}</td>
+			<td>{% if participationPrec is not empty %}
+					{% if hidePrecResult is defined and hidePrecResult == true %}
+						-
+					{% else %}
+						{{ participationPrec.nbVotants }}
+					{% endif %}
+				{% endif %}
+			</td>
+			<td>{% if participation is not empty and participationPrec is not empty %}
+					{% if hidePrecResult is defined and hidePrecResult == true %}
+						-
+					{% else %}
+						{{ participation.nbVotants - participationPrec.nbVotants }}
+					{% endif %}
+				{% endif %}
+			</td>
+			{# 			{% if eclair %}#}
+			{# 				{% if participation is not empty %}#}
+			{# 					<td>{% if participation.nbVotants != null %}{{ participation.nbVotants }}{% endif %}</td>#}
+			{# 					{% else %}<td>&nbsp;</td>#}
+			{# 				{% endif %}#}
+			{# 				{% if participationPrec is not empty %}#}
+			{# 					<td>{% if participationPrec.nbVotants != null %}{{ participationPrec.nbVotants }}{% endif %}</td>#}
+			{# 					{% if participation is not empty %}#}
+			{# 						<td>{% if participation.nbVotants != null and participationPrec.nbVotants != null %}#}
+			{# 								{{ participation.nbVotants - participationPrec.nbVotants }}{% endif %}</td>#}
+			{# 					{% endif %}#}
+			{# 				{% endif %}#}
+			{# 			{% endif %}#}
+		</tr>
+		<tr>
+			<th scope="row">Nombre de votes blancs ou nuls</th>
+			<td>{% if participation is not empty %}{{ participation.nbNulsBlancs }}{% endif %}</td>
+			<td>{% if participationPrec is not empty %}
+					{% if hidePrecResult is defined and hidePrecResult == true %}
+						-
+					{% else %}
+						{{ participationPrec.nbNulsBlancs }}
+					{% endif %}
+				{% endif %}
+			</td>
+			<td>{% if participation is not empty and participationPrec is not empty %}
+					{% if hidePrecResult is defined and hidePrecResult == true %}
+						-
+					{% else %}
+						{{ participation.nbNulsBlancs - participationPrec.nbNulsBlancs }}
+					{% endif %}
+				{% endif %}
+			</td>
+			{# 			{% if eclair %}#}
+			{# 				{% if participation is not empty %}#}
+			{# 					<td>{% if participation.nbNulsBlancs != null %}{{ participation.nbNulsBlancs }}{% endif %}</td>#}
+			{# 					{% else %}<td>&nbsp;</td>#}
+			{# 				{% endif %}#}
+			{# 				{% if participationPrec is not empty %}#}
+			{# 					<td>{% if participationPrec.nbNulsBlancs != null %}{{ participationPrec.nbNulsBlancs }}{% endif %}</td>#}
+			{# 					{% if participation is not empty %}#}
+			{# 						<td>{% if participation.nbNulsBlancs != null and participationPrec.nbNulsBlancs != null %}#}
+			{# 								{{ participation.nbNulsBlancs - participationPrec.nbNulsBlancs }}{% endif %}</td>#}
+			{# 					{% endif %}#}
+			{# 				{% endif %}#}
+			{# 			{% endif %}#}
+		</tr>
+		<tr>
+			<th scope="row">Nombre de suffrages exprimés</th>
+			<td>{% if participation is not empty %}{{ participation.nbExprimes }}{% endif %}</td>
+			<td>{% if participationPrec is not empty %}
+					{% if hidePrecResult is defined and hidePrecResult == true %}
+						-
+					{% else %}
+						{{ participationPrec.nbExprimes }}
+					{% endif %}
+				{% endif %}
+			</td>
+			<td>{% if participation is not empty and participationPrec is not empty %}
+					{% if hidePrecResult is defined and hidePrecResult == true %}
+						-
+					{% else %}
+						{{ participation.nbExprimes - participationPrec.nbExprimes }}
+					{% endif %}
+				{% endif %}
+			</td>
+			{# 			{% if eclair %}#}
+			{# 				{% if participation is not empty %}#}
+			{# 					<td>{% if participation.nbExprimes != null %}{{ participation.nbExprimes }}{% endif %}</td>#}
+			{# 					{% else %}<td>&nbsp;</td>#}
+			{# 				{% endif %}#}
+			{# 				{% if participationPrec is not empty %}#}
+			{# 					<td>{% if participationPrec.nbExprimes != null %}{{ participationPrec.nbExprimes }}{% endif %}</td>#}
+			{# 					{% if participation is not empty %}#}
+			{# 						<td>{% if participation.nbExprimes != null and participationPrec.nbExprimes != null %}#}
+			{# 								{{ participation.nbExprimes - participationPrec.nbExprimes }}{% endif %}</td>#}
+			{# 					{% endif %}#}
+			{# 				{% endif %}#}
+			{# 			{% endif %}#}
+		</tr>
+		<tr>
+			<th scope="row">Taux de participation</th>
+			<td>{% if participation is not empty %}{{ participation.taux|number_format(2, '.', ',') }}%{% endif %}</td>
+			<td>{% if participationPrec is not empty %}
+					{% if hidePrecResult is defined and hidePrecResult == true %}
+						-
+					{% else %}
+						{{ participationPrec.taux|number_format(2, '.', ',') }}%{% endif %}
+				{% endif %}
+			</td>
+			<td>{% if participation is not empty and participationPrec is not empty %}
+					{% if hidePrecResult is defined and hidePrecResult == true %}
+						-
+					{% else %}
+						{{ (( participation.taux|number_format(2, '.', ',') ) -  ( participationPrec.taux|number_format(2, '.', ',') ) )|number_format(2, '.', ',')  }}%{% endif %}
+				{% endif %}
+			</td>
+			{# 			{% if eclair %}#}
+			{# 				{% if participation is not empty %}#}
+			{# 					<td>{% if participation.taux != null %}{{ participation.taux|number_format(2, '.', ',') }}%{% endif %}</td>#}
+			{# 					{% else %}<td>&nbsp;</td>#}
+			{# 				{% endif %}#}
+			{# 				{% if participationPrec is not empty %}#}
+			{# 					<td>{% if participationPrec.taux != null %}{{ participationPrec.taux|number_format(2, '.', ',') }}%{% endif %}</td>#}
+			{# 					{% if participation is not empty %}#}
+			{# 						<td>{% if participation.taux != null and participationPrec.taux != null %}#}
+			{# 								{{ participation.taux|number_format(2, '.', ',') - participationPrec.taux|number_format(2, '.', ',') }}%{% endif %}</td>#}
+			{# 					{% endif %}#}
+			{# 				{% endif %}#}
+			{# 			{% endif %}#}
+		</tr>
+	{% else%}
+		<tr><td colspan="6" class="warning">Aucun détail sur la participation possible pour {% if app.session.get('select_etablissement') is not empty %}cet établissement{% else %}cette zone{% endif %}</td></tr>
+	{% endif %}
+</table>
+
+<h4>Résultats</h4>
+<table>
+	{% if elect is not empty or  electPrec is not empty %}
+		<tr>
+			<th scope="col">&nbsp;</th>
+			<th scope="col">Résultats bruts</th>
+			<th scope="col">Rappel {{ campagne.anneeDebut-1 }} - {{ campagne.anneeFin-1 }}</th>
+			<th scope="col">Variation</th>
+		</tr>
+		<tr>
+			<th scope="row">Nombre de sièges à pourvoir</th>
+			<td>{% if participation is not empty %}{{ participation.nbSiegesPourvoir }}{% endif %}</td>
+			<td>{% if participationPrec is not empty %}
+					{% if hidePrecResult is defined and hidePrecResult == true %}
+						-
+					{% else %}
+						{{ participationPrec.nbSiegesPourvoir }}
+					{% endif %}
+				{% endif %}
+			</td>
+			<td>{% if participation is not empty and participationPrec is not empty %}
+					{% if hidePrecResult is defined and hidePrecResult == true %}
+						-
+					{% else %}
+						{{ participation.nbSiegesPourvoir - participationPrec.nbSiegesPourvoir }}
+					{% endif %}
+				{% endif %}
+			</td>
+		</tr>
+		<tr>
+			<th scope="row">Nombre de sièges pourvus</th>
+			<td>{% if participation is not empty %}{{ participation.nbSiegesPourvus }}{% endif %}</td>
+			<td>{% if participationPrec is not empty %}
+					{% if hidePrecResult is defined and hidePrecResult == true %}
+						-
+					{% else %}
+						{{ participationPrec.nbSiegesPourvus }}
+					{% endif %}
+				{% endif %}
+			</td>
+			<td>{% if participation is not empty and participationPrec is not empty %}
+					{% if hidePrecResult is defined and hidePrecResult == true %}
+						-
+					{% else %}
+						{{ participation.nbSiegesPourvus - participationPrec.nbSiegesPourvus }}
+					{% endif %}
+				{% endif %}
+			</td>
+		</tr>
+		<tr>
+			<th scope="row">Pourcentage de sièges pourvus</th>
+			<td>{% if participation is not empty %}{{ participation.tauxSieges|number_format(2, '.', ',') }}%{% endif %}</td>
+			<td>{% if participationPrec is not empty %}
+					{% if hidePrecResult is defined and hidePrecResult == true %}
+						-
+					{% else %}
+						{{ participationPrec.tauxSieges|number_format(2, '.', ',') }}%
+					{% endif %}
+				{% endif %}
+			</td>
+			<td>{% if participation is not empty and participationPrec is not empty %}
+					{% if hidePrecResult is defined and hidePrecResult == true %}
+						-
+					{% else %}
+						{{ ( (participation.tauxSieges|number_format(2, '.', ',')) - (participationPrec.tauxSieges|number_format(2, '.', ',')) ) |number_format(2, '.', ',') }}%
+					{% endif %}
+				{% endif %}
+			</td>
+		</tr>
+
+		{% if electEtab is defined %}
+			<tr>
+				<th scope="row">Quotient électoral</th>
+				<td>{% if participation is not empty %}{{ participation.quotient|number_format(2, '.', ',') }}{% endif %}</td>
+				<td>{% if participationPrec is not empty %}
+						{% if hidePrecResult is defined and hidePrecResult == true %}
+							-
+						{% else %}
+							{{ participationPrec.quotient|number_format(2, '.', ',') }}
+						{% endif %}
+					{% endif %}
+				</td>
+				<td>{% if participation is not empty and participationPrec is not empty %}
+						{% if hidePrecResult is defined and hidePrecResult == true %}
+							-
+						{% else %}
+							{{ ( (participation.quotient|number_format(2, '.', ',')) -  (participationPrec.quotient|number_format(2, '.', ',')) )|number_format(2, '.', ',') }}
+						{% endif %}
+					{% endif %}
+				</td>
+			</tr>
+		{% endif %}
+	{% else%}
+		<tr><td colspan="3" class="warning">Aucun résultat détaillé pour {% if app.session.get('select_etablissement') is not empty %}cet établissement{% else %}cette zone{% endif %}</td></tr>
+	{% endif %}
+</table>

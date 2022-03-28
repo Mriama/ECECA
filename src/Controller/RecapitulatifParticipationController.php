@@ -1,47 +1,52 @@
 <?php
 namespace App\Controller;
 
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\Security\Core\Exception\AccessDeniedException;
-use Symfony\Component\HttpFoundation\Response;
-use App\Entity\ElePrioritaire;
-use App\Entity\EleConsolidation;
-use App\Entity\EleParticipation;
-use App\Entity\EleEtablissement;
+use App\Entity\EleCampagne;
+use App\Utils\EpleUtils;
+use App\Entity\RefProfil;
 use App\Entity\EleResultat;
 use App\Entity\RefAcademie;
+use App\Entity\ElePrioritaire;
 use App\Entity\RefDepartement;
-use App\Entity\RefEtablissement;
 use App\Entity\RefTypeElection;
-use App\Entity\RefTypeEtablissement;
-use App\Entity\RefProfil;
-use App\Utils\EpleUtils;
 use App\Utils\EcecaExportUtils;
+use App\Entity\EleConsolidation;
+use App\Entity\EleEtablissement;
+use App\Entity\EleParticipation;
+use App\Entity\RefEtablissement;
+use App\Entity\RefTypeEtablissement;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use App\Form\RecapitulatifParticipationEtabType;
 use App\Model\RecapitulatifParticipationEtabTypeModel;
+use Symfony\Component\Routing\Annotation\Route;
+use App\Controller\BaseController;
+use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
-class RecapitulatifParticipationController extends AbstractController
+class RecapitulatifParticipationController extends BaseController
 {
 
-    public function indexAction(\Symfony\Component\HttpFoundation\Request $request, $codeUrlTypeElect)
+    /**
+    * @Route("/recapitulatifParticipation/{codeUrlTypeElect}", name="recapitulatifParticipation")
+    */
+    public function indexAction(Request $request, $codeUrlTypeElect)
     {
         $em = $this->getDoctrine()->getManager();
+        $user = $this->getUser();
         // reset session
         $request->getSession()->set('recap_part_campagne_annee_deb', null);
         $request->getSession()->set('recap_part_niveau', 'departement');
         $request->getSession()->set('recap_part_type_etab', null);
 
-        if (false === $this->get('security.context')->isGranted('ROLE_STATS_TAUX_PART')) {
+        if (false === $this->get('security.authorization_checker')->isGranted('ROLE_STATS_TAUX_PART')) {
             throw new AccessDeniedException();
         }
-        $user = $this->get('security.context')
-            ->getToken()
-            ->getUser();
+        $user = $this->getUser();
 
         $academies = $user->getPerimetre()->getAcademies();
         $params = $this->getParametresStatistiques($request, $codeUrlTypeElect, $user);
 
-        return $this->render('EPLEElectionBundle:RecapitulatifParticipation:indexRecapitulatifParticipation.html.twig', $params);
+        return $this->render('recapitulatifParticipation/indexRecapitulatifParticipation.html.twig', $params);
     }
 
     private function getParametresStatistiques($request, $codeUrlTypeElect, $user)
@@ -58,7 +63,7 @@ class RecapitulatifParticipationController extends AbstractController
         /**
          * **** Récupération du type d'election *****
          */
-        $typeElection = $em->getRepository('EPLEElectionBundle:RefTypeElection')->find(RefTypeElection::getIdRefTypeElectionByCodeUrl($codeUrlTypeElect));
+        $typeElection = $em->getRepository(RefTypeElection::class)->find(RefTypeElection::getIdRefTypeElectionByCodeUrl($codeUrlTypeElect));
         if (empty($typeElection)) {
             throw $this->createNotFoundException('Le type d\'élection n\'a pas été trouvé.');
         }
@@ -66,10 +71,10 @@ class RecapitulatifParticipationController extends AbstractController
 
         $cze_current = new RecapitulatifParticipationEtabTypeModel($typeElection);
 
-        $form = $this->createForm(new RecapitulatifParticipationEtabType($user), $cze_current);
+        $form = $this->createForm(RecapitulatifParticipationEtabType::class, $cze_current, ['user'=>$user]);
         if ($request->getMethod() == 'POST') {
-            $form->bind($request);
-            if ($form->isValid()) {
+            $form->handleRequest($request);
+            if ($form->isSubmitted() && $form->isValid()) {
 
                 $options_recherche = $form->getData(); /* "options_recherche" : un objet "RecapitulatifPaticipationEtabTypeModel",
                                                         * contenant les données de recherche suivantes: 
@@ -96,7 +101,7 @@ class RecapitulatifParticipationController extends AbstractController
         } else {
             $campagneAnneeDeb = $request->getSession()->get('recap_part_campagne_annee_deb');
             $niveau = $request->getSession()->get('recap_part_niveau');
-            $typeEtab = $em->getRepository('EPLEElectionBundle:RefTypeEtablissement')->find($request->getSession()->get('recap_part_type_etab'));
+            $typeEtab = $em->getRepository(RefTypeEtablissement::class)->find($request->getSession()->get('recap_part_type_etab'));
         }
 
         /**
@@ -104,9 +109,9 @@ class RecapitulatifParticipationController extends AbstractController
          */
 
         if ($campagneAnneeDeb == null) {
-            $campagne = $em->getRepository('EPLEElectionBundle:EleCampagne')->getLastCampagne($typeElection);
+            $campagne = $em->getRepository(EleCampagne::class)->getLastCampagne($typeElection);
         } else {
-            $listeCampagne = $em->getRepository('EPLEElectionBundle:EleCampagne')->getCampagneParTypeElectionAnneeDebut($typeElection, $campagneAnneeDeb);
+            $listeCampagne = $em->getRepository(EleCampagne::class)->getCampagneParTypeElectionAnneeDebut($typeElection, $campagneAnneeDeb);
             $campagne = (! empty($listeCampagne)) ? $listeCampagne[0] : null;
         }
 
@@ -116,16 +121,16 @@ class RecapitulatifParticipationController extends AbstractController
 
         $params['campagne'] = $campagne;
 
-        $listeCampagnePrec = $em->getRepository('EPLEElectionBundle:EleCampagne')->getCampagneParTypeElectionAnneeDebut($typeElection, $campagne->getAnneeDebut() - 1);
+        $listeCampagnePrec = $em->getRepository(EleCampagne::class)->getCampagneParTypeElectionAnneeDebut($typeElection, $campagne->getAnneeDebut() - 1);
         $campagnePrec = (! empty($listeCampagnePrec)) ? $listeCampagnePrec[0] : null;
         $params['campagnePrec'] = $campagnePrec;
 
         // récuperation de la liste des informations à afficher      findConsolidationByNiveauCampagne   
-        // $listParticipation = $em->getRepository('EPLEElectionBundle:EleConsolidation')->findConsolidationByNiveauCampagne($campagne->getId(), $campagnePrec->getId(), $niveau, $typeEtab, $user->getPerimetre());
-        $listParticipation = $em->getRepository('EPLEElectionBundle:EleEtablissement')->findParticipationByNiveauCampagne($campagne->getId(), $campagnePrec->getId(), $niveau, $typeEtab, $user->getPerimetre(), $user, $campagneAnneeDeb);
+        // $listParticipation = $em->getRepository(EleConsolidation::class)->findConsolidationByNiveauCampagne($campagne->getId(), $campagnePrec->getId(), $niveau, $typeEtab, $user->getPerimetre());
+        $listParticipation = $em->getRepository(EleEtablissement::class)->findParticipationByNiveauCampagne($campagne->getId(), $campagnePrec->getId(), $niveau, $typeEtab, $user->getPerimetre(), $user, $campagneAnneeDeb);
 
         ///Anomalie 0220201 ($sumEtabList commented)
-        //$sumEtabList = $em->getRepository('EPLEElectionBundle:EleConsolidation')->findListEtabTotalByNiveauCampagne($campagne->getId(), $niveau, $typeEtab, $user->getPerimetre());
+        //$sumEtabList = $em->getRepository(EleConsolidation::class)->findListEtabTotalByNiveauCampagne($campagne->getId(), $niveau, $typeEtab, $user->getPerimetre());
         //TODO : Revoir le code pour cette partie  pour optimiser la performance
 
         $listEtabConso = array();
@@ -159,16 +164,16 @@ class RecapitulatifParticipationController extends AbstractController
                 // Mantis 0123179 récupération du nombre total d'établissements
                 $zone = null;
                 if ($niveau == 'departement') {
-                    $zone = $em->getRepository('EPLEElectionBundle:RefDepartement')->find($line['id']);
+                    $zone = $em->getRepository(RefDepartement::class)->find($line['id']);
                 } else {
                     // niveau = academie
-                    $zone = $em->getRepository('EPLEElectionBundle:RefAcademie')->find($line['id']);
+                    $zone = $em->getRepository(RefAcademie::class)->find($line['id']);
                 }
 
                 //Anomalie 0220201
                 // on utilise plus $sumEtabList
                 // nombre total des établissements selon la zone, type d'elec ,type d'étab
-                $nbEtabTotal = $em->getRepository('EPLEElectionBundle:RefEtablissement')->getNbEtabParTypeEtablissementZoneTypeElection($typeEtab, $zone, $typeElection);
+                $nbEtabTotal = $em->getRepository(RefEtablissement::class)->getNbEtabParTypeEtablissementZoneTypeElection($typeEtab, $zone, $typeElection);
 
                 if ($zoneCourante != $line['libelle']) {
                     // Nouvelle zone
@@ -262,9 +267,9 @@ class RecapitulatifParticipationController extends AbstractController
             $campagneDebut = new \DateTime($campagneAnneeDeb . "-01-01");
             foreach ($academies as $academie) {
                 if($academie != "TOTAL") {
-                    $acadObj = $em->getRepository('EPLEElectionBundle:RefAcademie')->findOneBy(array("libelle" => $academie));
+                    $acadObj = $em->getRepository(RefAcademie::class)->findOneBy(array("libelle" => $academie));
                     if ($acadObj->getDateDesactivation() <= $campagneDebut && $acadObj->getAcademieFusion() != null) {
-                        $acadFusion = $em->getRepository('EPLEElectionBundle:RefAcademie')->find($acadObj->getAcademieFusion()->getCode());
+                        $acadFusion = $em->getRepository(RefAcademie::class)->find($acadObj->getAcademieFusion()->getCode());
                         if (isset($newListConso[$acadFusion->getLibelle()]) && !empty($newListConso[$acadFusion->getLibelle()])) {
                             //Merge des données rattachées à la meme académie de fusion
                             $newListConso[$acadFusion->getLibelle()] = $this->mergeStatParticipation($newListConso[$acadFusion->getLibelle()], $listEtabConso[$acadObj->getLibelle()]);
@@ -291,10 +296,10 @@ class RecapitulatifParticipationController extends AbstractController
                     $totauxEtabTotaux -= $newListConso[$libelle]["etabTotal"]; //Recalcul du total sur la ligne "TOTAL"
 
                     //Récupération des "enfants" de l'académie fusionné pour faire la somme des établissement
-                    $fusionChild = $em->getRepository('EPLEElectionBundle:RefAcademie')->getchildnewAcademies($code);
+                    $fusionChild = $em->getRepository(RefAcademie::class)->getchildnewAcademies($code);
                     foreach ($fusionChild as $child) {
                         //Pour chaque enfant, on récupère le nombre total d'établissement
-                        $tmp = $em->getRepository('EPLEElectionBundle:RefEtablissement')->getNbEtabParTypeEtablissementZoneTypeElection($typeEtab, $child, $typeElection);
+                        $tmp = $em->getRepository(RefEtablissement::class)->getNbEtabParTypeEtablissementZoneTypeElection($typeEtab, $child, $typeElection);
                         $totalEtab += $tmp;
                     }
                     $newListConso[$libelle]["etabTotal"] = $totalEtab;
@@ -316,22 +321,20 @@ class RecapitulatifParticipationController extends AbstractController
         $params['niveau'] = $niveau;
         $params['typeEtab'] = $typeEtab;
         $params['form'] = $form->createView();
-        $params['warning'] = $this->container->getParameter('warning');
+        $params['warning'] = $this->getParameter('warning');
 
         return $params;
     }
 
     /**
      *
-     * @param \Symfony\Component\HttpFoundation\Request $request
+     * @param Request $request
      * @param unknown $codeUrlTypeElect
      */
-    public function exportXLSAction(\Symfony\Component\HttpFoundation\Request $request, $codeUrlTypeElect)
+    public function exportXLSAction(Request $request, $codeUrlTypeElect)
     {
         $em = $this->getDoctrine()->getManager();
-        $user = $this->get('security.context')
-            ->getToken()
-            ->getUser();
+        $user = $this->getUser();
         $params = $this->getParametresStatistiques($request, $codeUrlTypeElect, $user);
 
         // Récupération des paramètres

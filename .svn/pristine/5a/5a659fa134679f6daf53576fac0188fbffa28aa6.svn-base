@@ -1,0 +1,119 @@
+{% extends 'layout.html.twig' %}
+
+{% block js %}{{ parent() }}
+	<script src="{{ asset('js/etab.js') }}"></script>
+	<script src="{{ asset('js/consultationStatistiques.js') }}"></script>
+{% endblock %}
+
+{% block title %}{{ parent() }} - Archives
+	{% if electEtablissement is defined %} d'un établissement
+	{% elseif nationale is defined %} nationales
+		{# 	{% elseif circons is defined %} circonscription#}
+	{% else %} par {{ (dept is defined) ? "département" : "academie" }}{% endif %}
+{% endblock %}
+
+{% block arianeComplements %}{{ parent() }}<li>Archives
+	{% if electEtablissement is defined %} d'un établissement
+	{% elseif nationale is defined %} nationales
+		{# 	{% elseif circons is defined %} circonscription#}
+	{% else %} par {{ (dept is defined) ? "département" : "académie" }}{% endif %}
+	</li>{% endblock %}
+
+{% block contentPage %}
+
+	<h3>{{ typeElect.libelle }} - Archives
+		{% if electEtablissement is defined %} de l'établissement {{ etablissement.libelle }} ({{ etablissement.uai }})
+		{% elseif nationale is defined %} nationales
+			{# 	{% elseif circons is defined %} circonscription#}
+		{% else %} par {{ (dept is defined) ? "département" : "académie" }}{% endif %}
+	</h3>
+
+	{% include 'archives/alerte.html.twig' %}
+
+	<p>Vous avez la possibilité de consulter l'ensemble des archives pour toutes les campagnes.<br />
+		Il est possible de consulter les archives sur toute la France, par académie et par département.
+		Il est également possible de consulter les archives pour un établissement en particulier.
+	</p>
+
+	{% if form is defined %}
+		{% include 'archives/formulaireStatistiques.html.twig' with { 'form' : form, 'typeElect' : typeElect } %}
+	{% endif %}
+
+	{% if electEtablissement is defined %}
+		{# Zone = Etablissement #}
+		{% include "archives/tableau_description_etab.html.twig" %}
+		{% if electEtablissement is not null or electEtablissementPrec is not null %}
+			{% include "archives/tableau_participation.html.twig" with {
+				'zone' :  false,
+				'hidePrecResult': (hidePrecResult is defined) ? hidePrecResult : false,
+				'campagne' : (campagne is defined) ? campagne : null,
+				'elect' : (electEtablissement is defined) ? electEtablissement : null,
+				'electPrec' : (electEtablissementPrec is defined) ? electEtablissementPrec : null,
+				'electEtab' : (electEtablissement is defined) ? true : false,
+				'participation' : (electEtablissement.participation is defined) ? electEtablissement.participation : null,
+				'participationPrec' : (electEtablissementPrec.participation is defined) ? electEtablissementPrec.participation : null,
+				'eclair' : (electEtablissement.typeEtablissement.hasEclair is defined
+				and typeElect.codeUrlById == constant('\\App\\Entity\\RefTypeElection::CODE_URL_PARENT')
+				) ? true : false } %}
+			{% include "archives/tableau_resultat.html.twig" with {
+				'elect' : electEtablissement,
+				'totalDetails' : totalSiegeElect,
+				'totalDetailsPrec' : totalSiegeElectPrec,
+				'hidePrecResult': (hidePrecResult is defined) ? hidePrecResult : false,
+				'electPrec' : electEtablissementPrec } %}
+		{% else %}
+			<p class="message erreur">{{ warning[002] }}</p>
+		{% endif %}
+	{% else %}
+		{# Zone = Académie/Département/Nationale/Circonscription #}
+		{% if nationale is not defined%}
+			<h3>{% autoescape false %}
+					{{ (dept is defined) ? "Département <span>: "~dept.libelle~"</span>" : "Académie <span>: "~aca.libelle~"</span>" }}
+				{% endautoescape %}</h3>
+			{# 	{% else %}#}
+			{# 			{% if  circons is defined %}#}
+			{# 				<h3> {{ "Circonscription : "~circons }} </h3>#}
+			{# 			{% endif %}#}
+		{% endif %}
+		{% if electZone.participation is not null or electZonePrec.participation is not null %}
+			{% include "archives/tableau_participation.html.twig" with {
+				'zone' :  true,
+				'hidePrecResult': (hidePrecResult is defined) ? hidePrecResult : false,
+				'campagne' : (campagne is defined) ? campagne : null,
+				'elect' : (electZone is defined) ? electZone : null,
+				'electPrec' : (electZonePrec is defined) ? electZonePrec : null,
+				'participation' : (electZone.participation is defined) ? electZone.participation : null,
+				'participationPrec' : (electZonePrec.participation is defined) ? electZonePrec.participation : null,
+				'eclair' : (electZone.typeEtablissement.hasEclair is defined
+				and typeElect.codeUrlById == constant('\\App\\Entity\\RefTypeElection::CODE_URL_PARENT')
+				) ? true : false } %}
+			{% include "archives/tableau_resultat.html.twig" with {
+				'elect' : electZone,
+				'totalDetails' : totalSiegeElect,
+				'totalDetailsPrec' : totalSiegeElectPrec,
+				'hidePrecResult': (hidePrecResult is defined) ? hidePrecResult : false,
+				'electPrec' : electZonePrec } %}
+		{% else %}
+			<p class="message erreur">{{ warning[002] }}</p>
+		{% endif %}
+	{% endif %}
+	<div class="pageactions">
+		<a href="{{ path('EPLEElectionBundle_homepage') }}" class="retour">Retour</a>
+		{# 	<a class="pdf" href="{{ path('EPLEElectionBundle_statistiques_export_PDF', { 'codeUrlTypeElect': typeElect.codeUrlById }) }}">Export PDF</a>#}
+		{# 	{% if app.session.get('select_departement') != '' and app.session.get('select_type_etablissement') != '' and app.session.get('select_choix_etab') == '' %}#}
+		{# 		<a class="pdf" href="{{ path('EPLEElectionBundle_statistiques_export_PDF_complet', { 'codeUrlTypeElect': typeElect.codeUrlById }) }}">Export PDF (Complet)</a>#}
+		{# 	{% endif %}	#}
+		{% if electEtablissement is defined %}
+			{% if electEtablissement != null%}
+				<a class="xls" href="{{ path('EPLEElectionBundle_archives_export_XLS', { 'codeUrlTypeElect': typeElect.codeUrlById }) }}">Export XLS</a>
+			{% endif %}
+		{% endif %}
+		{% if electEtablissement is not defined and listeResultat != null %}
+			<a class="xls" href="{{ path('EPLEElectionBundle_archives_export_XLS', { 'codeUrlTypeElect': typeElect.codeUrlById }) }}">Export XLS</a>
+			{# 	{% if app.session.get('select_departement') != '' and app.session.get('select_type_etablissement') != '' and app.session.get('select_choix_etab') == '' %}#}
+			{# 		 <a class="xls" href="{{ path('EPLEElectionBundle_archives_export_XLS_complet', { 'codeUrlTypeElect': typeElect.codeUrlById }) }}">Export XLS (Complet)</a>#}
+			{# 	{% endif %}	#}
+		{% endif %}
+
+	</div>
+{% endblock %}

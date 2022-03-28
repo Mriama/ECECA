@@ -1,0 +1,169 @@
+<form id="form_edit_resultats" action="
+	{% if sousTypeElect is defined %}
+		{{ path('EPLEElectionBundle_saisie_resultats_etab', { 'etablissementUai': etablissement.uai, 'codeUrlTypeElect': sousTypeElect.getCodeUrlById(), 'retourLstRech': retourLstRech }) }}
+	{% else %}
+		{{ path('EPLEElectionBundle_saisie_resultats_etab', { 'etablissementUai': etablissement.uai, 'codeUrlTypeElect': typeElect.getCodeUrlById(), 'retourLstRech': retourLstRech  }) }}
+	{% endif %}
+	" method="post" accept-charset="UTF-8">
+
+	<h4>Participation</h4>
+	<p class="note">Un astérisque * marque un champ obligatoire</p>
+
+	{# Election Parent 1er et 2nd degré uniquement #}
+	{% if typeElect is defined and typeElect.id == constant('\\EPLE\\ElectionBundle\\Entity\\RefTypeElection::ID_TYP_ELECT_PARENT') %}
+		<div id="modalite_vote">
+			{{ form_errors(form) }}
+			<div>{{ form_label(form['participation'].modaliteVote) }}{{ form_widget(form['participation'].modaliteVote) }}</div>
+		</div>
+	{% endif %}
+
+	<div id="form_participation">
+		{{ form_errors(form) }}
+		<div>{{ form_label(form['participation'].nbInscrits) }}{{ form_widget(form['participation'].nbInscrits) }}</div>
+		<div>{{ form_label(form['participation'].nbVotants) }}{{ form_widget(form['participation'].nbVotants) }}</div>
+		<div>{{ form_label(form['participation'].nbNulsBlancs) }}{{ form_widget(form['participation'].nbNulsBlancs) }}</div>
+		<div>{{ form_label(form['participation'].nbExprimes) }}{{ form_widget(form['participation'].nbExprimes) }}</div>
+		<div>{{ form_label(form['participation'].nbSiegesPourvoir) }}{{ form_widget(form['participation'].nbSiegesPourvoir) }}</div>
+	</div>
+
+	<table>
+		<tr>
+			<th scope="row">Taux de participation</th>
+			<td id="id_taux"></td>
+		</tr>
+		<tr>
+			<th scope="row">Quotient électoral</th>
+			<td id="id_quotient"></td>
+		</tr>
+	</table>
+	<div id="titre_saisie_resultats">
+		<h4>Répartition détaillée des sièges</h4>
+	</div>
+	<table id="saisie_resultats">
+		<tr>
+			<th scope="col">Liste</th>
+			<th scope="col">Nombre de candidats<br />titulaires</th>
+			<th scope="col">Nombre de suffrages</th>
+			<th scope="col">Sièges attribués<br />au quotient et au plus fort reste</th>
+			<th scope="col">Sièges attribués<br /><span class="txtInseparable">Plus âgé</span></th>
+			<th scope="col">Total des sièges</th>
+		</tr>
+
+		{% for resultat in form.resultats %}
+			<tr id="ligne_{{ loop.index0 }}">
+				<td>
+					{{ eleEtablissement.resultats[loop.index0].organisation.libelle }}
+					{% if  eleEtablissement.resultats[loop.index0].organisation.detaillee %}
+						<img class="ajouter"
+							 title="Ajouter une liste détaillée"
+							 alt="+"
+							 onClick="addDetail('{{ loop.index0 }}','{{ eleEtablissement.resultats[loop.index0].organisation.id }}','{{ asset("images/pictos/delete.png") }}');"
+							 src="{{ asset('images/pictos/add.png') }}" />
+					{% endif %}
+				</td>
+				<td>{{ form_widget(resultat.nbCandidats, { 'attr': {'class': 'cdt_tit'}}) }}</td>
+				<td>{{ form_widget(resultat.nbVoix) }}</td>
+				<td>{{ form_widget(resultat.nbSieges) }}</td>
+				<td>{{ form_widget(resultat.nbSiegesSort) }}</td>
+				<td><input type="text" value="" id="total_{{ loop.index0 }}" /></td>
+			</tr>
+			{# Placer ici les résultats détaillés #}
+			{% set i = 0 %}
+			{% for resultatDetaille in form.resultatsDetailles %}
+				{% if eleEtablissement.resultats[loop.parent.loop.index0].organisation.detaillee and eleEtablissement.resultatsDetailles[loop.index0].organisation.id == eleEtablissement.resultats[loop.parent.loop.index0].organisation.id %}
+					{% set id = 'EleEtablissementType_resultatsDetailles_' ~ loop.parent.loop.index0 ~ '_' ~ i %}
+					<tr id="ligne_{{ loop.parent.loop.index0 }}_{{ i }}">
+						<td>
+							{{ form_widget(resultatDetaille.organisation) }}
+							<img class="retirer" title="Retirer la liste détaillée" alt="X"
+								 onClick="removeDetail($(this).closest('tr').attr('id'));"
+								 src="{{ asset('images/pictos/delete.png') }}"
+							/>
+							{{ form_widget(resultatDetaille.libelle, {'id' : id ~ '_libelle', 'attr': {'class': 'libelleDetail'}}) }}
+						</td>
+						<td>{{ form_widget(resultatDetaille.nbCandidats, {'id' : id ~ '_nbCandidats'}) }}</td>
+						<td>{{ form_widget(resultatDetaille.nbVoix, {'id' : id ~ '_nbVoix'}) }}</td>
+						<td>{{ form_widget(resultatDetaille.nbSieges, {'id' : id ~ '_nbSieges'}) }}</td>
+						<td>{{ form_widget(resultatDetaille.nbSiegesSort, {'id' : id ~ '_nbSiegesSort'}) }}</td>
+						<td><input type="text" value="" id="total_{{ loop.parent.loop.index0 }}_{{ i }}" /></td>
+					</tr>
+					{% set i = i+1 %}
+				{% endif %}
+			{% endfor %}
+		{% endfor %}
+		<tr id="somme" class="total">
+			<td>TOTAL TOUTES LISTES</td>
+			<td id=nbTotalCandidatsTitulaires></td>
+			<td id="nbVoixDistribues" colspan="3"></td>
+			<td id="nbSiegesDistribues"></td>
+		</tr>
+	</table>
+
+	<div id="detailNbSort">
+		<div>{{ form_label(form['participation'].nbSiegesPourvus) }}{{ form_widget(form['participation'].nbSiegesPourvus) }}</div>
+		<div><label>Nombre de sièges à répartir</label><input id='nb_sieges_au_sort' disabled /></div>
+	</div>
+	<div id="formRest" style="display:none;">
+		{{ form_rest(form) }}
+	</div>
+
+	<p class="note">Les détails des listes ne seront visibles dans le PV qu'une fois les résultats enregistrés</p>
+	<input type="hidden" value="" id="quotient_electoral" />
+	<input type="hidden" value="{{ nb_organisation }}" id="nb_organisation" />
+	<input type="hidden" value="{{ nb_resultats_detailles }}" id="nb_resultats_detailles" />
+	<input type="hidden" value="" id="tirage_au_sort" />
+	<input type="hidden" value="{{ controle_saisie }}" id="controle_saisie" />
+
+	<div class="boutons">
+		{% if accesLeveeControlesSaisie is defined and controle_saisie == true %}
+			<input type="button" id="forceSaisie" value="Lever les contrôles de saisie" title="Lever les contrôles de saisie" />
+		{% endif %}
+		<!-- En cas de levée de contrôle (clic sur le bouton "Lever les contrôles de saisie"), ne plus afficher le bouton de calcul de répartition -->
+		<!-- 013E bouton Calcul de la répartition -->
+		<input type="submit" id="boutonCalculRepartition" value="Calcul de la répartition" title="Calcul de la répartition" />
+		<input type="submit" id="enregistrerDonnees" value="Enregistrer les données" title="Enregistrer les données" />
+	</div>
+</form>
+
+<script type="text/javascript">
+	var getMessageSiegesNonPourvus = "{{ confirmDeficit }}".replace(/&#039;/g,"\'");
+	var getMessageCandidatTitulaire = "{{ msgCandidatTitulaire }}".replace(/&#039;/g,"\'");
+	$(document).ready(function() {
+
+		// Traitements sur les organisations détaillées
+		//desactiveOrganisationsDetaillees(true);
+		// 014E Griser le bouton enregistrer à l arrivé sur la page de saisie
+		disabledButtonEnregistrer();
+		setParticipationModifiableFields();
+		calculNbExprimes();
+		calculTauxParticipation();
+		calculQuotientElectoral();
+		if ($('input#controle_saisie').val() == 1){
+			calculRepartitionDesSieges();
+		}else{
+			verifNbSiegeSort();
+		}
+		calculLigneToutesListes();
+		calculNombreTotalCandidats();
+
+		// Widget de saisie / aide pour le nombre de sièges à pourvoir
+		inputNbSieges = $('#EleEtablissementType_participation_nbSiegesPourvoir');
+		inputNbSieges.prop('readonly', true);
+		inputNbSieges.prop('disabled', true); // mantis 121759, a mettre a false dans le submit pour pouvoir recuperer la valeur
+
+		inputNbSieges.after('<img id="aideNbSiegesImg" src="{{ asset("images/pictos/information.png") }}" class="picto" alt="Aide" title="Aide à la saisie du nombre de sièges à pourvoir" />');
+
+		$('#aideNbSiegesImg').colorbox({
+			href: "{{ path('EPLEElectionBundle_aide_nb_sieges', { 'etablissementUai': etablissement.uai, 'typeElectionId': typeElect.id }) }}",
+			closeButton: false,
+			title: '',
+			width: 700,
+			initialHeight: 150
+		});
+
+		// Nombre de suffrages exprimés
+		inputNbExprimes = $('#EleEtablissementType_participation_nbExprimes');
+		inputNbExprimes.prop('readonly', true);
+		inputNbExprimes.prop('disabled', true);
+	});
+</script>

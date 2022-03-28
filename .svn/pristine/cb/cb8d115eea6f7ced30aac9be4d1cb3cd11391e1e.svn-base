@@ -1,0 +1,72 @@
+{% extends 'EPLEElectionBundle::layout.html.twig' %}
+
+{% block js %}{{ parent() }}
+	<script src="{{ asset('js/jquery.colorbox-min.js') }}"></script>
+	<script src="{{ asset('js/saisieResultats.js') }}"></script>
+{% endblock %}
+
+{% block title %}{{ parent() }} - Saisie des résultats - Établissement {{ etablissement.libelle }} ({{ etablissement.uai }}){% endblock %}
+
+{% block arianeComplements %}{{ parent() }}<li>Saisie des résultats</li><li>Établissement {{ etablissement.libelle }} ({{ etablissement.uai }})</li>{% endblock %}
+
+{% block contentPage %}
+	
+<h3>Édition des résultats pour l'établissement {{ etablissement.libelle }} ({{ etablissement.uai }})</h3>
+
+<h4>Description d'établissement</h4>
+<table>
+	{% if etablissement is not empty %}
+		<tr>
+			<th scope="row"><abbr title="Unité Administrative Immatriculée">UAI</th><td>{{ etablissement.uai }}</td>
+		</tr>
+		<tr>
+			<th scope="row">Libellé</th><td>{{ etablissement.libelle }}</td>
+		</tr>
+		<tr>
+			<th scope="row">Type d'établissement</th><td>{{ etablissement.typeEtablissement.code }}</td>
+		</tr>
+		<tr>
+			<th scope="row">Commune</th>
+			{% if etablissement.commune is not empty %}
+				<td>{{ etablissement.commune.libelle }} ({{ etablissement.commune.departement.libelle }}, {{ etablissement.commune.codePostal }})</td>
+			{% else %}
+				<td><abbr title="Non communiqué">N/C</abbr></td>
+			{% endif %}
+		</tr>
+		<tr>
+			<!--anomalie 0121762-->
+			<th scope="row">Prioritaire</th><td>{% if etablissement.typePrioritaire.code is defined  %}{{ etablissement.typePrioritaire.code }}{% else %}N/A{% endif %}</td>
+		</tr>
+		<tr>
+			<th scope="row">Contact</th><td>{{ etablissement.contact }}</td>
+		</tr>
+	{% else %}
+		<tr><td colspan="2" class="warning">{{warning[001] }}</td></tr>	
+	{% endif %}
+</table>
+
+{% if form is defined %}{% include 'EPLEElectionBundle:SaisieResultat:formResultats.html.twig' %}{% endif %}
+
+<div class="pageactions">
+{% if tdbRetour is defined  and tdbRetour %}
+	<a href="{{ path('EPLEElectionBundle_recherche_TableauDeBord') }}" class="retour">Retour</a>
+{% else %}
+	<a href="javascript: history.go(-1)" class="retour">Retour</a>
+{% endif %}
+	{% if accesPVVierge is defined %}
+		{% if sousTypeElect is defined %}
+			<a class="pv" href="{{ path('EPLEElectionBundle_creation_PV', { 'etablissementUai': etablissement.uai, 'codeUrlTypeElect' : sousTypeElect.getCodeUrlById() , 'statut' : 'vierge' }) }}">Télécharger un PV vierge</a>
+		{% else %}
+			<a class="pv" href="{{ path('EPLEElectionBundle_creation_PV', { 'etablissementUai': etablissement.uai, 'codeUrlTypeElect' : typeElect.getCodeUrlById() , 'statut' : 'vierge' }) }}">Télécharger un PV vierge</a>
+		{% endif %}
+	{% endif %}
+	{% if accesPVRempli is defined %}
+		{% if sousTypeElect is defined %}
+			<a class="pv" href="{{ path('EPLEElectionBundle_creation_PV', { 'etablissementUai': etablissement.uai, 'codeUrlTypeElect' : sousTypeElect.getCodeUrlById() , 'statut' : 'rempli' }) }}">Télécharger le PV rempli</a>
+		{% else %}
+			<a class="pv" href="{{ path('EPLEElectionBundle_creation_PV', { 'etablissementUai': etablissement.uai, 'codeUrlTypeElect' : typeElect.getCodeUrlById() , 'statut' : 'rempli' }) }}">Télécharger le PV rempli</a>
+		{% endif %}
+	{% endif %}
+</div>
+
+{% endblock %}

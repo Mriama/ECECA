@@ -1,0 +1,190 @@
+<h4>Participation</h4>
+
+{# Modalité de vote à afficher sur les elections parents d'élève #}
+{% if campagne.typeElection.id == constant('\\EPLE\\ElectionBundle\\Entity\\RefTypeElection::ID_TYP_ELECT_PARENT') %}
+	{# Affichage modalité de vote : resultat d'un établissement #}
+	{% if electEtablissement is defined and participation.modaliteVote is defined and participation.modaliteVote is not null%}
+		<table>
+			<tr>
+				<th scope="row">Modalité de vote</th>
+				<td>{{ participation.modaliteVote }}</td>
+			</tr>
+		</table>
+
+		{# Affichage modalité de vote : resultat de zone #}
+	{% elseif electEtablissement is not defined and (participation.consolidationVoteUrneCorrespondance is not null or participation.consolidationVoteCorrespondance is not null) %}
+		<table>
+			<tr>
+				<th></th>
+				<th scope="col">Modalité de vote</th>
+			</tr>
+			<tr>
+				<th scope="row">Nombre d'écoles ou d'établissements avec vote {{ constant('\\EPLE\\ElectionBundle\\Entity\\RefModaliteVote::LIBELLE_MODALITE_VOTE_URNE_CORRESPONDANCE') }}</th>
+				<td>{{ participation.consolidationVoteUrneCorrespondance }}</td>
+			</tr>
+			<tr>
+				<th scope="row">Nombre d'écoles ou d'établissements avec vote {{ constant('\\EPLE\\ElectionBundle\\Entity\\RefModaliteVote::LIBELLE_MODALITE_VOTE_CORRESPONDANCE') }}</th>
+				<td>{{ participation.consolidationVoteCorrespondance }}</td>
+			</tr>
+		</table>
+	{% endif %}
+{% endif %}
+
+
+<table>
+	<tr>
+		<th>&nbsp;</th>
+		<th scope="col">Résultats bruts</th>
+		{% if prioritaire is defined %}<th scope="col">dont Éclair</th>{% endif %}
+	</tr>
+	<tr>
+		<th scope="row">Nombre d'inscrits</th>
+		<td>{{ participation.nbInscrits }}</td>
+		{% if prioritaire is defined %}<td>{{ participation.detailPrioritaireEclair.nbInscrits }}</td>{% endif %}
+	</tr>
+	<tr>
+		<th scope="row">Nombre de votants</th>
+		<td>{{ participation.nbVotants }}</td>
+		{% if prioritaire is defined %}<td>{{ participation.detailPrioritaireEclair.nbVotants }}</td>{% endif %}
+	</tr>
+	<tr>
+		<th scope="row">Nombre de votes blancs ou nuls</th>
+		<td>{{ participation.nbNulsBlancs }}</td>
+		{% if prioritaire is defined %}<td>{{ participation.detailPrioritaireEclair.nbNulsBlancs }}</td>{% endif %}
+	</tr>
+	<tr>
+		<th scope="row">Nombre de suffrages exprimés</th>
+		<td>{{ participation.nbExprimes }}</td>
+		{% if prioritaire is defined %}<td>{{ participation.detailPrioritaireEclair.nbExprimes }}</td>{% endif %}
+	</tr>
+	<tr>
+		<th scope="row">Taux de participation</th>
+		<td>{{ participation.taux|number_format(2, '.', ',') }}%</td>
+		{% if prioritaire is defined %}<td>{{ participation.detailPrioritaireEclair.taux|number_format(2, '.', ',') }}%</td>{% endif %}
+	</tr>
+</table>
+
+<h4>Résultats</h4>
+<table>
+	<tr>
+		<th scope="row">Nombre de sièges à pourvoir</th>
+		<td id="resultatsNbSiegesPourvoir">{{ participation.nbSiegesPourvoir }}</td>
+	</tr>
+	{% if participation is defined %}<tr>
+		<th scope="row">Quotient</th>
+		<td>{{ participation.quotient|number_format(2, '.', ',') }}</td>
+		</tr>{% endif %}
+</table>
+<!-- YME Mise en place de la balise page-break pour éviter à TCPDF de couper le tableau -->
+<div style="page-break-inside:avoid;">
+	<h4>Répartition détaillée des sièges</h4>
+	<table>
+		<tr>
+			<th scope="col">Liste</th>
+			<th scope="col" class="resultats">Nombre <span class="txtInseparable">de candidats</span></th>
+			<th scope="col" class="resultats">Nombre <span class="txtInseparable">de suffrages</span></th>
+			<!-- <span class="txtInseparable">au quotient et au plus fort reste</span>  -->
+			<th scope="col" class="resultats">Sièges attribués</th>
+			<th scope="col" class="resultats">Plus âgé</th>
+			<th scope="col" class="resultats">Total</th>
+		</tr>
+		{% set nbCandidatsTotal = 0 %}
+		{% set nbVoixTotal = 0 %}
+		{% set nbSiegesTotal = 0 %}
+		{% set nbSiegesSortTotal = 0 %}
+		{% set nbSommeSiegesTotal = 0 %}
+		{% for res in resultats %}
+			{% set nbCandidatsTotal = nbCandidatsTotal + res.nbCandidats %}
+			{% set nbVoixTotal = nbVoixTotal + res.nbVoix %}
+			{% set nbSiegesTotal = nbSiegesTotal + res.nbSieges %}
+			{% set nbSiegesSortTotal = nbSiegesSortTotal + res.nbSiegesSort %}
+			{% set nbSommeSiegesTotal = nbSommeSiegesTotal + res.NbSiegesTotal %}
+			<tr>
+				<td>{{ res.organisation.libelle }}</td>
+				<td class="resultats">{%if res.nbCandidats > 0 %}{{ res.nbCandidats }}{% endif %}</td>
+				<td class="resultats">{%if res.nbVoix >= 0 and res.nbCandidats > 0 %}{{ res.nbVoix }}{% endif %}</td>
+				<td class="resultats">{%if res.nbSieges > 0 %}{{ res.nbSieges }}{% endif %}</td>
+				<td class="resultats">{%if res.nbSiegesSort > 0 %}{{ res.nbSiegesSort }}{% endif %}</td>
+				<td class="resultats">{%if res.NbSiegesTotal > 0 %}{{ res.NbSiegesTotal }}{% endif %}</td>
+			</tr>
+			{% if res.organisation.detaillee and resultatsDetailles is defined %}
+				{% for resDetail in resultatsDetailles %}
+					{% if resDetail.organisation.id == res.organisation.id %}
+						<tr>
+							<td class="italique">Dont {{ resDetail.libelle }}</td>
+							<td class="resultats italique">{%if vierge is not defined and resDetail.nbCandidats > 0 %}{{ resDetail.nbCandidats }}{% endif %}</td>
+							<td class="resultats italique">{%if vierge is not defined and resDetail.nbVoix >= 0 and resDetail.nbCandidats > 0  %}{{ resDetail.nbVoix }}{% endif %}</td>
+							<td class="resultats italique">{%if vierge is not defined and resDetail.nbSieges > 0 %}{{ resDetail.nbSieges }}{% endif %}</td>
+							<td class="resultats italique">{%if vierge is not defined and resDetail.nbSiegesSort > 0 %}{{ resDetail.nbSiegesSort }}{% endif %}</td>
+							<td class="resultats italique">{%if vierge is not defined and resDetail.NbSiegesTotal > 0 %}{{ resDetail.NbSiegesTotal }}{% endif %}</td>
+						</tr>
+					{% endif %}
+				{% endfor %}
+			{% endif %}
+		{% else %}
+			<tr>
+				<td colspan="6" class="warning">{{ warning[003] }}</td>
+			</tr>
+		{% endfor %}
+
+		{% if resultats is not empty %}
+			<tr class="total">
+				<td>TOTAL TOUTES LISTES</td>
+				<td colspan="1" class="resultats" id="resultatsNbCandidatsTotal">{{ nbCandidatsTotal }}</td>
+				<td colspan="1" class="resultats">{{ nbVoixTotal }}</td>
+				<td colspan="1" class="resultats">{{ nbSiegesTotal }}</td>
+				<td colspan="1" class="resultats">{{ nbSiegesSortTotal }}</td>
+				<td colspan="1" class="resultats">{{ nbSommeSiegesTotal }}</td>
+			</tr>
+		{% endif %}
+	</table>
+
+	<table>
+		<tr>
+			<th scope="row">Nombre de sièges pourvus</th>
+			<td id="resultatsNbSiegesPourvus">{{ participation.nbSiegesPourvus }}</td>
+		</tr>
+		<!-- 0239479: Erreur aléatoire lors de l affichage de la page Résultats -->
+		{#
+		CAS 1 : Tirage au sort saisi
+        CAS 2 : Tirage au sort non saisi par le DE et en période P2Ter
+        CAS 3 : Tirage au sort remis à 0 suite à un "retour pour anomalie" par le DSDEN/RECTORAT
+		#}
+		{% if (
+			(participation.nbSiegesSort is not null
+			and typeEtab is defined
+			and typeEtab.degre is not null
+			and typeEtab.degre == '1' )
+			or ( participation.nbSiegesSort is null
+			and typeEtab is defined
+			and typeEtab.degre is not null
+			and typeEtab.degre == '1'
+			and P2Ter is defined
+			and P2Ter)
+			or ( participation.nbSiegesSort is null
+			and typeEtab is defined
+			and typeEtab.degre is not null
+			and typeEtab.degre == '1'
+			and electEtablissement is defined
+			and electEtablissement.indTirageSort == 1
+			and isDSDENorRect is defined
+			and isDSDENorRect == true)
+			)
+			and formTirage is defined
+		%}
+			<tr>
+				<th scope="row">Nombre de sièges pourvus par tirage au sort</th>
+				<td id="siegesPourvusParTirageAuSort">
+					<span id="nbSiegesSort">{{ participation.nbSiegesSort }}</span>
+					<form action="" method="post" accept-charset="UTF-8" id="form_saisie_ts" style="display:none">
+						{{ form_errors(formTirage) }}
+						{{ form_widget(formTirage['nbSiegesTirageAuSort']) }}
+						{{ form_rest(formTirage) }}
+					</form>
+
+				</td>
+			</tr>
+		{% endif %}
+	</table>
+
+</div>

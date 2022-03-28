@@ -1,0 +1,54 @@
+{% if nationale is not defined %} {% if etablissement is defined %}
+<h3>
+	Archives de <span>l'établissement {{ etablissement.libelle }} ({{
+		etablissement.uai }})</span>
+</h3>
+{% else %}
+<h3>{% autoescape false %} {{ (dept is defined) ? "Département <span>:
+	"~dept.libelle~"</span>" : "Académie <span>: "~aca.libelle~"</span>" }}
+	{% endautoescape %}</h3>
+{% endif %} {% endif %}
+
+<h4>Description d'établissement</h4>
+<table>
+	{% if etablissement is not empty %}
+	<tr>
+		<th scope="row"><abbr title="Unité Administrative Immatriculée">UAI</abbr></th>
+		<td>{{ etablissement.uai }}</td>
+	</tr>
+	<tr>
+		<th scope="row">Libellé</th>
+		<td>{{ etablissement.libelle }}</td>
+	</tr>
+	<tr>
+		<th scope="row">Type d'établissement</th>
+		<td>{{ etablissement.typeEtablissement.code }}</td>
+	</tr>
+{# 	<tr>{% if app.user.profil.code#}
+{# 		!=constant('\\EPLE\\ElectionBundle\\Entity\\RefProfil::CODE_PROFIL_IEN')%}#}
+	<tr>
+		<th scope="row">Commune</th>
+		<td>{{ etablissement.commune.libelle }} ( {{etablissement.commune.departement.libelle }} )</td> 
+{# 			{% else %}#}
+{# 		<th scope="row">Circonscription</th>#}
+{# 		<td>{{ etablissement.circonscription }}</td> {% endif %}#}
+	</tr>
+	<tr>
+		<th scope="row">Catégorie</th>
+		<td>{% if etablissement.typePrioritaire.code is defined %}{{
+			etablissement.typePrioritaire.code }}{% else %}N/A{% endif %}</td>
+	</tr>
+
+	<tr>
+		<th scope="row">Contact</th>
+		<td>{{ etablissement.contact }}</td>
+	</tr>
+
+	{% else %}
+	<tr>
+
+		<td colspan="2" class="warning">{{ warning[001] }}</td>
+
+	</tr>
+	{% endif %}
+</table>

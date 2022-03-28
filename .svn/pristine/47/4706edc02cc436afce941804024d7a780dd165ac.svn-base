@@ -1,0 +1,773 @@
+/**
+ * Feuille de styles pour EPLE
+ * Violets (foncé > clair) : #7e1a70 - #c912aa
+ * Gris : #676767, #f1f1f1
+ */
+@import url("base.css");
+
+/* LIENS */
+a:link {
+	text-decoration: underline;
+	color: #7e1a70;
+	font-weight: bold;
+}
+
+a:visited {
+	text-decoration: none;
+	color: #155786;
+}
+
+a:hover,a:focus {
+	text-decoration: none;
+	color: #c912aa;
+}
+
+a:active {
+	text-decoration: none;
+	color: #000;
+}
+
+a.ajouter {
+	padding-left: 20px;
+	background-image: url("../images/pictos/add.png");
+	background-repeat: no-repeat;
+	background-position: left center;
+}
+
+/* span.ajouter { */
+/* 	background-image: url("../images/pictos/add.png"); */
+/* 	background-repeat: no-repeat; */
+/* 	background-position: right center; */
+/* 	margin-left: 1em; */
+/* 	padding: 3px 23px 3px 0; */
+/* 	cursor: pointer; */
+/* } */
+
+img.ajouter{
+	vertical-align:middle;
+	margin-left:10px;
+	cursor:pointer;
+}
+
+/* span.retirer { */
+/* 	background-image: url("../images/pictos/delete.png"); */
+/* 	background-repeat: no-repeat; */
+/* 	background-position: left center; */
+/* 	margin-left: 1em; */
+/* 	padding: 3px 6px 3px 16px; */
+/* 	cursor: pointer; */
+/* } */
+
+img.retirer{
+	vertical-align:top;
+	margin-top:5px;
+	cursor:pointer;
+}
+
+/* TITRES (h1, h2 dans header) */
+h3 {
+	margin: 1em 0;
+	padding: 5px 0 0 0;
+	color: #7e1a70;
+	font-size: 1.5em;
+}
+
+h3 span {
+	color: #c912aa;
+	font-size: 0.8em;
+}
+
+h4 {
+	margin: 0.5em 0 0 0;
+	padding: 5px 0 0 0;
+	color: #000;
+	font-size: 1.3em;
+}
+
+img.picto {
+	vertical-align: middle;
+}
+
+/* LAYOUT */
+div#layout {
+	box-shadow: 8px 8px 5px 5px #f4f4f4, -8px -8px 5px 5px #f4f4f4;
+}
+
+header {
+	margin: 0;
+	min-height: 150px;
+	background: transparent url(../images/design/bg_head_right.png)
+	no-repeat right top;
+	overflow: auto;
+}
+
+header a#men {
+	float: left;
+	padding: 0 50px 0 20px;
+	background: transparent url(../images/design/bg_head_left.png) no-repeat
+	left top;
+}
+
+header h1 {
+	margin: 0;
+	padding-top: 1.5em;
+	color: #c912aa;
+}
+
+header h2 {
+	margin: 0;
+	color: #676767;
+}
+
+nav#menu {
+	float: left;
+	margin: 0;
+	padding: 10px;
+	width: 130px;
+	background: #fff url(../images/design/bg_menu.gif) repeat-y left top;
+}
+
+nav#menu ul {
+	margin: 0;
+	padding: 0;
+	width: 110px;
+	list-style-type: none;
+}
+
+nav#menu li {
+	margin-top: -1px;
+	padding: 0;
+	background-color: #f7f7f7;
+	color: #fff;
+	border: 1px solid #7e1a70;
+	font-weight: bold;
+	font-size: 1.3em;
+	text-align: center;
+}
+
+nav#menu li a {
+	display: block;
+	margin: 1px;
+	padding: 5px;
+	background-color: #f7f7f7;
+	color: #333;
+	text-decoration: none;
+	line-height: 1em;
+}
+
+nav#menu li li {
+	font-size: 1em;
+}
+
+nav#menu li a:hover,nav#menu li a:focus {
+	background-color: #d6cedc;
+	text-decoration: none;
+	color: #000;
+}
+
+nav#menu ul.election,nav#menu ul.admin {
+	margin-top: 1em;
+}
+
+nav#menu ul.election>li {
+	background-color: #7352ad;
+	color: #fff;
+	border: none;
+}
+
+nav#menu ul.admin>li {
+	background-color: #0093d6;
+	color: #000;
+	border: none;
+}
+
+nav#menu ul.election>li:first-child,nav#menu ul.admin>li:first-child {
+	border: 1px solid #7e1a70;
+}
+
+nav ul#deconnexion, ul#accessibilite {
+	margin-top: 1em !important;
+}
+
+nav ul#deconnexion a {
+	padding-left: 20px;
+	background: transparent url(../images/pictos/disconnect.png) no-repeat
+	2px center;
+	font-size: 0.9em;
+}
+
+ul#ariane {
+	margin: 5px 0;
+	padding: 0;
+	list-style-type: none;
+}
+
+ul#ariane li {
+	display: inline;
+	padding-left: 22px;
+	background: transparent url(../images/design/spacer.gif) no-repeat left
+	center;
+	color: #333;
+	font-weight: bold;
+	font-size: 1.1em;
+}
+
+ul#ariane li:first-child {
+	padding-left: 0;
+	background-image: none;
+}
+
+ul#ariane li a {
+	text-decoration: none;
+	color: #7e1a70;
+}
+
+ul#ariane li a:focus,ul#ariane li a:hover {
+	text-decoration: underline;
+	color: #000;
+}
+
+footer {
+	position: relative;
+	margin-top: 4em;
+	padding-top: 15px;
+	height: 28px;
+	text-align: center;
+	font-size: 0.8em;
+	background: transparent url(../images/design/foot.jpg) repeat-x left top;
+	line-height: initial;
+}
+
+/* FORMULAIRES */
+form {
+	margin: 1em 0;
+	padding: 0;
+}
+
+form#identification {
+	padding-left: 85px;
+	background: transparent url(../images/design/cadenas.gif) no-repeat left
+	center;
+}
+
+form#identification input#form_login {
+	text-transform: uppercase;
+}
+
+form div {
+	width: 95%;
+}
+
+form div div {
+	margin-top: -1px;
+	padding: 3px 0;
+	width: 100%;
+	border: 1px solid #999;
+	background: transparent url(../images/design/bg_form.png) repeat-y left
+	top;
+}
+
+form label {
+	display: inline-block;
+	width: 244px;
+	margin: 2px 6px 0 3px;
+	padding: 0;
+	font-size: 1.1em;
+	background-color: #eee;
+	color: #000;
+	text-align: left;
+	vertical-align: top;
+	font-weight: normal;
+}
+
+form input,form textarea {
+	background-color: #f7f7f7;
+}
+
+form input[type=text],form input[type=url],form input[type=search],form input[type=email],form input[type=password]
+{
+	width: 20em;
+}
+
+form input:focus,form select:focus,form textarea:focus {
+	outline: 1px solid #7e1a70;
+}
+
+form select {
+	vertical-align: middle;
+	border: 1px solid #ddd;
+}
+
+form select#zoneetabtype_academie,form select#zoneetabtype_departement,form select#zoneetabtype_typeEtab,form select#campagneZoneEtabType_academie,select#campagneZoneEtabType_departement,select#campagneZoneEtabType_typeEtab,form select#form_academie
+{
+	text-transform: capitalize !important;
+}
+
+div.boutons {
+	padding: 1em 0;
+	border: none;
+	text-align: right;
+}
+
+form input[type=submit],form input[type=button],a button {
+	padding: 0.2em 0.5em;
+	background-color: #f7f7f7;
+	color: #7e1a70;
+	font-weight: bold;
+	font-size: 1.2em;
+	width: auto;
+	overflow: visible;
+}
+
+form input[type=image] {
+	display: inline;
+	background-color: transparent;
+}
+
+/* Formulaire de filtrage résultats */
+/*BBL defect HPQC 216*/
+form div#resultatZoneEtabType_etatSaisie {
+	display: inline;
+	margin-top: 0;
+	padding: 0;
+	width: auto;
+	border: none;
+	background-image: none;
+}
+
+form div#resultatZoneEtabType_etatSaisie label {
+	margin-right: 2em;
+	width: auto;
+	background-color: #fff;
+}
+
+/* Formulaire de tdb recherche  */
+/*BBL defect HPQC 216*/
+form div#tdbZoneEtabType_etatAvancement {
+	display: inline;
+	margin-top: 0;
+	padding: 0;
+	width: auto;
+	border: none;
+	background-image: none;
+}
+
+form div#tdbZoneEtabType_etatAvancement label {
+	margin-right: 2em;
+	width: auto;
+	background-color: #fff;
+}
+/*BBL defect HPQC 216*/
+form div#tdbZoneEtabType_statutPv {
+	display: inline;
+	margin-top: 0;
+	padding: 0;
+	width: auto;
+	border: none;
+	background-image: none;
+}
+
+form div#tdbZoneEtabType_statutPv label {
+	margin-right: 2em;
+	width: auto;
+	background-color: #fff;
+}
+
+/* TABLEAUX */
+table {
+	margin: 1em 2em 1em 0;
+	border: 1px solid #999;
+	border-collapse: collapse;
+}
+
+table caption {
+	padding: 3px;
+	font-size: 1.5em;
+	color: #000;
+	text-align: left;
+	font-weight: normal;
+}
+
+table tr {
+	border-bottom: 1px solid #999;
+}
+
+table tr.obsolete {
+	background-color: #bbb;
+}
+
+table th,table td {
+	padding: 3px;
+	font-size: 1.1em;
+}
+
+table th {
+	background-color: #eee;
+	color: #000;
+	text-align: left;
+	font-weight: normal;
+}
+
+table th[scope=row] {
+	width: 244px;
+}
+
+table th span.txtInseparable {
+	text-align: center;
+	white-space: nowrap;
+}
+
+div.pageactions {
+	width: 95%;
+	background-color: #fff;
+	border-top: 1px solid #7e1a70;
+	text-align: right;
+	overflow: auto;
+}
+
+div.exportComplet {
+	width: 95%;
+	background-color: #fff;
+	text-align: right;
+	overflow: auto;
+}
+
+div.pageactions a.retour {
+	float: left;
+	margin-left: 1em;
+	font-size: 1.2em;
+	vertical-align: middle;
+}
+
+div.pageactions input {
+	margin-left: 1em;
+	padding: 0.2em 0.5em;
+	background-color: #f1f1f1;
+	color: #7e1a70;
+	font-weight: bold;
+	font-size: 1.2em;
+	width: auto;
+	overflow: visible;
+}
+
+div.pageactions a.pdf,div.pageactions a.pv,div.pageactions a.xls,div.exportComplet a.xls {
+	display: inline-block;
+	margin-left: 1em;
+	padding: 3px 23px 3px 0;
+	background-repeat: no-repeat;
+	background-position: right center;
+}
+
+div.pageactions a.pdf {
+	background-image: url(../images/pictos/PDF_small.png);
+}
+
+div.pageactions a.pv {
+	background-image: url(../images/pictos/PV_small.png);
+}
+
+div.pageactions a.xls,div.exportComplet a.xls {
+	background-image: url(../images/pictos/XLS_small.png);
+}
+
+/* Pagination */
+div.pagination {
+	margin: 1em 5em 0 0;
+	text-align: right;
+	overflow: hidden;
+}
+
+div.pagination span {
+	font-size: 1.2em;
+}
+
+div.pagination ul {
+	display: inline-block;
+	margin-left: 1em;
+	padding: 0 0 0.3em 0;
+}
+
+div.pagination li {
+	display: inline;
+	margin: 0 0.2em;
+	padding: 0.3em;
+	font-weight: bold;
+	color: #fff;
+	background-color: #7e1a70;
+	background-image: none;
+	box-shadow: 1px 1px 1px #888;
+}
+
+div.pagination li.courant {
+	background-color: #222;
+}
+
+div.pagination li.separator {
+	color: #000;
+	background-color: #fff;
+	box-shadow: none;
+}
+
+div.pagination li a:link {
+	color: #fff;
+	text-decoration: none;
+}
+
+div.pagination li a:visited {
+	color: #ffc0cb;
+}
+
+div.pagination li a:focus,div.pagination li a:hover {
+	color: #ff69b4;
+	text-decoration: underline;
+}
+
+table#saisie_resultats input[type=text] {
+	width: 3em;
+}
+
+table#saisie_resultats input.libelleDetail {
+	width: 14em;
+}
+
+table tr.inactif {
+	background-color: #ddd;
+}
+
+table tr.total {
+	background-color: rgb(238, 238, 238);
+}
+
+form div#etabtype div {
+	width: 100%;
+	border: 1px solid #999;
+	height: 2.1em;
+}
+
+form div#etabtype a#liste_commune {
+	margin-left: 1em;
+	position: relative;
+	bottom: 4px;
+}
+
+form div#etabtype a#new_commune {
+	margin-bottom: 5px;
+	margin-left: 1em;
+}
+
+form #saisie_resultats input {
+	width: 2em;
+}
+
+a.accepter {
+	padding-left: 20px;
+	background-image: url("../images/pictos/accept.png");
+	background-repeat: no-repeat;
+	background-position: left center;
+}
+
+a.refuser {
+	padding-left: 20px;
+	background-image: url("../images/pictos/refuse.png");
+	background-repeat: no-repeat;
+	background-position: left center;
+}
+
+div#tb_afficher_detail {
+	width: 95%;
+}
+
+div#tb_afficher_detail div {
+	margin-top: -1px;
+	padding: 3px 0;
+	width: 100%;
+	border: 1px solid #999;
+	background: transparent url(../images/design/bg_form.png) repeat-y left
+	top;
+}
+
+div#tb_afficher_detail label {
+	display: inline-block;
+	width: 244px;
+	margin: 2px 6px 0 3px;
+	padding: 0;
+	font-size: 1.1em;
+	background-color: #eee;
+	color: #000;
+	text-align: left;
+	vertical-align: top;
+	font-weight: normal;
+}
+
+div#tb_afficher_detail input {
+	background-color: #f7f7f7;
+}
+
+form img.chargement {
+	position: relative;
+	left: 0.5em;
+	top: 0.3em;
+}
+
+.archivee {
+	color: red;
+}
+
+img.consulter,img.contacter,img.icones {
+	position: relative;
+	top: 0.2em;
+}
+
+/* Tableau de bord */
+th.campagne {
+	width: 25%;
+}
+
+th.election {
+	width: 20%;
+}
+
+th.commune {
+	width: 10%;
+}
+
+th.pictos,td.pictos {
+	text-align: center;
+}
+
+th.actions {
+	width: 6%;
+}
+
+table th.resultats,td.resultats {
+	text-align: center;
+}
+
+table td.italique {
+	font-style: italic;
+}
+
+.even {
+	background-color: #efefef;
+}
+
+.odd {
+	background-color: #fff;
+}
+
+/* Colorbox aide à la saisie */
+#colorbox {
+	padding: 1em;
+	border: 3px solid #444;
+	border-radius: 1em;
+	box-shadow: 0.3em 0.3em 2px #888;
+	background: #ddd;
+}
+
+img#colorboxclose {
+	float: right;
+	cursor: pointer;
+}
+
+#colorbox form {
+	margin: 0;
+	padding: 1em;
+	border-radius: 1em;
+	background-color: #fff;
+}
+
+#colorbox label {
+	background-color: #fff;
+	font-weight: bold;
+	width: auto;
+}
+
+/* hides the spin-button for firefox */
+input[type=number] {
+	-moz-appearance:textfield;
+}
+/* hides the spin-button for chrome*/
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button {
+	-webkit-appearance: none;
+	margin: 0;
+}
+.notification_mass_validation {
+	background-color: rgba(0, 0, 255, 0.5);
+	display: none;
+	min-width: 100%;
+	min-height: 5px;
+	padding: 10px 10px;
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	font-size: 12px;
+	font-weight: bold;
+	text-align: center
+}
+.notification_info{
+	background-color: rgba(0, 0, 255, 0.5);
+}
+.notification_warning{
+	background-color: rgba(255, 0, 0, 0.5);
+}
+
+#rappel_dates_campagne p.title {
+	color: #7e1a70;
+	text-decoration: underline;
+	font-weight: bold;
+	font-size: 13px;
+}
+#rappel_dates_campagne .election .election_name {
+	color: #7e1a70;
+	font-weight: 600;
+}
+
+#rappel_dates_campagne table,
+#rappel_dates_campagne table tbody,
+#rappel_dates_campagne table tbody tr,
+#rappel_dates_campagne table tbody tr td {
+	line-height: 1 !important;
+	border: none !important;
+}
+
+#rappel_dates_campagne table tbody tr td:first-child {
+	width: min-content !important;
+}
+
+#form_courriel_relance table {
+	width: 100%;
+}
+
+#form_courriel_relance table tr {
+	margin-top: -1px;
+	padding: 3px 0;
+	width: 100%;
+	border: 1px solid #999;
+	background: transparent url(../images/design/bg_form.png) repeat-y left top;
+}
+
+#form_courriel_relance table tr td:first-child {
+	width: 245px !important;
+}
+
+#form_courriel_relance table tr td input,
+#form_courriel_relance table tr td select,
+#form_courriel_relance table tr td textarea {
+	width: calc(100% - 1em);
+}
+
+#form_courriel_relance table tr td.copie_expediteur div#ececa_saisie_courriel_choix_expediteur {
+	background: none !important;
+	border: none;
+}
+
+#form_courriel_relance table tr td.copie_expediteur input {
+	width: auto !important;
+}
+
+#form_courriel_relance table tr td.copie_expediteur label {
+	background-color: #fff;
+	width: auto !important;
+}

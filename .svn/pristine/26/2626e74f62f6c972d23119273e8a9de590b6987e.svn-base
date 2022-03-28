@@ -1,0 +1,30 @@
+{% extends 'EPLEElectionBundle::layout.html.twig' %}
+{% block js %}
+	{{ parent() }}
+	<script src="{{ asset('js/saisieResultats.js') }}"></script>
+{% endblock %}
+
+{% block title %}{{ parent() }} - Contacter les établissements{% endblock %}
+
+{% block arianeComplements %}{{ parent() }}
+	<li>Contacter les établissements</li>
+{% endblock %}
+
+{% block contentPage %}
+<h3>Envoi des alertes</h3>
+{% if nbEtabs == 0 %}
+	<p class="message info">Tous les établissements ont transmis leurs résultats.</p>
+{% else %}
+	<p class="message info">Les alertes seront envoyées à {{ nbEtabs }} établissement{% if nbEtabs > 1 %}s{% endif %} qui n'{% if nbEtabs > 1 %}ont{% else %}a{% endif %} pas transmis {% if nbEtabs > 1 %}leurs{% else %}ses{% endif %} résultats.</p>
+{% endif %}
+
+{% if form is defined %}
+	{% include 'EPLEElectionBundle:Courriel:formMassContact.html.twig' with { 'form' : form } %}
+{% endif %}
+    
+<div class="pageactions">
+	<a href="{{ path('EPLEElectionBundle_recherche_TableauDeBord') }}" class="retour">Retour</a>
+	{% if canExportEtab %}<a class="xls" href="{{ path('EPLEElectionBundle_courriel_masse_export_XLS') }}">Export XLS des établissements sans adresse mail</a>{% endif %}
+</div>
+
+{% endblock %}

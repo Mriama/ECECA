@@ -1,0 +1,36 @@
+<html>
+	{% block stylesheets %}
+		<link href="css/eple_pdf.css" type="text/css" rel="stylesheet" />
+	{% endblock %}		
+	<body>
+		{% block contentPage %}
+			<h3>{{ typeElect.libelle }} - Archives
+				{% if nationale is defined %} nationales
+				{% else %} par {{ (dept is defined) ? "département" : "académie" }}{% endif %}
+			</h3>
+			{% include "EPLEElectionBundle:Archives:alerte.html.twig" %}
+			{# Zone = Département/Académie/Nationale #}
+			{% if nationale is not defined %}
+				<h3>{% autoescape false %}
+				{{ (dept is defined) ? "Département <span>: "~dept.libelle~"</span>" : "Académie <span>: "~aca.libelle~"</span>" }}
+				{% endautoescape %}</h3>
+			{% endif %}
+			{% if electZone.participation is not null or electZonePrec.participation is not null %}
+				{% include "EPLEElectionBundle:Archives:tableau_participation.html.twig" with { 
+						'campagne' : (campagne is defined) ? campagne : null,
+						'elect' : (electZone is defined) ? electZone : null,
+						'electPrec' : (electZonePrec is defined) ? electZonePrec : null,
+						'participation' : (electZone.participation is defined) ? electZone.participation : null,
+						'participationPrec' : (electZonePrec.participation is defined) ? electZonePrec.participation : null,
+						'eclair' : (electZone.typeEtablissement.hasEclair is defined 
+										and typeElect.codeUrlById == constant('\\EPLE\\ElectionBundle\\Entity\\RefTypeElection::CODE_URL_PARENT')
+									) ? true : false } %}
+				{% include "EPLEElectionBundle:Archives:tableau_resultat.html.twig" with { 
+						'elect' : electZone,
+						'electPrec' : electZonePrec } %}
+			{% else %}
+				<p class="message erreur">{{ warning[002] }}</p>
+			{% endif %}
+		{% endblock %}
+	</body>
+</html>

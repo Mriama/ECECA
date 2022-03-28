@@ -1,0 +1,55 @@
+{% extends 'EPLEAdminBundle::layout.html.twig' %}
+
+{% block title %}{{ parent() }} - Liste des organisations{% if isTypeElectionParent %}/association{% endif %} pour l'élection {{ form.vars.value.typeElection.code }}{% endblock %}
+
+{% block arianeComplements %}{{ parent() }}<li>Liste des organisations{% if isTypeElectionParent %}/association{% endif %} pour l'élection 
+	<abbr title="{{ form.vars.value.typeElection.libelle }}">{{ form.vars.value.typeElection.code }}</abbr>
+</li>{% endblock %}
+
+{% block content %}
+<p>
+	Les organisations sont les groupes (syndicats, associations...) éligibles pour les trois types d'élections.
+	<br />Les organisations sont affichées en fonction du type d'élection choisi ; une organisation syndicale peut
+	être rattachée à une <a href="{{ path('EPLEAdminBundle_federations') }}" title="Liste des fédérations">fédération syndicale</a>.
+</p>
+
+
+<form action="{{ path('EPLEAdminBundle_organisations') }}" method="post" accept-charset="UTF-8" {{ form_enctype(form) }}>
+	<p class="note">Un astérisque * marque un champ obligatoire</p>
+	
+	{{ form_widget(form) }}
+	
+	<div class="boutons"><input type="submit" value="Valider" /></div>
+</form>
+
+
+<p class="no-print"><a href="{{ path('EPLEAdminBundle_organisation_ajouter') }}" class="ajouter">Ajouter une organisation
+	{% if isTypeElectionParent %}/ association{% endif %} pour l'élection 
+	<abbr title="{{ form.vars.value.typeElection.libelle }}">{{ form.vars.value.typeElection.code }}</abbr>
+</a></p>
+
+<table>
+	<tr>
+		<th scope="col">Organisation{% if isTypeElectionParent %}/Association{% endif %}</th>
+		{% if not isTypeElectionParent %}<th scope="col">Fédération</th>{% endif %}
+		<th scope="col">Ordre</th>
+		<th scope="col" class="actions">Actions</th>
+	</tr>
+	{% for organisation in organisations %}
+		<tr{% if organisation.obsolete %} class="obsolete"{% endif %}>
+			<td>{% autoescape false %}{{ organisation.libelle }}{% endautoescape %}{% if organisation.obsolete %} (Obsolète){% endif %}</td>
+			{% if not isTypeElectionParent %}
+				<td>{% if organisation.federation.id is defined %}{% autoescape false %}{{ organisation.federation.libelle }}{% endautoescape %}{% endif %}</td>
+			{% endif %}
+			<td>{{ organisation.ordre }}</td>
+			<td class="actions">
+				<a href="{{ path('EPLEAdminBundle_organisation_modifier', { 'organisationId':organisation.id }) }}"><img src="{{ asset('images/pictos/edit.png') }}" alt="Modifier" title="Modifier l'organisation {{ organisation.libelle }}" /></a>
+			</td>
+		</tr>
+	{% else %}
+		<tr>
+			<td colspan="2" class="warning">{{ mess_warning[003] }}</td>
+		</tr>
+	{% endfor %}
+</table>
+{% endblock %}

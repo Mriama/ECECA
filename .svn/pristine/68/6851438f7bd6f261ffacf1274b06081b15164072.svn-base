@@ -1,0 +1,58 @@
+<?php
+namespace App\Form;
+
+use Doctrine\ORM\EntityRepository;
+use App\Form\ParticipationZoneEtabType;
+use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Bridge\Doctrine\Form\Type\EntityType;
+use Symfony\Component\OptionsResolver\OptionsResolverInterface;
+use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
+
+class RecapitulatifParticipationEtabType extends ParticipationZoneEtabType{
+	
+	protected $user;
+	public function __construct(TokenStorageInterface $tokenStorage) {
+		$this->user = $tokenStorage->getToken()->getUser();
+		parent::__construct($user);
+		$this->user = $user;
+
+	}
+	
+	public function buildForm(FormBuilderInterface $builder, array $options) {
+			
+		parent::buildForm($builder, $options);
+		
+		$degres = ($this->degresUser != null) ? $this->degresUser : null;
+		//$datas = $options['data'];
+		//$refTypeElection = $datas->getTypeElection();
+		
+		$builder->add('typeEtablissement', EntityType::class, array(
+			'label' => 'Type d\'établissement',
+			'multiple' => false,
+			'class' => RefTypeEtablissement::class,
+			'query_builder' => function(EntityRepository $er) use ($degres) {
+				$qb = $er->createQueryBuilder('t');
+				if (!empty($degres)) {
+					$qb->where('t.degre in (:degres)')
+					->setParameter('degres', $degres);
+				}
+				$qb->orderBy('t.ordre', 'ASC');
+				return $qb;
+			},
+			'required' => false,
+			'property' => 'code',
+			'empty_data' => 'Tous'));
+		
+	}
+	
+	public function setDefaultOptions(OptionsResolverInterface $resolver) {
+		$resolver->setDefaults(array(
+				'data_class' => 'App\Model\RecapitulatifParticipationEtabTypeModel'
+		));
+	}
+	
+	public function getName() {
+		return 'recapitulatifParticipationEtabType';
+	}
+}

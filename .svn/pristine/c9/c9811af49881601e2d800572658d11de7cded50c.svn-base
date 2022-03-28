@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<title>ECECA{% block title %}{% endblock %}</title>
+	<meta name="description" content="Application pour la saisie, la consultation et les statistiques des élections de représentants du personnel et de parents d'élèves." />
+	<link rel="icon" type="image/x-icon" href="{{ asset('images/favicon.ico') }}" />
+
+
+	{% block stylesheets %}
+		<link href="{{ asset('css/eple.css') }}" type="text/css" rel="stylesheet" />
+		<link href="{{ asset('css/print.css') }}" type="text/css" rel="stylesheet" media="print" />
+		<!--[if IE]><link href="{{ asset('css/eple_ie.css') }}" type="text/css" rel="stylesheet" /><![endif]-->
+	{% endblock %}
+
+	<!--[if IE]><script src="{{ asset('js/html5.js') }}"></script><![endif]-->
+	{% block js %}
+		<script src="{{ asset('js/jquery-1.9.1.min.js') }}"></script>
+		<script src="{{ asset('js/eple.js') }}"></script>
+	{% endblock %}
+</head>
+<body>
+<div id="layout">
+	<nav id="quicknav" role="navigation" aria-labelledby="labquick">
+		{% block ql_menu %}<a href="#menu">Menu</a>{% endblock %}
+		<a href="#page">Contenu</a>
+		<a href="#footer">Pied de page</a>
+	</nav>
+	<header role="banner" aria-labelledby="labheader">
+		<p id="labheader" class="arialabel">Entete</p>
+		<a href="http://www.education.gouv.fr/" title="Ministère de l'éducation nationale" id="men" target="_blank"><img src="{{ asset('images/design/2019_logoMENESR_web.jpg') }}" alt="Ministère de l'éducation nationale" width="91" height="150" /></a>
+		<h1 class="{{ app.environment }}">ECECA</h1>
+		<h2>{% block h2 %}Élections Conseil d'École et Conseil d'Administration{% endblock %}</h2>
+	</header>
+	<div id="centre">
+		{% block menu %}
+			<nav id="menu" role="navigation">
+				{#% render "Bundle:Controller:getMenu" - dépend du profil %#}
+				<ul class="neutre">
+					<li><a href="{{ app.user.perimetre.getUrlEduscol() }}" target="_blank">Éduscol</a></li>
+					{% if app.user.profil.code != constant('\\App\\Entity\\RefProfil::CODE_PROFIL_DGESCO') and not app.user.perimetre.isPerimetreVide %}  <!-- anomalie signalée par BALTIMOR -->
+						{# {% if is_granted('ROLE_DOCUMENTATION') %}<li><a href="{{ app.user.perimetre.getUrlDocumentation() }}" target="_blank">Documentation</a></li>{% endif %} #}
+						{# IF/ELSE STATEMENT -> Documentation return depending on user code #}
+						{# CE #}
+						{% if is_granted('ROLE_DOCUMENTATION') %}
+							{% if app.user.profil.code == constant('\\App\\Entity\\RefProfil::CODE_PROFIL_CE') %}
+								<li><a href="{{ app.user.perimetre.getUrlCE() }}"  target="_blank">Documentation</a></li>
+								{# DE #}
+							{% elseif app.user.profil.code == constant('\\App\\Entity\\RefProfil::CODE_PROFIL_DE') %}
+								<li><a href="{{ app.user.perimetre.getUrlDE() }}"  target="_blank">Documentation</a></li>
+								{# OTHER ROLE #}
+							{% else %}
+								<li><a href="{{ app.user.perimetre.getUrlDocumentation() }}"  target="_blank">Documentation</a></li>
+							{% endif %}
+						{% endif %}
+
+						{% if app.user.profil.code != constant('\\App\\Entity\\RefProfil::CODE_PROFIL_RECT') %}
+							<li><a href="mailto:{{ app.user.perimetre.getEmailContact(app.user) }}">Contact</a></li>
+						{% endif %}
+					{% endif %}
+				</ul>
+				{% if app.user is defined and app.user.perimetre.hasElectionsASS_ATE and not app.user.perimetre.isPerimetreVide %}
+					<ul class="pliable election">
+						<li>ASS et ATE</li>
+						<li>
+							<ul>
+								{% if is_granted('ROLE_RES_ETAB_PE') or is_granted('ROLE_RES_GLO_PE') %}<li><a href="{{ path('EPLEElectionBundle_resultats', { 'codeUrlTypeElect':constant('\\App\\Entity\\RefTypeElection::CODE_URL_ASS_ATE') }) }}">Résultats</a></li>{% endif %}
+								{% if is_granted('ROLE_STATS') %}<li><a href="{{ path('EPLEElectionBundle_statistiques', { 'codeUrlTypeElect' :constant('\\App\\Entity\\RefTypeElection::CODE_URL_ASS_ATE')}) }}">Statistiques</a></li>{% endif %}
+								{% if app.user.profil.code == constant('\\App\\Entity\\RefProfil::CODE_PROFIL_DGESCO') %}<li><a href="{{ path('EPLEElectionBundle_archives', { 'codeUrlTypeElect' :constant('\\App\\Entity\\RefTypeElection::CODE_URL_ASS_ATE')}) }}">Archives</a></li>{% endif %}
+								{% if is_granted('ROLE_ENV_COUR_LIB_CE') %}<li><a href="{{ path('EPLEElectionBundle_courriel_libre', { 'codeUrlTypeElect' :constant('\\App\\Entity\\RefTypeElection::CODE_URL_ASS_ATE')}) }}">Courriel</a></li>{% endif %}
+							</ul>
+						</li>
+					</ul>
+				{% endif %}
+				{% if app.user is defined and app.user.perimetre.hasElectionsPEE and not app.user.perimetre.isPerimetreVide %}
+					<ul class="pliable election">
+						<li>PEE</li>
+						<li>
+							<ul>
+								{% if is_granted('ROLE_RES_ETAB_PE') or is_granted('ROLE_RES_GLO_PE') %}<li><a href="{{ path('EPLEElectionBundle_resultats', { 'codeUrlTypeElect':constant('\\App\\Entity\\RefTypeElection::CODE_URL_PEE') }) }}">Résultats</a></li>{% endif %}
+								{% if is_granted('ROLE_STATS') %}<li><a href="{{ path('EPLEElectionBundle_statistiques', { 'codeUrlTypeElect' :constant('\\App\\Entity\\RefTypeElection::CODE_URL_PEE')}) }}">Statistiques</a></li>{% endif %}
+								{% if app.user.profil.code == constant('\\App\\Entity\\RefProfil::CODE_PROFIL_DGESCO') %}<li><a href="{{ path('EPLEElectionBundle_archives', { 'codeUrlTypeElect' :constant('\\App\\Entity\\RefTypeElection::CODE_URL_PEE')}) }}">Archives</a></li>{% endif %}
+								{% if is_granted('ROLE_ENV_COUR_LIB_CE') %}<li><a href="{{ path('EPLEElectionBundle_courriel_libre', { 'codeUrlTypeElect' :constant('\\App\\Entity\\RefTypeElection::CODE_URL_PEE')}) }}">Courriel</a></li>{% endif %}
+							</ul>
+						</li>
+					</ul>
+				{% endif %}
+				{% if app.user is defined and app.user.perimetre.hasElectionsPARENTS and not app.user.perimetre.isPerimetreVide %}
+					<ul class="pliable election">
+						<li>Parents d'élèves</li>
+						<li>
+							<ul>
+								{% if is_granted('ROLE_RES_ETAB_PAR') or is_granted('ROLE_RES_GLO_PAR') %}<li><a href="{{ path('EPLEElectionBundle_resultats', { 'codeUrlTypeElect':constant('\\App\\Entity\\RefTypeElection::CODE_URL_PARENT') }) }}">Résultats</a></li>{% endif %}
+								{% if is_granted('ROLE_STATS') %}<li><a href="{{ path('EPLEElectionBundle_statistiques', { 'codeUrlTypeElect' :constant('\\App\\Entity\\RefTypeElection::CODE_URL_PARENT') }) }}">Statistiques</a></li>{% endif %}
+								{% if is_granted('ROLE_STATS_TAUX_PART') %}<li><a href="{{ path('EPLEElectionBundle_recapitulatif_participation', { 'codeUrlTypeElect' :constant('\\App\\Entity\\RefTypeElection::CODE_URL_PARENT') }) }}">Statistiques taux de participation</a></li>{% endif %}
+								{% if is_granted('ROLE_STATS_EDU_PRIO') %}<li><a href="{{ path('EPLEElectionBundle_recapitulatif_participation_detaillee', { 'codeUrlTypeElect' :constant('\\App\\Entity\\RefTypeElection::CODE_URL_PARENT') }) }}">Statistiques éducation prioritaire</a></li>{% endif %}
+								{% if app.user.profil.code == constant('\\App\\Entity\\RefProfil::CODE_PROFIL_DGESCO') %}<li><a href="{{ path('EPLEElectionBundle_archives', { 'codeUrlTypeElect' :constant('\\App\\Entity\\RefTypeElection::CODE_URL_PARENT') }) }}">Archives</a></li>{% endif %}
+								{% if is_granted('ROLE_ENV_COUR_LIB_CE') %}<li><a href="{{ path('EPLEElectionBundle_courriel_libre', { 'codeUrlTypeElect' :constant('\\App\\Entity\\RefTypeElection::CODE_URL_PARENT')}) }}">Courriel</a></li>{% endif %}
+							</ul>
+						</li>
+					</ul>
+				{% endif %}
+				{% if is_granted('ROLE_GEST_CAMP') or is_granted('ROLE_GEST_ETAB') or is_granted('ROLE_GEST_FEDE') or is_granted('ROLE_GEST_ORG') or is_granted('ROLE_GEST_CONTACT') or is_granted('ROLE_RECH_UAI')%}
+					<ul class="pliable admin">
+						<li>Administration</li>
+						<li>
+							<ul>
+								{% if is_granted('ROLE_IMPORT_RAMSESE') %}<li><a href="{{ path('EPLEAdminBundle_import') }}">Import RAMSESE</a></li>{% endif %}
+								{% if is_granted('ROLE_GEST_CAMP') %}<li><a href="{{ path('EPLEAdminBundle_campagnes') }}">Campagnes</a></li>{% endif %}
+								{% if is_granted('ROLE_GEST_ETAB') %}<li><a href="{{ path('EPLEAdminBundle_etablissement', { 'page' : 0 }) }}">Établissements</a></li>{% endif %}
+								{% if is_granted('ROLE_GEST_FEDE') %}<li><a href="{{ path('EPLEAdminBundle_federations') }}">Fédérations</a></li>{% endif %}
+								{% if is_granted('ROLE_GEST_ORG') %}<li><a href="{{ path('EPLEAdminBundle_organisations') }}">Organisations</a></li>{% endif %}
+								{% if is_granted('ROLE_RECH_UAI') %}<li><a href="{{ path('EPLEAdminBundle_page_formulaire_recherche_etablissement') }}">UAIs</a></li>{% endif %}
+								{% if is_granted('ROLE_GEST_CONTACT') %}<li><a href="{{ path('EPLEAdminBundle_contacts') }}">Contacts</a></li>{% endif %}
+
+							</ul>
+						</li>
+					</ul>
+				{% endif %}
+				{% if app.user.roles is defined %}
+					<ul class="neutre" id="deconnexion">
+						<li><a href="{{ path('EPLEElectionBundle_logout') }}">Déconnexion</a></li>
+					</ul>
+				{% endif %}
+				<nav id="version">v{{ app.user.perimetre.getVersion() }}</nav>
+			</nav>
+
+		{% endblock %}
+
+		<section id="page" role="main" aria-labelledby="labmain">
+			<p id="labmain" class="arialabel">Contenu principal</p>
+			{% block ariane %}<ul id="ariane">
+				<li><a href="{{ path('EPLEElectionBundle_tableau_bord') }}">Tableau de bord</a></li>
+				{% block arianeComplements %}{% endblock %}
+				</ul>{% endblock %}
+			{% block contentPage %}{% endblock %}
+		</section>
+	</div>
+
+
+	<footer id="footer">
+		Ministère de l'éducation nationale, de l'enseignement supérieur et de la recherche
+		<br/>
+		<a target="_blank" href="{{ app.user.perimetre.getRgaaDeclarationLink() }}">Accessibilité : {{ app.user.perimetre.getRgaaStatus() }}</a>
+	</footer>
+
+</div>
+
+</body>
+</html>

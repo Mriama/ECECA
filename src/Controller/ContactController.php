@@ -2,26 +2,40 @@
 
 namespace App\Controller;
 
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\Security\Core\Exception\AccessDeniedException;
-
-use App\Model\ContactModel;
-
-use App\Entity\RefDepartement;
 use App\Entity\RefAcademie;
+use App\Entity\RefContact;
+use App\Form\ContactType;
+use App\Form\TypeElectionHandler;
+use App\Model\ContactModel;
+use App\Entity\RefDepartement;
+use App\Entity\RefTypeElection;
+use App\Form\TypeElectionType;
+use App\Utils\EpleUtils;
+use App\Controller\BaseController;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Security\Core\Exception\AccessDeniedException;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
+use Symfony\Component\Routing\Annotation\Route;
 
-class ContactController extends AbstractController {
+class ContactController extends BaseController {
 
-	public function indexAction(\Symfony\Component\HttpFoundation\Request $request) {
-		if (false === $this->get('security.context')->isGranted('ROLE_GEST_CONTACT')) {
-			throw new AccessDeniedException();
+	/**
+	 *
+	 *@Route("/contacts", name="contacts")
+	 */
+	public function indexAction(Request $request,ParameterBagInterface $parameters) {
+		// if (false === $this->get('security.authorization_checker')->isGranted('ROLE_GEST_CONTACT')) {
+		// 	throw new AccessDeniedException();
+		// }
+		$user = $this->getUser();
+		$em = $this->getDoctrine()->getManager();
+		if($request->getSession()->get('typeElectIdSession') != null){
+			$te_defaultValue = $em->getRepository(RefTypeElection::class)->find($request->getSession()->get('typeElectIdSession'));
+		}else{
+			$te_defaultValue = null;
 		}
 		
-		$em = $this->getDoctrine()->getManager();
-		
-		$te_defaultValue = $em->getRepository('EPLEElectionBundle:RefTypeElection')
-									->find($request->getSession()->get('typeElectIdSession'));
-		if (empty($te_defaultValue)) { $te_defaultValue = $em->getRepository('EPLEElectionBundle:RefTypeElection')->find(1); }
+		if (empty($te_defaultValue)) { $te_defaultValue = $em->getRepository(RefTypeElection::class)->find(1); }
 		
 		$tz_defaultValue = "";
 		$tz_defaultValue_session = $request->getSession()->getFlashBag()->get('typeZoneSession');
@@ -30,13 +44,14 @@ class ContactController extends AbstractController {
 		} else {
 			$tz_defaultValue = $tz_defaultValue_session;
 		}
+		if (empty($tz_defaultValue)) 
+		{ 
+			$tz_defaultValue = RefAcademie::getNameEntity(); 
+		}
 		
-		if (empty($tz_defaultValue)) { $tz_defaultValue = RefAcademie::getNameEntity(); }
-		
-		$form = $this->createForm(	new \App\Form\TypeElectionType(),
-									(empty($te_defaultValue)? null : array('typeElection' => $te_defaultValue, 'typeZone'=> $tz_defaultValue)) );
+		$form = $this->createForm(TypeElectionType::class,array('typeElection' => $te_defaultValue, 'typeZone'=> $tz_defaultValue) );
 
-		$formHandler = new \App\Form\TypeElectionHandler($form, $request, $em);
+		$formHandler = new TypeElectionHandler($form, $request, $em);
 		if ($formHandler->processGestionContact()) {
 			$te_defaultValue = $formHandler->getTeDefaultValue();
 			$tz_defaultValue = $formHandler->getTypeZoneDefaultValue();
@@ -57,17 +72,17 @@ class ContactController extends AbstractController {
 			 * 							 )
 			 */
 			
-			$params['modelContacts'] = $em->getRepository('EPLEElectionBundle:RefContact')->findContactModelsByTypeZoneTypeElection($tz_defaultValue, $te_defaultValue);
+			$params['modelContacts'] = $em->getRepository(RefContact::class)->findContactModelsByTypeZoneTypeElection($tz_defaultValue, $te_defaultValue);
 		} else {
 			$this->get('session')->getFlashBag()->set('info', 'Aucun contact proposé car il n\'existe pas de type d\'élection');
 			$params['modelContacts'] = array();
 		}
 		
 		if($tz_defaultValue == RefAcademie::getNameEntity()) { //Académie
-			$zoneSansContact = $em->getRepository('EPLEElectionBundle:RefAcademie')
+			$zoneSansContact = $em->getRepository(RefAcademie::class)
 										->findRefAcademieSansContactByRefTypeElection($te_defaultValue);
 		} else { //Département
-			$zoneSansContact = $em->getRepository('EPLEElectionBundle:RefDepartement')
+			$zoneSansContact = $em->getRepository(RefDepartement::class)
 										->findRefDepartementSansContactByRefTypeElection($te_defaultValue);
 		}
 		
@@ -75,9 +90,9 @@ class ContactController extends AbstractController {
 		
 		if ($te_defaultValue!=null) { $this->get('session')->set('typeElectIdSession', $te_defaultValue->getId()); }
 		$request->getSession()->getFlashBag()->set('typeZoneSession', $tz_defaultValue);
-		$params['mess_warning']= $this->container->getParameter('mess_warning');
+		$params['mess_warning']= $parameters->get('mess_warning');
 		
-		return $this->render('EPLEAdminBundle:Contact:index.html.twig', $params);
+		return $this->render('contact/index.html.twig', $params);
 	}
 
 
@@ -87,7 +102,7 @@ class ContactController extends AbstractController {
 		}
 		
 		$em = $this->getDoctrine()->getManager();
-		$te_defaultValue = $em->getRepository('EPLEElectionBundle:RefTypeElection')
+		$te_defaultValue = $em->getRepository(RefTypeElection::class)
 									->find($request->getSession()->get('typeElectIdSession'));
 		
 		if ($te_defaultValue == null) {
@@ -100,19 +115,19 @@ class ContactController extends AbstractController {
 			$c_defaultValues = new \App\Entity\RefContact($te_defaultValue);
 			$typeZoneSession = $request->getSession()->getFlashBag()->get('typeZoneSession');
 			if (RefAcademie::getNameEntity() === $typeZoneSession[0]) {
-				$zone = $em->getRepository('EPLEElectionBundle:RefAcademie')->findOneBy(array(), array('libelle'=>'ASC'));
+				$zone = $em->getRepository(RefAcademie::class)->findOneBy(array(), array('libelle'=>'ASC'));
 			} else {
-				$zone = $em->getRepository('EPLEElectionBundle:RefDepartement')->findOneBy(array(), array('libelle'=>'ASC'));
+				$zone = $em->getRepository(RefDepartement::class)->findOneBy(array(), array('libelle'=>'ASC'));
 			}
 		} else {
-			$c_defaultValues = $em->getRepository('EPLEElectionBundle:RefContact')->find($contactId);
+			$c_defaultValues = $em->getRepository(RefContact::class)->find($contactId);
 		}
 		
 		if ($c_defaultValues == null) {
 			throw $this->createNotFoundException('Le contact n\'a pas été trouvé.');
 		}
 		
-		if ($contactId != 0) { $zone = \App\Utils\EpleUtils::getZone($em, $c_defaultValues->getIdZone()); }
+		if ($contactId != 0) { $zone = EpleUtils::getZone($em, $c_defaultValues->getIdZone()); }
 		
 		if( !($zone instanceof RefAcademie or $zone instanceof RefDepartement) ) {
 			throw $this->createNotFoundException('Le contact n\'a pas été trouvé car la zone (académie ou département) est inconnue ('. $c_defaultValues->getIdZone() .').');
@@ -120,11 +135,11 @@ class ContactController extends AbstractController {
 		
 		$mContact = new ContactModel($zone, $c_defaultValues);		
 		
-		$form = $this->createForm(	new \App\Form\ContactType(), $mContact);
+		$form = $this->createForm(ContactType::class, $mContact);
 		
 		if ($request->getMethod() == 'POST') {
-			$form->bind($request);
-			if ($form->isValid()) {
+			$form->handleRequest($request);
+			if ($form->isSubmitted() && $form->isValid()) {
 				$mContactEnCours = $form->getData();
 				
 				$contactEnCours = $mContactEnCours->getContact();
@@ -145,7 +160,7 @@ class ContactController extends AbstractController {
 		}
 		$request->getSession()->set('typeElectIdSession', ( ($c_defaultValues->getTypeElection()==null) ? null : $c_defaultValues->getTypeElection()->getId() ));
 		$request->getSession()->getFlashBag()->set('typeZoneSession', ( $mContact->getDepartement()==null ) ? RefAcademie::getNameEntity() : RefDepartement::getNameEntity());
-		return $this->render('EPLEAdminBundle:Contact:edit.html.twig', array('form' => $form->createView()));
+		return $this->render('contact/edit.html.twig', array('form' => $form->createView()));
 	}
 
 }

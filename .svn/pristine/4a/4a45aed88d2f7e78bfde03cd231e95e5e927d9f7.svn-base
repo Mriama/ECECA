@@ -1,0 +1,1250 @@
+<?php
+namespace App\Controller;
+
+use DateTime;
+use App\Entity\RefModaliteVote;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Security\Core\Exception\AccessDeniedException;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Form\Extension\Core\ChoiceList\ObjectChoiceList;
+use App\Entity\EleCampagne;
+use App\Entity\EleEtablissement;
+use App\Entity\RefAcademie;
+use App\Entity\RefDepartement;
+use App\Entity\RefCommune;
+use App\Entity\RefEtablissement;
+use App\Entity\RefTypeElection;
+use App\Entity\RefProfil;
+use App\Utils\EcecaExportUtils;
+use App\Form\CampagneZoneEtabType;
+use App\Entity\RefTypeEtablissement;
+use App\Utils\EpleUtils;
+
+class StatistiqueController extends AbstractController
+{
+
+    /**
+     * Fonction permettant d'afficher les statistiques d'une année n et n-1 en
+     * fonction des données sélectionnées par l'utilisateur dans le formulaire associé
+     *
+     * @param \Symfony\Component\HttpFoundation\Request $request
+     * @param string $codeUrlTypeElect
+     * @throws AccessDeniedException
+     */
+    public function indexAction(\Symfony\Component\HttpFoundation\Request $request, $codeUrlTypeElect)
+    {
+        if (false === $this->get('security.context')->isGranted('ROLE_STATS')) {
+            throw new AccessDeniedException();
+        }
+        $em = $this->getDoctrine()->getManager();
+        // reset session
+        $request->getSession()->remove('campagne_annee_deb');
+        $request->getSession()->remove('select_campagne');
+        $request->getSession()->remove('select_academie');
+        $request->getSession()->remove('select_departement');
+        $request->getSession()->remove('select_commune');
+        $request->getSession()->remove('select_etablissement');
+        $request->getSession()->remove('select_choix_etab');
+        $request->getSession()->remove('select_type_etablissement');
+
+        $user = $this->get('security.context')->getToken()->getUser();
+        $profilsLimitEtab = array(RefProfil::CODE_PROFIL_IEN, RefProfil::CODE_PROFIL_CE, RefProfil::CODE_PROFIL_DE);
+
+        //DE/CE/IEN : Selection par defaut des données ) afficher
+        if (in_array($user->getProfil()->getCode(), $profilsLimitEtab)) {
+            $academies = $user->getPerimetre()->getAcademies();
+            $request->getSession()->set('select_academie', $academies[0]->getCode());
+
+            $departements = $user->getPerimetre()->getDepartements();
+            $request->getSession()->set('select_departement', $departements[0]->getNumero());
+
+            $communes = $user->getPerimetre()->getCommunes();
+            $communeSelection = $request->getSession()->get('select_commune') != null ? $request->getSession()->get('select_commune') :  $communes[0]->getId();
+            $request->getSession()->set('select_commune', $communeSelection);
+
+            $etablissements = $user->getPerimetre()->getEtablissements();
+            $etablissementSelection = $request->getSession()->get('select_etablissement') != null ? $request->getSession()->get('select_etablissement') : $etablissements[0]->getUai();
+            $request->getSession()->set('select_etablissement', $etablissementSelection);
+
+            $request->getSession()->set('select_choix_etab', true);
+        }
+
+        $params = $this->getParametresStatistiques($request, $user, $codeUrlTypeElect);
+
+        $params['warning'] = $this->container->getParameter('warning');
+
+        // Evol message info pour le nombre total des établissements exclu EREA/ERPD
+        $typeElectionId = RefTypeElection::getIdRefTypeElectionByCodeUrl($codeUrlTypeElect);
+        $typeElection = $em->getRepository('EPLEElectionBundle:RefTypeELection')->find($typeElectionId);
+        if (($typeElectionId == RefTypeElection::ID_TYP_ELECT_ASS_ATE || $typeElectionId == RefTypeElection::ID_TYP_ELECT_PEE)
+            && ($user->getProfil()->getCode() == RefProfil::CODE_PROFIL_DGESCO
+                || $user->getProfil()->getCode() == RefProfil::CODE_PROFIL_DSDEN
+                || $user->getProfil()->getCode() == RefProfil::CODE_PROFIL_RECT
+                || $user->getProfil()->getCode() == RefProfil::CODE_PROFIL_CE)) {
+            $params['info'] = $this->container->getParameter('info');
+            $params['typeElectCode'] = $typeElection->getCode();
+        }
+
+        return $this->render('EPLEElectionBundle:Statistiques:index.html.twig', $params);
+    }
+
+    public function rechercheAction(\Symfony\Component\HttpFoundation\Request $request, $codeUrlTypeElect)
+    {
+        $user = $this->get('security.context')->getToken()->getUser();
+
+        $params = $this->getParametresStatistiques($request, $user, $codeUrlTypeElect);
+        $params['warning'] = $this->container->getParameter('warning');
+
+        return $this->render('EPLEElectionBundle:Statistiques:index.html.twig', $params);
+    }
+
+    /**
+     * Récupère les données pour l'affichage des statistiques
+     *
+     * @param \Symfony\Component\HttpFoundation\Request $request
+     * @param unknown $user
+     * @param unknown $codeUrlTypeElect
+     * @return multitype:boolean NULL Ambigous <\App\Entity\RefDepartement, \App\Entity\RefAcademie> unknown \App\Entity\RefDepartement Ambigous <NULL, unknown>
+     */
+    private function getParametresStatistiques(\Symfony\Component\HttpFoundation\Request $request, $user, $codeUrlTypeElect)
+    {
+        $em = $this->getDoctrine()->getManager();
+
+        // RECT -> placer l'académie en session
+        if ($user->getProfil()->getCode() == RefProfil::CODE_PROFIL_RECT) {
+            $academies = $user->getPerimetre()->getAcademies();
+            $typeElection = $em->getRepository('EPLEElectionBundle:RefTypeElection')->find(RefTypeElection::getIdRefTypeElectionByCodeUrl($codeUrlTypeElect));
+            $lastCampange = $em->getRepository('EPLEElectionBundle:EleCampagne')->getLastCampagne($typeElection->getId());
+            $dateDebutLaseCampagne = $lastCampange->getAnneeDebut();
+            $checkChildAcad = $em->getRepository('EPLEElectionBundle:RefAcademie')->countchildAcademies( $academies[0]->getCode());
+            //check if the  Aca is not deactivated in the last campagne
+            if($academies[0]->getDateDesactivation() <= new \DateTime( $dateDebutLaseCampagne . "-01-01") ){
+                //check the parent of the deactivated Aca
+                if($academies[0]->getAcademieFusion() != null){
+                    $departements =  $em->getRepository('EPLEElectionBundle:RefDepartement')->findBydepartementAdademiefusionner( $academies[0]->getAcademieFusion()->getCode());
+                    $request->getSession()->set('select_academie', $academies[0]->getAcademieFusion()->getCode());
+                }
+                //check if the eactivated Aca has child
+            }elseif( $checkChildAcad >= 0 ){
+                $departements =  $em->getRepository('EPLEElectionBundle:RefDepartement')->findBydepartementAdademiefusionner( $academies[0]->getCode());
+                $request->getSession()->set('select_academie', $academies[0]->getCode());
+            }else{
+                $request->getSession()->set('select_academie', $academies[0]->getCode());
+            }
+        }
+
+        // DSDEN -> placer l'académie et le département de l'utilisateur en session
+        if ($user->getProfil()->getCode() == RefProfil::CODE_PROFIL_DSDEN) {
+            $academies = $user->getPerimetre()->getAcademies();
+            $request->getSession()->set('select_academie', $academies[0]->getCode());
+            $departements = $user->getPerimetre()->getDepartements();
+            $request->getSession()->set('select_departement', $departements[0]->getNumero());
+        }
+
+
+        $params = array();
+        $campagneAnneeDeb = $request->getSession()->get('campagne_annee_deb');
+        $codeUrlTypeEtab = 'tous';
+        $datasSearch = array();
+
+        $typeElection = $em->getRepository('EPLEElectionBundle:RefTypeElection')->find(RefTypeElection::getIdRefTypeElectionByCodeUrl($codeUrlTypeElect));
+        if (empty($typeElection)) {
+            throw $this->createNotFoundException('Le type d\'élection n\'a pas été trouvé.');
+        }
+        $params['typeElect'] = $typeElection;
+
+        $datasSearch['typeElect'] = $typeElection;
+        $datasSearch['campagne'] =  $em->getRepository('EPLEElectionBundle:EleCampagne')->find($request->getSession()->get('select_campagne'));
+        $datasSearch['academie'] = $em->getRepository('EPLEElectionBundle:RefAcademie')->find($request->getSession()->get('select_academie'));
+        $datasSearch['departement'] = $em->getRepository('EPLEElectionBundle:RefDepartement')->find($request->getSession()->get('select_departement'));
+        $datasSearch['typeEtablissement'] = $em->getRepository('EPLEElectionBundle:RefTypeEtablissement')->find($request->getSession()->get('select_type_etablissement'));
+        $datasSearch['choix_etab'] = $request->getSession()->get('select_choix_etab');
+        $datasSearch['commune'] = $em->getRepository('EPLEElectionBundle:RefCommune')->find($request->getSession()->get('select_commune'));
+        $datasSearch['etablissement'] = $em->getRepository('EPLEElectionBundle:RefEtablissement')->find($request->getSession()->get('select_etablissement'));
+
+        $form = $this->createForm(new CampagneZoneEtabType($user), $datasSearch);
+
+        if ($request->getMethod() == 'POST') {
+            $form->bind($request);
+            if ($form->isValid()) {
+
+                $datasForm = $form->getData();
+
+                /* Variable $datasForm prend les parametres renvoyes par $form et a priori saisis par user */
+                /* Variable $datasSearch prend le relai, elle prend les donnees renvoyees par $datasForm */
+                $datasSearch['campagne'] = $datasForm['campagne'];
+                $datasSearch['academie'] = $datasForm['academie'];
+                $datasSearch['departement'] = $datasForm['departement'];
+                $datasSearch['typeEtablissement'] = $datasForm['typeEtablissement'];
+                $datasSearch['choix_etab'] = $datasForm['choix_etab'];
+                $datasSearch['commune'] = $datasForm['commune'];
+                $datasSearch['etablissement'] = $datasForm['etablissement'];
+
+            }else{
+                /* Sinon, au cas où le user n'a rien saisi, $datasSearch va chercher dans BD, */
+                /*ce cas renvoie un resultat global d'une campagne quelque soit la session    */
+
+                // YME : rustine pour DGESCO, à corriger
+                $arrayRequest = $request->request->all();
+
+                //Contient ["academie"] (code); ["departement"] (numero); ["typeEtablissement"] (id); ["etatSaisie"]; ["choix_etab"]; ["commune"] (id); ["etablissement"] (uai); ["_token"]
+                $arrayResultatZoneEtabType = $arrayRequest['campagneZoneEtabType'];
+                $datasSearch['campagne'] = $em->getRepository('EPLEElectionBundle:EleCampagne')->find($arrayResultatZoneEtabType['campagne']);
+                $datasSearch['academie'] = $em->getRepository('EPLEElectionBundle:RefAcademie')->find($arrayResultatZoneEtabType['academie']);
+                $datasSearch['departement'] = $em->getRepository('EPLEElectionBundle:RefDepartement')->find($arrayResultatZoneEtabType['departement']);
+                $datasSearch['commune'] = $em->getRepository('EPLEElectionBundle:RefCommune')->find($arrayResultatZoneEtabType['commune']);
+                $datasSearch['typeEtablissement'] = $em->getRepository('EPLEElectionBundle:RefTypeEtablissement')->find($arrayResultatZoneEtabType['typeEtablissement']);
+                $datasSearch['choix_etab'] = (array_key_exists('choix_etab', $arrayResultatZoneEtabType) && $arrayResultatZoneEtabType['choix_etab'] == "1") ? true : false;
+                $datasSearch['etablissement'] = $em->getRepository('EPLEElectionBundle:RefEtablissement')->find($arrayResultatZoneEtabType['etablissement']);
+
+            }
+
+            // Année de début de la campagne
+            $campagneAnneeDeb = $datasSearch['campagne']->getAnneeDebut();
+
+            // si demande de liste d'établissement sans précision, on restreint à la zone du User
+
+            /*Ajouter un filtre du type d'élection *********/
+            if ($datasSearch['choix_etab']) {
+                $zoneUser = ($user->getIdZone() != null) ? EpleUtils::getZone($em, $user->getIdZone()) : null;
+                if ($zoneUser instanceof RefDepartement) {
+                    $datasSearch['academie'] = $zoneUser->getAcademie();
+                    $datasSearch['departement'] = $zoneUser;
+                } else
+                    if ($zoneUser instanceof RefAcademie) {
+                        $datasSearch['academie'] = $zoneUser;
+                    }
+            }
+        }
+
+        //EVOL 014E exclus les EREA-ERPD des statistiques ASS et ATE et PEE
+        $typeEtablissement = $datasSearch['typeEtablissement'];
+        $isEreaErpdExclus = false;
+        if((RefTypeElection::ID_TYP_ELECT_ASS_ATE == $typeElection->getId() || RefTypeElection::ID_TYP_ELECT_PEE == $typeElection->getId())
+            && (($typeEtablissement != null && !empty($typeEtablissement) && $typeEtablissement->getCode() != RefTypeEtablissement::CODE_EREA_ERPD) || $typeEtablissement == null)) {
+            $isEreaErpdExclus = true;
+        }
+
+        if ($datasSearch['typeEtablissement'] != null && !empty($datasSearch['typeEtablissement'])) {
+            $codeUrlTypeEtab = $datasSearch['typeEtablissement']->getCodeUrlById();
+
+        } else {
+            $codeUrlTypeEtab = 'tous';
+        }
+        $params['codeUrlTypeEtab'] = $codeUrlTypeEtab;
+
+        // Campagne et campagne antérieure
+        if ($campagneAnneeDeb == null) {
+            $campagne = $em->getRepository('EPLEElectionBundle:EleCampagne')->getLastCampagne($typeElection);
+        } else {
+            $listeCampagne = $em->getRepository('EPLEElectionBundle:EleCampagne')->getCampagneParTypeElectionAnneeDebut($typeElection, $campagneAnneeDeb);
+            $campagne = (! empty($listeCampagne)) ? $listeCampagne[0] : null;
+        }
+        if (empty($campagne)) {
+            throw $this->createNotFoundException('La campagne pour ce type d\'élection n\'a pas été trouvé.');
+        }
+        $params['campagne'] = $campagne;
+
+        $listeCampagnePrec = $em->getRepository('EPLEElectionBundle:EleCampagne')->getCampagneParTypeElectionAnneeDebut($typeElection, $campagne->getAnneeDebut() - 1);
+        $campagnePrec = (! empty($listeCampagnePrec)) ? $listeCampagnePrec[0] : null;
+        $params['campagnePrec'] = $campagnePrec;
+
+        // Type de zone
+        /* Ajouter un filtre du type d'élection*/
+        if (!empty($datasSearch['commune'])) {
+            $params['commune'] = $datasSearch['commune'];
+            $params['dept'] = $datasSearch['departement'];
+            $zone = $datasSearch['commune'];
+        } elseif (!empty($datasSearch['departement'])) {
+            $params['dept'] = $datasSearch['departement'];
+            $zone = $datasSearch['departement'];
+        } elseif (!empty($datasSearch['academie'])) {
+            $params['aca'] = $datasSearch['academie'];
+            $zone = $datasSearch['academie'];
+        } else {
+            $params['nationale'] = true;
+            $zone = null;
+        }
+
+
+        // Statistiques générales des 2 dernières campagnes
+
+        /*** Mise en commentaire car non utilisé */
+        //$params['nbEtabExprDetailles'] = $em->getRepository('EPLEElectionBundle:EleConsolidation')->getNbEtabExprWithTypeEtabFromEleConsolidationByCampagneZoneTypeEtab($campagne, $zone, $datasSearch['typeEtablissement'], $user->getPerimetre());
+
+        // Choix par établissement : recherche dans EleEtablissement
+        if ($datasSearch['choix_etab'] && !empty($datasSearch['etablissement'])) {
+
+
+            $params['etablissement'] = $datasSearch['etablissement'];
+            // 	0167880 on affiche que les données validés            
+            $eleEtablissement = $em->getRepository('EPLEElectionBundle:EleEtablissement')->getEleEtablissementGlobale($campagne, $datasSearch['etablissement'], null, 'V');
+
+            /*  exclusion des résultats EREA-ERPD **************************/
+            /*if (null != $eleEtablissement && (!$eleEtablissement->isValide() ||
+												($eleEtablissement->getEtablissement()->getTypeEtablissement()->getId() == RefTypeEtablissement::ID_TYP_EREA_ERPD && $isEreaErpdExclus)) // YME 0145664
+            ) { // mantis 123016
+               $eleEtablissement = null;
+            }*/
+
+            $params['electEtablissement'] = $eleEtablissement;
+
+            if (! empty($campagnePrec)) {
+                // 	0167880 on affiche que les données validés
+                $eleEtablissementPrec = $em->getRepository('EPLEElectionBundle:EleEtablissement')->getEleEtablissementGlobale($campagnePrec, $datasSearch['etablissement'], null, 'V');
+                if ($datasSearch['etablissement']->getTypeEtablissement()->getId() == RefTypeEtablissement::ID_TYP_EREA_ERPD
+                    && (RefTypeElection::ID_TYP_ELECT_ASS_ATE == $typeElection->getId() || RefTypeElection::ID_TYP_ELECT_PEE == $typeElection->getId())) { // YME 0145664
+                    $eleEtablissementPrec = null;
+                }
+            } else {
+                $eleEtablissementPrec = null;
+            }
+
+            $params['electEtablissementPrec'] = $eleEtablissementPrec;
+
+            // Résultats de l'établissement (année n et année n-1)
+            $params['listeResultat'] = $this->getListeResultatsAnneeCouranteAnneePrec($params['electEtablissement'], $params['electEtablissementPrec']);
+        } else {  // Pas d'établissement précisé
+
+            // Choix par zone : recherche dans EleParticipation            
+
+            // Ajout du parametre null a la place de $user, pour mettre en bonne ordre les parametres
+            $params['nbEtabParZone'] = $em->getRepository('EPLEElectionBundle:RefEtablissement')->getNbEtabParTypeEtablissementZoneCommune($datasSearch['typeEtablissement'], $zone, $zone, false, true, $user, $campagne, $isEreaErpdExclus);
+            $params['nbEtabSaisieParZone'] = $em->getRepository('EPLEElectionBundle:EleEtablissement')->getNbEleEtabParCampagne($campagne, $zone, 'S', $datasSearch['typeEtablissement'], $user, $isEreaErpdExclus);
+            $params['nbEtabSaisieValideeParZone'] = $em->getRepository('EPLEElectionBundle:EleEtablissement')->getNbEleEtabParCampagne($campagne, $zone, 'V', $datasSearch['typeEtablissement'], $user, $isEreaErpdExclus);
+
+            /* Exclusion des résultats EREA-ERPD **************************/
+            // YME 0145664 -> Pas d'exclusion pour les élections PE
+            /*
+            if ($datasSearch['typeEtablissement'] != null && $datasSearch['typeEtablissement']->getId() == RefTypeEtablissement::ID_TYP_EREA_ERPD) {
+            	$eleEtablissementExclureEREA = null;
+            } else {
+            	$isEreaErpdExclus = true;
+            	$eleEtablissementExclureEREA =
+
+            } */
+
+            $params['electZone'] = $em->getRepository('EPLEElectionBundle:EleEtablissement')->getConsolidationByCampagneTypeEtabZoneEtatSaisie($em, $campagne, $datasSearch['typeEtablissement'], $zone, 'V', $user, $isEreaErpdExclus);//$eleEtablissementExclureEREA;
+
+
+            if ($params['electZone'] != null) {
+                if ($params['electZone']->getNbEtabTotal() == null) {
+                    $params['electZone']->setNbEtabTotal($params['nbEtabParZone']);
+                }
+
+                if ($params['electZone']->getNbEtabExprimes() == null) {
+                    $params['electZone']->setNbEtabExprimes(0);
+                }
+            }
+
+            if (! empty($campagnePrec)) {
+
+                $params['electZonePrec'] = $em->getRepository('EPLEElectionBundle:EleEtablissement')->getConsolidationByCampagneTypeEtabZoneEtatSaisie($em, $campagnePrec, $datasSearch['typeEtablissement'], $zone, 'V', $user, $isEreaErpdExclus);
+
+                /*
+                 * YME 0145664 - Pas d'exclusion des EREA-ERPD pour les élestions PE
+                if ($datasSearch['typeEtablissement'] != null && $datasSearch['typeEtablissement']->getId()== RefTypeEtablissement::ID_TYP_EREA_ERPD) {
+                    $eleEtablissementPrecExclureEREA = null;
+                } else {
+                    $isEreaErpdExclus = true;
+                    $eleEtablissementPrecExclureEREA = $em->getRepository('EPLEElectionBundle:EleEtablissement')->getConsolidationByCampagneTypeEtabZoneEtatSaisie($em, $campagnePrec, $datasSearch['typeEtablissement'], $zone, 'V', $user, $isEreaErpdExclus);
+                }*/
+            } else {
+                $params['electZonePrec'] = null; //$eleEtablissementPrecExclureEREA
+            }
+
+            //$params['electZonePrec'] = $eleEtablissementPrecExclureEREA;
+            /**
+             * **** Récupération de l'ensemble des résultats par zone *****
+             */
+            $params['listeResultat'] = $this->getListeResultatsAnneeCouranteAnneePrec($params['electZone'], $params['electZonePrec']);
+        }
+
+        //Calcul du nombre de sieges totale dans la repartition detaille
+        $total = 0;
+        $totalPrec = 0;
+        foreach ($params["listeResultat"] as $res) {
+            if($res["resultat"] != null) {
+                $total += intval(intval($res["resultat"]->getNbSieges()) + intval($res["resultat"]->getNbSiegesSort()));
+            }
+            if($res["resultatPrec"] != null) {
+                $totalPrec += intval(intval($res["resultatPrec"]->getNbSieges()) + intval($res["resultatPrec"]->getNbSiegesSort()));
+            }
+        }
+        $params["totalSiegeElect"] = $total;
+        $params["totalSiegeElectPrec"] = $totalPrec;
+
+        // Mise à jour Session
+        $request->getSession()->set('campagne_annee_deb', $campagneAnneeDeb);
+        $request->getSession()->set('select_campagne', ($datasSearch['campagne'] instanceof EleCampagne) ? $datasSearch['campagne']->getId() : null);
+        $request->getSession()->set('select_academie', ($datasSearch['academie'] instanceof RefAcademie) ? $datasSearch['academie']->getIdZone() : null);
+        $request->getSession()->set('select_departement', ($datasSearch['departement'] instanceof RefDepartement) ? $datasSearch['departement']->getIdZone() : null);
+
+        $request->getSession()->set('select_type_etablissement', ($datasSearch['typeEtablissement'] instanceof RefTypeEtablissement) ? $datasSearch['typeEtablissement']->getId() : null);
+        $request->getSession()->set('select_choix_etab', $datasSearch['choix_etab']);
+        $request->getSession()->set('select_commune', ($datasSearch['commune'] instanceof RefCommune) ? $datasSearch['commune']->getId() : null);
+        $request->getSession()->set('select_etablissement', ($datasSearch['etablissement'] instanceof RefEtablissement) ? $datasSearch['etablissement']->getUai() : null);
+        // mise en session des params
+        // $request->getSession()->set('params_stats', $params);
+        $params['form'] = $form->createView();
+
+        switch ($user->getProfil()->getCode()){
+            case RefProfil::CODE_PROFIL_DGESCO:
+                $params['acad_date_activation'] = $datasSearch['academie'] == null ? "" : $datasSearch['academie']->getDateActivation()->format('Y');
+                break;
+            case RefProfil::CODE_PROFIL_RECT:
+                $params['acad_date_activation'] = $datasSearch['academie'] == null ? "" : $datasSearch['academie']->getDateActivation()->format('Y');
+                break;
+
+            default:
+                break;
+        }
+
+        $selct = $request->getSession()->get('select_departement');
+
+        return $params;
+    }
+
+    /**
+     * Cette fonction renvoie une liste de résultats en associant les résultats de l'année n avec les résultats de l'année n-1
+     *
+     * @param
+     *            EleEtablissement ou EleConsolidation $elect
+     * @param
+     *            EleEtablissement ou EleConsolidation $electPrec
+     * @return array EleResulat
+     *         @codeCoverageIgnore
+     */
+    private function getListeResultatsAnneeCouranteAnneePrec($elect, $electPrec)
+    {
+        $listeResultat = array();
+        $resultatsAnneeCourante = false;
+
+        if (! empty($elect)) {
+            foreach ($elect->getResultats() as $key => $resultat) {
+                //SESAM 0313887 : Calcul du nombre réel de siège attribué
+                if ($resultat->getNbSieges() != null && $resultat->getNbCandidats() != null) {
+                    $resultat->setNbSieges(min($resultat->getNbSieges(), $resultat->getNbCandidats()));
+                }
+                $listeResultat[$key]['resultat'] = $resultat;
+                $listeResultat[$key]['resultatPrec'] = null;
+                $resultatsAnneeCourante = true;
+            }
+        }
+        /**
+         * **** Comparaison des organisations de l'année antérieur si données existantes *****
+         */
+
+        if (! empty($electPrec)) {
+            foreach ($electPrec->getResultats() as $resultatPrec) {
+                $organisation_supplementaire = true;
+                //SESAM 0313887 : Calcul du nombre réel de siège attribué
+                if ($resultatPrec->getNbSieges() != null && $resultatPrec->getNbCandidats() != null) {
+                    $resultatPrec->setNbSieges(min($resultatPrec->getNbSieges(), $resultatPrec->getNbCandidats()));
+                }
+                if ($resultatsAnneeCourante) {
+                    foreach ($listeResultat as $key => $value) {
+                        if ($resultatPrec->getOrganisation()->getId() == $listeResultat[$key]['resultat']->getOrganisation()->getId()) {
+                            $listeResultat[$key]['resultatPrec'] = $resultatPrec;
+                            $organisation_supplementaire = false;
+                            break;
+                        }
+                    }
+                }
+                if ($organisation_supplementaire == true) {
+                    $indice = sizeof($listeResultat) + 1;
+                    $listeResultat[$indice]['resultat'] = null;
+                    $listeResultat[$indice]['resultatPrec'] = $resultatPrec;
+                }
+            }
+        }
+
+        return $listeResultat;
+    }
+
+    /**
+     * Fonction permettant la génération d'un PDF à partir du twig résultat
+     *
+     * @param \Symfony\Component\HttpFoundation\Request $request
+     * @param string $codeUrlTypeElect
+     * @param string $anneeCampagne
+     * @throws AccessDeniedException
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
+    public function exportStatistiquesPDFAction(\Symfony\Component\HttpFoundation\Request $request, $codeUrlTypeElect)
+    {
+        if (false === $this->get('security.context')->isGranted('ROLE_STATS')) {
+            throw new AccessDeniedException();
+        }
+        $user = $this->get('security.context')
+            ->getToken()
+            ->getUser();
+
+        $params = $this->getParametresStatistiques($request, $user, $codeUrlTypeElect);
+
+        $fileName = EcecaExportUtils::generateFileName('Statistiques', $params);
+
+        $pdf = $this->get("white_october.tcpdf")->create('L');
+        $pdf->SetAuthor('ECECA');
+        $pdf->SetTitle($fileName);
+        $pdf->SetSubject('');
+        $pdf->SetKeywords('');
+        $pdf->setPrintHeader(false);
+        $pdf->AddPage();
+        $response = new Response();
+        $params['warning'] = $this->container->getParameter('warning');
+
+        $this->render('EPLEElectionBundle:Statistiques:exportPDFStatistiques.html.twig', $params, $response);
+        $html = $response->getContent();
+        $pdf->writeHTML($html, true, 0, true, 0);
+        $pdf->lastPage();
+        $response = new Response($pdf->Output($fileName . '.pdf', 'D'));
+        $response->headers->set('Content-Type', 'application/pdf');
+
+        return $response;
+    }
+
+    /**
+     * Fonction permettant la génération d'un PDF à partir du twig résultat
+     * Export complet des établissements classés par code postal
+     *
+     * @param \Symfony\Component\HttpFoundation\Request $request
+     * @param string $codeUrlTypeElect
+     * @param string $anneeCampagne
+     * @throws AccessDeniedException
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
+    public function exportStatistiquesPDFCompletAction(\Symfony\Component\HttpFoundation\Request $request, $codeUrlTypeElect)
+    {
+        if (false === $this->get('security.context')->isGranted('ROLE_STATS')) {
+            throw new AccessDeniedException();
+        }
+        $user = $this->get('security.context')
+            ->getToken()
+            ->getUser();
+
+        $em = $this->getDoctrine()->getManager();
+
+        $params = $this->getParametresStatistiques($request, $user, $codeUrlTypeElect);
+
+        $typeEtabForm = $em->getRepository('EPLEElectionBundle:RefTypeEtablissement')->find($request->getSession()
+            ->get('select_type_etablissement'));
+        $deptForm = $em->getRepository('EPLEElectionBundle:RefDepartement')->find($request->getSession()
+            ->get('select_departement'));
+        $lstElectEtab = $em->getRepository('EPLEElectionBundle:EleEtablissement')->findByCampagneTypeEtabZone($params['campagne'], $typeEtabForm, $deptForm, true);
+
+        /**
+         * **** Récupération de l'ensemble des résultats par établissement *****
+         */
+        $params['listeResultat'] = $this->getListeResultatsAnneeCouranteAnneePrec($params['electEtablissement'], $params['electEtablissementPrec']);
+
+        $fileName = EcecaExportUtils::generateFileName('Statistiques', $params);
+
+        $pdf = $this->get("white_october.tcpdf")->create('L');
+        $pdf->SetAuthor('ECECA');
+        $pdf->SetTitle($fileName);
+        $pdf->SetSubject('');
+        $pdf->SetKeywords('');
+        $pdf->setPrintHeader(false);
+        $pdf->AddPage();
+        $response = new Response();
+        $params['warning'] = $this->container->getParameter('warning');
+        $this->render('EPLEElectionBundle:Statistiques:exportPDFStatistiquesComplet.html.twig', $params, $response);
+        $html = $response->getContent();
+        $pdf->writeHTML($html, true, 0, true, 0);
+
+        foreach ($lstElectEtab as $electEtab) {
+            $etab = $em->getRepository('EPLEElectionBundle:RefEtablissement')->find($electEtab['uai']);
+            $params['etablissement'] = $etab;
+
+            $params['electEtablissement'] = $em->getRepository('EPLEElectionBundle:EleEtablissement')->getEleEtablissementGlobale($params['campagne'], $etab);
+            if (! empty($params['campagnePrec'])) {
+                $params['electEtablissementPrec'] = $em->getRepository('EPLEElectionBundle:EleEtablissement')->getEleEtablissementGlobale($params['campagnePrec'], $etab);
+            } else {
+                $params['electEtablissementPrec'] = null;
+            }
+            $params['listeResultat'] = $this->getListeResultatsAnneeCouranteAnneePrec($params['electEtablissement'], $params['electEtablissementPrec']);
+
+            $pdf->AddPage();
+            $response = new Response();
+            $params['warning'] = $this->container->getParameter('warning');
+            $this->render('EPLEElectionBundle:Statistiques:exportPDFStatistiquesCompletDetailEtablissement.html.twig', $params, $response);
+            $html = $response->getContent();
+            $pdf->writeHTML($html, true, 0, true, 0);
+        }
+
+        $pdf->lastPage();
+        $response = new Response($pdf->Output($fileName . '.pdf', 'D'));
+        $response->headers->set('Content-Type', 'application/pdf');
+
+        return $response;
+    }
+
+    /**
+     * Fonction permettant l'édition au format Excel des résultats d'une zone ou d'un établissement
+     *
+     * @param \Symfony\Component\HttpFoundation\Request $request
+     * @param string $codeUrlTypeElect
+     * @param string $anneeCampagne
+     * @throws AccessDeniedException
+     * @return file xls
+     */
+    public function exportStatistiquesXLSAction(\Symfony\Component\HttpFoundation\Request $request, $codeUrlTypeElect)
+    {
+        if (false === $this->get('security.context')->isGranted('ROLE_STATS')) {
+            throw new AccessDeniedException();
+        }
+        $user = $this->get('security.context')
+            ->getToken()
+            ->getUser();
+
+        // Récupération des données de statistiques
+        $params = $this->getParametresStatistiques($request, $user, $codeUrlTypeElect);
+
+        $params['ligne'] = 1;
+        $params['complet'] = false;
+
+        // **************** Création de l'objet Excel *********************//
+        $phpExcelObject = $this->get('phpexcel')->createPHPExcelObject();
+
+        // Export
+        $this->generateStatistiquesXLS($params, $phpExcelObject);
+
+        // Création du writer
+        $writer = $this->get('phpexcel')->createWriter($phpExcelObject, 'Excel5');
+
+        // Création du nom du fichier
+        $fileName = EcecaExportUtils::generateFileName('Statistiques', $params);
+
+        // Créer la réponse
+        $response = $this->get('phpexcel')->createStreamedResponse($writer);
+        $response->headers->set('Content-Type', 'text/vnd.ms-excel; charset=utf-8');
+        $date = $date = new \Datetime();
+        $response->headers->set('Content-Disposition', 'attachment;filename=' . $fileName . '.xls');
+        //var_dump($request->getSession()->get('select_academie'));die;
+        return $response;
+    }
+
+    /**
+     * Fonction permettant l'édition au format Excel des résultats d'une zone ou d'un établissement
+     * Export détaillé avec affichage des statistiques des établissements.
+     *
+     * @param \Symfony\Component\HttpFoundation\Request $request
+     * @param string $codeUrlTypeElect
+     * @param string $anneeCampagne
+     * @throws AccessDeniedException
+     * @return file xls
+     */
+    public function exportStatistiquesXLSCompletAction(\Symfony\Component\HttpFoundation\Request $request, $codeUrlTypeElect)
+    {
+        if (false === $this->get('security.context')->isGranted('ROLE_STATS')) {
+            throw new AccessDeniedException();
+        }
+        $user = $this->get('security.context')
+            ->getToken()
+            ->getUser();
+
+        $em = $this->getDoctrine()->getManager();
+
+        // Récupération des données de statistiques
+        $params = $this->getParametresStatistiques($request, $user, $codeUrlTypeElect);
+        $params['ligne'] = 1;
+
+        $campagne = $params['campagne'];
+        $campagnePrec = $params['campagnePrec'];
+        $codeUrlTypeEtab = $params['codeUrlTypeEtab'];
+        $typeElect = $params['typeElect'];
+
+        $typeEtabForm = $em->getRepository('EPLEElectionBundle:RefTypeEtablissement')->find($request->getSession()
+            ->get('select_type_etablissement'));
+        $deptForm = $em->getRepository('EPLEElectionBundle:RefDepartement')->find($request->getSession()
+            ->get('select_departement'));
+
+        $lstElectEtab = $em->getRepository('EPLEElectionBundle:EleEtablissement')->findByCampagneTypeEtabZone($campagne, $typeEtabForm, $deptForm, true);
+
+        // **************** Création de l'objet Excel *********************//
+        $phpExcelObject = $this->get('phpexcel')->createPHPExcelObject();
+
+        // Export en-tête
+        $ligne = $this->generateStatistiquesXLS($params, $phpExcelObject);
+
+        // Parcours de la liste des établissements
+        foreach ($lstElectEtab as $electEtab) {
+
+            $ligne += 2;
+
+            $data = array();
+            $data['codeUrlTypeEtab'] = $codeUrlTypeEtab;
+            $data['campagne'] = $campagne;
+            $data['campagnePrec'] = $campagnePrec;
+            $data['complet'] = true;
+
+            // Infos etablissement
+            $data['etablissement'] = $em->getRepository('EPLEElectionBundle:RefEtablissement')->find($electEtab['uai']);
+            $data['ligne'] = $ligne;
+
+            // Récupération des statistiques établissement (campagne + campagne précédente)
+            $data['electEtablissement'] = $em->getRepository('EPLEElectionBundle:EleEtablissement')->getEleEtablissementGlobale($data['campagne'], $data['etablissement']);
+            if (! empty($campagnePrec)) {
+                $data['electEtablissementPrec'] = $em->getRepository('EPLEElectionBundle:EleEtablissement')->getEleEtablissementGlobale($data['campagnePrec'], $data['etablissement']);
+            } else {
+                $data['electEtablissementPrec'] = null;
+            }
+
+            // Récupération des résultats
+            $data['listeResultat'] = $this->getListeResultatsAnneeCouranteAnneePrec($data['electEtablissement'], $data['electEtablissementPrec']);
+
+            // Export de l'établissement
+            $ligne = $this->generateStatistiquesXLS($data, $phpExcelObject);
+        }
+
+        // Création du writer
+        $writer = $this->get('phpexcel')->createWriter($phpExcelObject, 'Excel5');
+
+        // Création du nom du fichier
+        $fileName = EcecaExportUtils::generateFileName('Statistiques', $params);
+
+        // Créer la réponse
+        $response = $this->get('phpexcel')->createStreamedResponse($writer);
+        $response->headers->set('Content-Type', 'text/vnd.ms-excel; charset=utf-8');
+        $date = $date = new \Datetime();
+        $response->headers->set('Content-Disposition', 'attachment;filename=' . $fileName . '.xls');
+        return $response;
+    }
+
+    /**
+     * Fonction permettant la génération des résultats d'une zone ou d'un établissement
+     * Export détaillé avec affichage des statistiques des établissements.
+     * @param array $data : tableau array contenant les données à exporter
+     * @param \PHPExcel : objet de la librairie PhpExcelObject
+     * @return $ligne
+     */
+    private function generateStatistiquesXLS($data, &$phpExcelObject)
+    {
+        $em = $this->getDoctrine()->getManager();
+        // Données à exporter
+        // $Data contient le tableau de données à exporter passé en paramètre
+
+        $campagne = $data['campagne'];
+        $codeUrlTypeEtab = $data['codeUrlTypeEtab'];
+        $ligne = $data['ligne'];
+        $typeElect = $data['typeElect'];
+
+        $displayPrecData = (isset($data["acad_date_activation"])
+            && $data["acad_date_activation"] == $campagne->getAnneeDebut()
+            && (!isset($data["dept"]) || empty($data['dept'])))
+            ? false : true;
+        $sheet = $phpExcelObject->getActiveSheet();
+        $styleArray = array(
+            'font' => array(
+                'bold' => true
+            ),
+        );
+        $styleArrayTitre = array(
+            'font' => array(
+                'color' => array(
+                    'rgb' => 'CC33CC'
+                )
+            )
+        );
+
+        // **************** Génération du titre *********************//
+        $isZone = false;
+        if (! empty($data['electZone'])) {
+            $isZone = true;
+            $elect = $data['electZone'];
+            $electPrec = $data['electZonePrec'];
+            if (! empty($data['nationale'])) {
+                $libelle_recherche = 'Nationales';
+                $filtre_aca = 'Toutes';
+                $filtre_dept = 'Tous';
+                $filtre_comm = 'Toutes';
+            } elseif (! empty($data['commune'])) {
+                $libelle_recherche = $data['commune']->getLibelle();
+
+                //Determine l'académie de l'établissement (avant ou après fusion de certaines académie)
+                $filtre_aca = $data['commune']->getDepartement()->getAcademie();
+                $dateDebutCampagne = new Datetime($campagne->getAnneeDebut() . "-01-01");
+                if($filtre_aca->getDateDesactivation() <= $dateDebutCampagne) {
+                    $filtre_aca = $filtre_aca->getAcademieFusion();
+                }
+                if($filtre_aca != null) {
+                    $filtre_aca = $filtre_aca->getLibelle();
+                }
+
+                $filtre_dept = $data['commune']->getDepartement()->getLibelle();
+                $filtre_comm = $data['commune']->getLibelle();
+            }
+            elseif (! empty($data['dept'])) {
+                $libelle_recherche = $data['dept']->getLibelle();
+
+                //Determine l'académie de l'établissement (avant ou après fusion de certaines académie)
+                $filtre_aca = $data['dept']->getAcademie();
+                $dateDebutCampagne = new Datetime($campagne->getAnneeDebut() . "-01-01");
+                if($filtre_aca->getDateDesactivation() <= $dateDebutCampagne) {
+                    $filtre_aca = $filtre_aca->getAcademieFusion();
+                }
+                if($filtre_aca != null) {
+                    $filtre_aca = $filtre_aca->getLibelle();
+                }
+
+                $filtre_dept = $data['dept']->getLibelle();
+                $filtre_comm = 'Toutes';
+            } elseif (! empty($data['aca'])) {
+                $libelle_recherche = "";
+
+                //Determine l'académie de l'établissement (avant ou après fusion de certaines académie)
+                $filtre_aca = $data['aca'];
+                $dateDebutCampagne = new Datetime($campagne->getAnneeDebut() . "-01-01");
+                if($filtre_aca->getDateDesactivation() <= $dateDebutCampagne) {
+                    $filtre_aca = $filtre_aca->getAcademieFusion();
+                }
+                if($filtre_aca != null) {
+                    $filtre_aca = $filtre_aca->getLibelle();
+                    $libelle_recherche = $filtre_aca;
+                }
+
+                $filtre_dept = 'Tous';
+                $filtre_comm = 'Toutes';
+            }
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . $ligne, $typeElect->getLibelle() . ' - Statistiques ' . $libelle_recherche);
+        }  else {
+            $elect = $data['electEtablissement'];
+            $electPrec = $data['electEtablissementPrec'];
+
+            if($elect != null){
+                $libelle_recherche = 'de l\'établissement ' . $elect->getEtablissement()->getLibelle() . ' (' . $elect->getEtablissement()->getUai() . ')';
+            }else if($electPrec != null){
+                $libelle_recherche = 'de l\'établissement ' . $electPrec->getEtablissement()->getLibelle() . ' (' . $electPrec->getEtablissement()->getUai() . ')';
+            }
+
+            if ($data['complet']) {
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . $ligne, 'Statistiques ' . $libelle_recherche);
+            } else {
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . $ligne, $typeElect->getLibelle() . ' - Statistiques ' . $libelle_recherche);
+            }
+        }
+        $sheet->getStyle('A' . $ligne)->applyFromArray($styleArrayTitre);
+
+        // **************** Génération du descriptif *********************//
+        /***************Recherche par un établissement précis***************/
+        $ligne += 2;
+        $nomZone = '';
+        if (! empty($data['etablissement'])) {
+
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A3', 'Description d\'école ou d\'établissement');
+            // Emplacement ligne campagne
+            // Descriptif établissement
+            $etablissement = $data['etablissement'];
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . ($ligne + 1), 'Unité Administrative Immatriculée');
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . ($ligne + 2), 'Libellé');
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . ($ligne + 3), 'Type d\'établissement');
+
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 1), $etablissement->getUai());
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 2), $etablissement->getLibelle());
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 3), $etablissement->getTypeEtablissement()->getLibelle());
+
+            // Degré
+            // BBL Defect 260 HPQC
+            if ($etablissement->getTypeEtablissement() != null) {
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . ($ligne + 4), 'Degré');
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 4), $etablissement->getTypeEtablissement()->getDegre());
+                $ligne++;
+            }
+
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . ($ligne + 4), 'Commune');
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . ($ligne + 5), 'Catégorie');
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . ($ligne + 6), 'Contact');
+
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 4), $etablissement->getCommune()
+                    ->getLibelle() . ' (' . $etablissement->getCommune()
+                    ->getDepartement()
+                    ->getLibelle() . ')');
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 5), (null == $etablissement->getTypePrioritaire() ? 'N/A' : $etablissement->getTypePrioritaire()
+                ->getCode()));
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 6), $etablissement->getContact());
+
+            // Récupération des données pour le titre du fichier
+            $nomZone = $etablissement->getUai();
+
+            $ligne += 9;
+
+        } else {
+            // SESAM 0347673 : Ajout du champs "Commune" pour toutes les elections
+            // Emplacement ligne campagne
+            $case_libelle_campagne = 'A3';
+            $case_valeur_campagne = 'B3';
+            // Descriptif Zone != Etablissement
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . ($ligne + 1), 'Academie');
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . ($ligne + 2), 'Département');
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . ($ligne + 3), 'Commune');
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . ($ligne + 4), 'Type d\'établissement');
+
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 1), $filtre_aca);
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 2), $filtre_dept);
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 3), $filtre_comm);
+            // defect 268
+            if($codeUrlTypeEtab == RefTypeEtablissement::CODE_URL_2ND_DGRE) {
+                $typeEtablissement = $em->getRepository('EPLEElectionBundle:RefTypeEtablissement')->find(RefTypeEtablissement::ID_TYP_2ND_DEGRE);
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 4), ($typeEtablissement->getLibelle()));
+            } else {
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 4), ($codeUrlTypeEtab != 'tous' && $elect->getTypeEtablissement() != null ? $elect->getTypeEtablissement()->getLibelle() : ucwords($codeUrlTypeEtab)));
+            }
+
+            // Degré
+            if ($codeUrlTypeEtab != 'tous' && $elect->getTypeEtablissement() != null ) {
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . ($ligne + 5), 'Degré');
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 5), $elect->getTypeEtablissement()->getDegre());
+                $ligne++;
+            }
+
+            // Récupération des données pour le titre
+            $nomZone = $libelle_recherche;
+
+            $ligne += 8;
+
+
+            // **************** Ligne campagne ***************************//
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue($case_libelle_campagne, 'Campagne');
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue($case_valeur_campagne, $campagne->getAnneeDebut() . '-' . $campagne->getAnneeFin());
+        }
+
+        // **************** Génération de la participation *******************//
+        if ( ((null != $elect) && $elect->getParticipation())  || ((null != $electPrec) && $electPrec->getParticipation())) { // YME 0145590
+
+            $participation = (null != $elect ? $elect->getParticipation() : null);
+            $participationPrec = (null != $electPrec ? $electPrec->getParticipation() : null);
+
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . ($ligne - 1), 'Participation');
+
+            if ($typeElect->getId() == RefTypeElection::ID_TYP_ELECT_PARENT) {
+                if($isZone) {
+                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . $ligne, 'Modalité de vote');
+                    $sheet->getStyle('B' . $ligne)->applyFromArray($styleArray);
+                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . $ligne, 'Rappel ' . ($campagne->getAnneeDebut() - 1) . ' - ' . ($campagne->getAnneeFin() - 1));
+                    $sheet->getStyle('C' . $ligne)->applyFromArray($styleArray);
+                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . $ligne, 'Variation');
+                    $sheet->getStyle('D' . $ligne)->applyFromArray($styleArray);
+
+                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . ($ligne + 1), 'Vote ' . RefModaliteVote::LIBELLE_MODALITE_VOTE_URNE_CORRESPONDANCE);
+                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . ($ligne + 2), 'Vote ' . RefModaliteVote::LIBELLE_MODALITE_VOTE_CORRESPONDANCE);
+
+                    if ($participation != null) {
+                        $totalModalite = $elect->getNbEtabExprimes();
+                        if($totalModalite != 0) {
+                            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 1), round($participation->getConsolidationVoteUrneCorrespondance()/$totalModalite*100, 2) . '%');
+                            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 2), round($participation->getConsolidationVoteCorrespondance()/$totalModalite*100, 2) . '%');
+                        } else {
+                            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 1), '-');
+                            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 2), '-');
+                        }
+                    } else {
+                        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 1), '-');
+                        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 2), '-');
+                    }
+
+                    if ($participationPrec != null && $displayPrecData) {
+                        $totalModalitePrec = $electPrec->getNbEtabExprimes();
+                        if($totalModalitePrec != 0) {
+                            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . ($ligne + 1), round($participationPrec->getConsolidationVoteUrneCorrespondance() / $totalModalitePrec * 100, 2) . '%');
+                            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . ($ligne + 2), round($participationPrec->getConsolidationVoteCorrespondance() / $totalModalitePrec * 100, 2) . '%');
+                        } else {
+                            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . ($ligne + 1), '-');
+                            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . ($ligne + 2), '-');
+                        }
+                    } else {
+                        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . ($ligne + 1), '-');
+                        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . ($ligne + 2), '-');
+                    }
+                    if ($participation != null && $participationPrec != null && $displayPrecData && $totalModalite != 0 && $totalModalitePrec != 0) {
+                        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . ($ligne + 1), round(($participation->getConsolidationVoteUrneCorrespondance() / $totalModalite * 100) - ($participationPrec->getConsolidationVoteUrneCorrespondance() / $totalModalitePrec * 100),2). '%');
+                        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . ($ligne + 2), round(($participation->getConsolidationVoteCorrespondance()/$totalModalite*100) - ($participationPrec->getConsolidationVoteCorrespondance()/$totalModalitePrec*100), 2). '%');
+                    } else {
+                        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . ($ligne + 1), '-');
+                        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . ($ligne + 2), '-');
+                    }
+                    $ligne += 4;
+                } elseif(!$isZone && $elect->getIndCarence() == 0) {
+                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . $ligne, 'Modalité de vote');
+                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . $ligne, $participation->getModaliteVote() != null ? $participation->getModaliteVote()->getLibelle() : "-");
+                    $ligne += 2;
+                }
+            }
+
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . $ligne, 'Résultats Bruts');
+            $sheet->getStyle('B' . $ligne)->applyFromArray($styleArray);
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . $ligne, 'Rappel ' . ($campagne->getAnneeDebut() - 1) . ' - ' . ($campagne->getAnneeFin() - 1));
+            $sheet->getStyle('C' . $ligne)->applyFromArray($styleArray);
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . $ligne, 'Variation');
+            $sheet->getStyle('D' . $ligne)->applyFromArray($styleArray);
+
+
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . ($ligne + 1), 'Nombre d\'inscrits');
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . ($ligne + 2), 'Nombre de votants');
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . ($ligne + 4), 'Nombre de suffrages exprimés');
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . ($ligne + 3), 'Nombre de votes blancs ou nuls');
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . ($ligne + 5), 'Taux de participation');
+
+            if ($participation != null) {
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 1), $participation->getNbInscrits());
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 2), $participation->getNbVotants());
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 4), $participation->getNbExprimes());
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 3), $participation->getNbNulsBlancs());
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 5), number_format($participation->getTaux(), 2, '.', ',') . '%');
+            } else {
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 1), '-');
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 2), '-');
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 4), '-');
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 3), '-');
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 5), '-');
+            }
+
+            if ($participationPrec != null && $displayPrecData) {
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . ($ligne + 1), $participationPrec->getNbInscrits());
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . ($ligne + 2), $participationPrec->getNbVotants());
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . ($ligne + 4), $participationPrec->getNbExprimes());
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . ($ligne + 3), $participationPrec->getNbNulsBlancs());
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . ($ligne + 5), number_format($participationPrec->getTaux(), 2, '.', ',') . '%');
+            } else {
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . ($ligne + 1), '-');
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . ($ligne + 2), '-');
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . ($ligne + 3), '-');
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . ($ligne + 4), '-');
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . ($ligne + 5), '-');
+            }
+
+            if ($participation != null && $participationPrec != null && $displayPrecData) {
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . ($ligne + 1), $participation->getNbInscrits() - $participationPrec->getNbInscrits());
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . ($ligne + 2), $participation->getNbVotants() - $participationPrec->getNbVotants());
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . ($ligne + 4), $participation->getNbExprimes() - $participationPrec->getNbExprimes());
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . ($ligne + 3), $participation->getNbNulsBlancs() - $participationPrec->getNbNulsBlancs());
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . ($ligne + 5), number_format((number_format($participation->getTaux(), 2, '.', ',') - number_format($participationPrec->getTaux(), 2, '.', ',')),2, '.', ',') . '%');
+            } else {
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . ($ligne + 1), '-');
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . ($ligne + 2), '-');
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . ($ligne + 3), '-');
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . ($ligne + 4), '-');
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . ($ligne + 5), '-');
+            }
+
+            $ligne = $ligne + 8;
+
+            // *************** Génération des résultats *******************//
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . ($ligne - 1), 'Résultats');
+
+            // NB. Le quotient éléctoral est affiché par défaut avec une virgule par excel.
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . $ligne, 'Résultats Bruts');
+            $sheet->getStyle('B' . $ligne)->applyFromArray($styleArray);
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . $ligne, 'Rappel ' . ($campagne->getAnneeDebut() - 1) . ' - ' . ($campagne->getAnneeFin() - 1));
+            $sheet->getStyle('C' . $ligne)->applyFromArray($styleArray);
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . $ligne, 'Variation');
+            $sheet->getStyle('D' . $ligne)->applyFromArray($styleArray);
+
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . ($ligne + 1), 'Nombre de sièges à pourvoir');
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . ($ligne + 2), 'Nombre de sièges pourvus');
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . ($ligne + 3), 'Pourcentage de sièges pourvus');
+
+            if (! empty($data['etablissement'])) {
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . ($ligne + 4), 'Quotient électoral');
+            }
+
+            if ($participation != null) {
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 1), $participation->getNbSiegesPourvoir());
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 2), $participation->getNbSiegesPourvus());
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 3), number_format($participation->getTauxSieges(), 2, '.', ',') . '%');
+                if (! empty($data['etablissement'])) {
+                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 4), number_format($participation->getQuotient(), 2, '.', ','));
+                }
+            } else {
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 1), '-');
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 2), '-');
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 3), '-');
+                if (! empty($data['etablissement'])) {
+                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 4), '-');
+                }
+            }
+
+            if ($participationPrec != null && $displayPrecData) {
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . ($ligne + 1), $participationPrec->getNbSiegesPourvoir());
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . ($ligne + 2), $participationPrec->getNbSiegesPourvus());
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . ($ligne + 3), number_format($participationPrec->getTauxSieges(), 2, '.', ',') . '%');
+                if (! empty($data['etablissement'])) {
+                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . ($ligne + 4), number_format($participationPrec->getQuotient(), 2, '.', ','));
+                }
+            } else {
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . ($ligne + 1), '-');
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . ($ligne + 2), '-');
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . ($ligne + 3), '-');
+                if (! empty($data['etablissement'])) {
+                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . ($ligne + 4), '-');
+                }
+            }
+
+            if ($participation != null && $participationPrec != null && $displayPrecData) {
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . ($ligne + 1), $participation->getNbSiegesPourvoir() - $participationPrec->getNbSiegesPourvoir());
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . ($ligne + 2), $participation->getNbSiegesPourvus() - $participationPrec->getNbSiegesPourvus());
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . ($ligne + 3), number_format((number_format($participation->getTauxSieges(), 2, '.', ',') - number_format($participationPrec->getTauxSieges(), 2, '.', ',')), 2, '.', ',') . '%');
+                if (! empty($data['etablissement'])) {
+                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . ($ligne + 4), number_format((number_format($participation->getQuotient(), 2, '.', ',') - number_format($participationPrec->getQuotient(), 2, '.', ',')), 2, '.', ','));
+                }
+            } else {
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . ($ligne + 1), '-');
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . ($ligne + 2), '-');
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . ($ligne + 3), '-');
+                if (! empty($data['etablissement'])) {
+                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . ($ligne + 4), '-');
+                }
+            }
+            $ligne += 7;
+        } else {
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . $ligne, 'Aucun résultat disponible');
+        }
+
+        // ********************** Génération de la répartition détaillée des sièges ***********************//
+
+        if ($elect || $electPrec) {
+            if (sizeof($data['listeResultat']) != 0){
+                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . ($ligne - 1), 'Répartition détaillée des sièges');
+
+                $phpExcelObject->setActiveSheetIndex(0)
+                    ->setCellValue('A' . $ligne, 'Organisation')
+                    ->setCellValue('B' . $ligne, 'Nombre de suffrages')
+                    ->setCellValue('C' . $ligne, '%')
+                    ->setCellValue('D' . $ligne, 'Rappel ' . ($campagne->getAnneeDebut() - 1) . ' - ' . ($campagne->getAnneeFin() - 1))
+                    ->setCellValue('E' . $ligne, 'Variation')
+                    ->setCellValue('F' . $ligne, 'Nb sièges')
+                    ->setCellValue('G' . $ligne, '%')
+                    ->setCellValue('H' . $ligne, 'Rappel ' . ($campagne->getAnneeDebut() - 1) . ' - ' . ($campagne->getAnneeFin() - 1))
+                    ->setCellValue('I' . $ligne, 'Variation');
+
+                $sheet->getStyle('B' . $ligne)->applyFromArray($styleArray);
+                $sheet->getStyle('C' . $ligne)->applyFromArray($styleArray);
+                $sheet->getStyle('D' . $ligne)->applyFromArray($styleArray);
+                $sheet->getStyle('E' . $ligne)->applyFromArray($styleArray);
+                $sheet->getStyle('F' . $ligne)->applyFromArray($styleArray);
+                $sheet->getStyle('G' . $ligne)->applyFromArray($styleArray);
+                $sheet->getStyle('H' . $ligne)->applyFromArray($styleArray);
+                $sheet->getStyle('I' . $ligne)->applyFromArray($styleArray);
+                $ligne ++;
+            }
+
+            foreach($data['listeResultat'] as $res){
+
+                if ($res['resultat'] != null) {
+
+                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . $ligne, $res['resultat']->getOrganisation()
+                        ->getLibelle());
+
+                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . $ligne, $res['resultat']->getNbVoix());
+
+                    $tmp = '-';
+                    if ($elect->getNbVoixTotal() != 0) {
+                        $tmp = number_format(($res['resultat']->getNbVoix() / $elect->getNbVoixTotal() * 100), 2, '.', ',') . '%';
+                    }
+                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . $ligne, $tmp);
+
+                    $tmp = '-';
+                    if (null != $electPrec && $electPrec->getNbVoixTotal() != 0 && ! empty($res['resultatPrec']) && $displayPrecData) {
+                        $tmp = number_format(($res['resultatPrec']->getNbVoix() / $electPrec->getNbVoixTotal() * 100), 2, '.', ',') . '%';
+                    }
+                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . $ligne, $tmp);
+
+                    $tmp = '-';
+                    if ($elect->getNbVoixTotal() != 0 && null != $electPrec && $electPrec->getNbVoixTotal() != 0 && ! empty($res['resultatPrec']) && $displayPrecData) {
+                        $tmp = number_format((number_format(($res['resultat']->getNbVoix() / $elect->getNbVoixTotal() * 100), 2, '.', ',') - number_format(($res['resultatPrec']->getNbVoix() / $electPrec->getNbVoixTotal() * 100), 2, '.', ',')), 2, '.', ',') . '%';
+                    }
+                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('E' . $ligne, $tmp);
+
+                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('F' . $ligne, ($res['resultat']->getNbSieges() + $res['resultat']->getNbSiegesSort()));
+
+                    $tmp = '-';
+                    if ($data["totalSiegeElect"] != 0) {
+                        $tmp = number_format((($res['resultat']->getNbSieges() + $res['resultat']->getNbSiegesSort()) / $data["totalSiegeElect"] * 100), 2, '.', ',') . '%';
+                    }
+                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('G' . $ligne, $tmp);
+
+                    $tmp = '-';
+                    if (null != $electPrec && $data["totalSiegeElectPrec"] != 0 && ! empty($res['resultatPrec']) && $displayPrecData) {
+                        $tmp = number_format((($res['resultatPrec']->getNbSieges() + $res['resultatPrec']->getNbSiegesSort()) / $data["totalSiegeElectPrec"] * 100), 2, '.', ',') . '%';
+                    }
+                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('H' . $ligne, $tmp);
+
+                    $tmp = '-';
+                    if ($data["totalSiegeElect"] && null != $electPrec && $data["totalSiegeElectPrec"] != 0 && ! empty($res['resultatPrec']) && $displayPrecData) {
+                        $tmp = number_format((number_format((($res['resultat']->getNbSieges() + $res['resultat']->getNbSiegesSort()) / $data["totalSiegeElect"] * 100), 2, '.', ',') - number_format((($res['resultatPrec']->getNbSieges() + $res['resultatPrec']->getNbSiegesSort()) / $data["totalSiegeElectPrec"] * 100), 2, '.', ',')), 2, '.', ',') . '%';
+                    }
+                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('I' . $ligne, $tmp);
+                } elseif($res['resultatPrec']) {
+                    // Pas de statistique sur la campagne en cours
+
+                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . $ligne, $res['resultatPrec']->getOrganisation()->getLibelle());
+
+                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . $ligne, '-');
+
+                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . $ligne, '-');
+
+                    $tmp = '-';
+                    if (null != $electPrec && $electPrec->getNbVoixTotal() != 0 && ! empty($res['resultatPrec']) && $displayPrecData) {
+                        $tmp = number_format(($res['resultatPrec']->getNbVoix() / $electPrec->getNbVoixTotal() * 100), 2, '.', ',') . '%';
+                    }
+                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . $ligne, $tmp);
+
+                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('E' . $ligne, '-');
+
+                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('F' . $ligne, '-');
+
+                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('G' . $ligne, '-');
+
+                    $tmp = '-';
+                    if (null != $electPrec && $data["totalSiegeElectPrec"] != 0 && ! empty($res['resultatPrec']) && $displayPrecData) {
+                        $tmp = number_format((($res['resultatPrec']->getNbSieges() + $res['resultatPrec']->getNbSiegesSort()) / $data["totalSiegeElectPrec"] * 100), 2, '.', ',') . '%';
+                    }
+                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('H' . $ligne, $tmp);
+
+                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('I' . $ligne, '-');
+                }
+
+                $ligne ++;
+            }
+        } else {
+            $msg_erreur_resultat_vide = 'Aucun résultat détaillé pour ';
+            if (! empty($data['etablissement'])) {
+                $msg_erreur_resultat_vide .= 'cet établissement';
+            } else {
+                $msg_erreur_resultat_vide .= 'cette zone';
+            }
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . $ligne, $msg_erreur_resultat_vide);
+        }
+
+        if (sizeof($data['listeResultat']) != 0) {
+            // Ligne total
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . ($ligne + 1), 'TOTAL TOUTES ORGANISATIONS');
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 1), (null != $elect ? $elect->getNbVoixTotal() : '-'));
+            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('F' . ($ligne + 1), (null != $elect ? $elect->getNbSiegesTotal() : '-'));
+        }
+        // Activer la 1ère feuille
+        $phpExcelObject->setActiveSheetIndex(0);
+
+        $sheet->getColumnDimension('A')->setWidth(45);
+        $sheet->getColumnDimension('B')->setWidth(20);
+        $sheet->getColumnDimension('C')->setWidth(20);
+        $sheet->getColumnDimension('D')->setWidth(20);
+        $sheet->getColumnDimension('E')->setWidth(20);
+        $sheet->getColumnDimension('F')->setWidth(20);
+        $sheet->getColumnDimension('G')->setWidth(20);
+        $sheet->getColumnDimension('H')->setWidth(20);
+        $sheet->getColumnDimension('I')->setWidth(20);
+
+        $sheet->getStyle('A1:A' . ($ligne+1))->applyFromArray($styleArray);
+        $sheet->getStyle('B1:B' . ($ligne+1))->getAlignment()->setHorizontal('center');
+        $sheet->getStyle('C1:C' . ($ligne+1))->getAlignment()->setHorizontal('center');
+        $sheet->getStyle('D1:D' . ($ligne+1))->getAlignment()->setHorizontal('center');
+        $sheet->getStyle('E1:E' . ($ligne+1))->getAlignment()->setHorizontal('center');
+        $sheet->getStyle('F1:F' . ($ligne+1))->getAlignment()->setHorizontal('center');
+        $sheet->getStyle('G1:G' . ($ligne+1))->getAlignment()->setHorizontal('center');
+        $sheet->getStyle('H1:H' . ($ligne+1))->getAlignment()->setHorizontal('center');
+        $sheet->getStyle('I1:I' . ($ligne+1))->getAlignment()->setHorizontal('center');
+
+        return $ligne;
+    }
+}

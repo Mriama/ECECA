@@ -1,0 +1,15 @@
+<form action="
+	{% if sousTypeElect is defined %}
+		{{ path('EPLEElectionBundle_saisie_nb_sieges_tirage_sort', { 'uai': etablissement.uai, 'codeUrlTypeElect': sousTypeElect.getCodeUrlById() }) }}
+	{% else %}
+		{{ path('EPLEElectionBundle_saisie_nb_sieges_tirage_sort', { 'uai': etablissement.uai, 'codeUrlTypeElect': typeElect.getCodeUrlById() }) }}
+	{% endif %}
+	" method="post" accept-charset="UTF-8" id="form_saisie_ts">
+    <div id="form">	
+		{{ form_errors(form) }}
+			<div>{{ form_label(form['nbSiegesTirageAuSort']) }}{{ form_widget(form['nbSiegesTirageAuSort']) }}</div>
+		{{ form_rest(form) }}
+	</div>
+	
+	<div class="boutons"><input type="submit" value="Valider le tirage au sort" title="Valider le tirage au sort" /></div>
+</form>
