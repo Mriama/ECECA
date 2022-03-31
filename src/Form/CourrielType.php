@@ -41,7 +41,7 @@ class CourrielType extends AbstractType {
         ;
     }
 
-    public function getName() {
+    public function getBlockPrefix() {
         return 'ececa_saisie_courriel';
     }
 

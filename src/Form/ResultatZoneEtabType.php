@@ -4,23 +4,21 @@ namespace App\Form;
 
 use App\Entity\RefProfil;
 use App\Entity\EleEtablissement;
+use App\Entity\RefSousTypeElection;
 use Doctrine\ORM\EntityRepository;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
-use Symfony\Component\OptionsResolver\OptionsResolverInterface;
+use Symfony\Component\OptionsResolver\OptionsResolver;
+
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
 class ResultatZoneEtabType extends ZoneEtabType {
-	
-	protected $hasSousTypeElect;
-	
-    public function __construct($hasSousTypeElect = null) {
-    	$this->hasSousTypeElect = $hasSousTypeElect;
-    }
 
     public function buildForm(FormBuilderInterface $builder, array $options) {
         parent::buildForm($builder, $options);
+
+        $hasSousTypeElect = $options["hasSousTypeElect"];
 
 // 		if (!$this->campagne->isFinished()) { // mantis 122046 le filtre avancement des saisies apparait tout le temps
         $builder->add('etatSaisie', ChoiceType::class, array(
@@ -28,14 +26,15 @@ class ResultatZoneEtabType extends ZoneEtabType {
             'multiple' => true,
             'expanded' => true,
             'choices' => array(
-                EleEtablissement::ETAT_SAISIE => 'Enregistrées',
-                EleEtablissement::ETAT_TRANSMISSION => 'Transmises',
-                EleEtablissement::ETAT_VALIDATION => 'Validées'
+                'Enregistrées' => EleEtablissement::ETAT_SAISIE,
+                'Transmises' => EleEtablissement::ETAT_TRANSMISSION,
+                'Validées' => EleEtablissement::ETAT_VALIDATION
             ),
+             'data' => array(EleEtablissement::ETAT_VALIDATION),
             'required' => true)
         );
         
-        if( $this->hasSousTypeElect ){
+        if( $hasSousTypeElect ){
 	       	$builder ->add('sousTypeElection', EntityType::class, array(
 	        		'label' => 'Sous-type d’élection',
 	        		'multiple' => false,
@@ -47,19 +46,19 @@ class ResultatZoneEtabType extends ZoneEtabType {
 	        		},
 	        		'required' => false,
 	        		'choice_label' => 'code',
-	        		'empty_data' => false));
+	        		'placeholder' => false));
 	   		}
     }
-    
-    
 
-    public function setDefaultOptions(OptionsResolverInterface $resolver) {
+    public function configureOptions(OptionsResolver $resolver) {
         $resolver->setDefaults(array(
-            'data_class' => null
+            'data_class' => null,
+            'hasSousTypeElect' => null,
+            'user' => null
         ));
     }
 
-    public function getName() {
+    public function getBlockPrefix() {
         return 'resultatZoneEtabType';
     }
 

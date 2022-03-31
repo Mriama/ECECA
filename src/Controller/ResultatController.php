@@ -11,30 +11,28 @@ use App\Entity\RefCommune;
 use App\Entity\EleCampagne;
 use App\Entity\RefAcademie;
 use App\Entity\RefDepartement;
-use App\Form\TypeElectionType;
 use App\Entity\RefModaliteVote;
 use App\Entity\RefTypeElection;
 use App\Utils\EcecaExportUtils;
 use App\Utils\RefUserPerimetre;
 use App\Entity\EleEtablissement;
 use App\Entity\RefEtablissement;
-use App\Entity\RefAcademieFusion;
 use App\Form\ResultatZoneEtabType;
 use App\Entity\RefSousTypeElection;
 use App\Entity\RefTypeEtablissement;
 use App\Form\NbSiegesTirageAuSortType;
-use App\Form\ParticipationZoneEtabType;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Validator\Constraints\Date;
 use Symfony\Component\HttpFoundation\StreamedResponse;
-use Symfony\Component\Finder\Comparator\DateComparator;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use App\Controller\BaseController;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
+use Symfony\Component\Routing\Annotation\Route;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
 
-class ResultatController extends AbstractController {
+class ResultatController extends BaseController {
 
     /**
      * Formulaire de recherche des résultats (page principale)
@@ -92,36 +90,6 @@ class ResultatController extends AbstractController {
                 $academies[0]->setlibelle($academies[0]->getAcademieFusion()->getLibelle());
                 $request->getSession()->set('select_academie', $academies[0]->getCode());
             }
-//
-//            $academies = $user->getPerimetre()->getAcademies();
-//            $code_academies = $academies->getCode();
-//            if( $code_academies ){
-//                $repoAcademie = $em->getRepository(RefAcademie::class)->checkifAcademieHasDisactivateDate($code_academies);
-//
-//                if (!is_null($repoAcademie[0]['dateDesactivation'])){
-//
-//                    $dateDesactivation = $repoAcademie[0]['dateDesactivation']->format('Y-m-d H:i:s');
-//                    $currentDate = date('Y-m-d H:i:s');
-//
-//                    if($dateDesactivation < $currentDate ){
-//                        $newAcaCodeRepo = $em->getRepository(RefAcademie::class)->findTheAcademie($academies->getCode());
-//                        $oldCodeAcad = $academies->getCode();
-//                        $theNewAcadmie = $em->getRepository(RefAcademie::class)->findByCode($newAcaCodeRepo['code']);
-//                        $acad = $em->getRepository(RefAcademie::class)->findAcademieFisuByParParent($theNewAcadmie[0]->getCode());
-//                        $academies->setCode($theNewAcadmie->getCode());
-//                        $departements = $em->getRepository(RefDepartement::class)->findBydepartementAdademiefusionner( $theNewAcadmie[0]->getCode() );
-//                        $user->setIdZone($theNewAcadmie[0]->getCode());
-//                    //    $user->getPerimetre()->setDepartements($departements);
-//
-//                        $request->getSession()->set('select_academie', $theNewAcadmie[0]->getCode());
-//
-//                    }else{
-//                        $request->getSession()->set('select_academie', $academies->getCode());
-//                    }
-//
-//                }
-//            }
-
         }
 
         // DSDEN -> placer l'académie et le département de l'utilisateur en session
@@ -241,15 +209,29 @@ class ResultatController extends AbstractController {
 
 
         $datasSearch = array();
-        $datasSearch['departement'] = $em->getRepository(RefDepartement::class)->findByNumero($request->getSession()->get('select_departement'));
-        $datasSearch['academie']  = $em->getRepository(RefAcademie::class)->findByCode($request->getSession()->get('select_academie'));
-        $datasSearch['commune'] = $em->getRepository(RefCommune::class)->findById($request->getSession()->get('select_commune'));
+        $datasSearch['departement'] = null;
+        $datasSearch['academie'] = null;
+        $datasSearch['commune'] = null;
+        $datasSearch['typeEtablissement'] = null;
+        $datasSearch['choix_etab'] = null;
+        $datasSearch['etablissement'] = null;
+        $datasSearch['sousTypeElection'] = null;
 
-        $datasSearch['typeEtablissement'] = $em->getRepository(RefTypeEtablissement::class)->findById($request->getSession()->get('select_typeEtab'));
-        $datasSearch['choix_etab'] = $request->getSession()->get('select_choix_etab');
-        $datasSearch['etablissement'] = $em->getRepository(RefEtablissement::class)->findByUai($request->getSession()->get('select_etablissement'));
+        if($request->getSession()->get('select_departement'))
+            $datasSearch['departement'] = $em->getRepository(RefDepartement::class)->find($request->getSession()->get('select_departement'));
+        if($request->getSession()->get('select_academie'))
+            $datasSearch['academie']  = $em->getRepository(RefAcademie::class)->find($request->getSession()->get('select_academie'));
+        if($request->getSession()->get('select_commune'))
+            $datasSearch['commune'] = $em->getRepository(RefCommune::class)->find($request->getSession()->get('select_commune'));
 
-        $datasSearch['sousTypeElection'] = $em->getRepository(RefSousTypeElection::class)->findById($request->getSession()->get('select_sousTypeElect'));
+        if($request->getSession()->get('select_typeEtab'))
+            $datasSearch['typeEtablissement'] = $em->getRepository(RefTypeEtablissement::class)->find($request->getSession()->get('select_typeEtab'));
+        if($request->getSession()->get('select_choix_etab'))
+            $datasSearch['choix_etab'] = $request->getSession()->get('select_choix_etab');
+        if($request->getSession()->get('select_etablissement'))
+            $datasSearch['etablissement'] = $em->getRepository(RefEtablissement::class)->find($request->getSession()->get('select_etablissement'));
+        if($request->getSession()->get('select_sousTypeElect'))
+            $datasSearch['sousTypeElection'] = $em->getRepository(RefSousTypeElection::class)->find($request->getSession()->get('select_sousTypeElect'));
 
         // mantis 122046 le filtre avancement des saisies apparait tout le temps
         //         if ($campagne->isFinished()) {
@@ -279,7 +261,7 @@ class ResultatController extends AbstractController {
             $hasSousTypeElect = $this->hasEreaErpd($user);
         }
 
-        $form = $this->createForm(ResultatZoneEtabType::class,['user'=>$user, 'hasSousTypeElect'=>$hasSousTypeElect]);
+        $form = $this->createForm(ResultatZoneEtabType::class, null, ['user'=>$user, 'hasSousTypeElect'=>$hasSousTypeElect]);
 
         if ($request->getMethod() == 'POST') {
 
@@ -459,7 +441,7 @@ class ResultatController extends AbstractController {
                 }
 
                 // 0167899 recherche par etablissement on retourne au tableau de bord
-                $params['retourLstRech'] = false;
+                $params['retourLstRech'] = 0;
             }
         } else {
 
@@ -1302,17 +1284,12 @@ class ResultatController extends AbstractController {
      * @param string $codeUrlTypeElect
      * @throws AccessDeniedException
      * @return file xls
+     * @Route("/{codeUrlTypeElect}/{etablissementUai}/resultats/exportXLS", name="resultats_export_XLS")
      */
     public function exportResultatsXLSAction(Request $request, ParameterBagInterface $parameters, RefUserPerimetre $refUserPerimetre, $codeUrlTypeElect, $etablissementUai = 'tous') {
         $em = $this->getDoctrine()->getManager();
         //TODO : changer authentification
-        $user = $em->getRepository(RefUser::class)->find(133);
-        $perimetre = $refUserPerimetre->setPerimetreForUser($user);
-        $user->setPerimetre($perimetre);
-        $token = new UsernamePasswordToken($user, null, 'main', $user->getRoles());
-        $this->get('security.token_storage')->setToken($token);
-        $this->get('session')->set('_security_main', serialize($token));
-        /************ */
+        $user = $this->getUser();
         $joursCalendaires = $parameters->get('jours_calendaires');
 
         $typeElectionId = RefTypeElection::getIdRefTypeElectionByCodeUrl($codeUrlTypeElect);
@@ -1329,10 +1306,6 @@ class ResultatController extends AbstractController {
         if (empty($typeElection) && null != $sousTypeElection) {
             throw $this->createNotFoundException('Type élection inconnu');
         }
-
-        // $user = $this->get('security.token_storage')
-        //     ->getToken()
-        //     ->getUser();
         if (!$user->canConsult($typeElection)) {
             throw new AccessDeniedException();
         }
@@ -1387,8 +1360,8 @@ class ResultatController extends AbstractController {
 
 
         // Génération du fichier Excel
-        $phpExcelObject = $this->get('phpexcel')->createPHPExcelObject();
-        $sheet = $phpExcelObject->getActiveSheet();
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
         $styleArray = array(
             'font' => array(
                 'bold' => true
@@ -1447,28 +1420,28 @@ class ResultatController extends AbstractController {
 
         // Création du titre
         $typeElectionLibelle = ($sousTypeElection != null ? $sousTypeElection->getLibelle() : $typeElection->getLibelle());
-        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A1', $typeElectionLibelle . ' - Résultats ' . $libelle_recherche);
+        $spreadsheet->setActiveSheetIndex(0)->setCellValue('A1', $typeElectionLibelle . ' - Résultats ' . $libelle_recherche);
 
         // Affiche des champs du filtre appliqué à la recherche
         if (!empty($params['nationale']) || !empty($params['aca']) || !empty($params['dept'])) {
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A4', 'Académie');
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A5', 'Département');
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A6', 'Type d\'établissement');
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B4', $filtre_aca);
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B5', $filtre_dept);
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B6', ucwords($codeUrlTypeEtab));
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('A4', 'Académie');
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('A5', 'Département');
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('A6', 'Type d\'établissement');
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('B4', $filtre_aca);
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('B5', $filtre_dept);
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('B6', ucwords($codeUrlTypeEtab));
         } else {
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A4', 'Type d\'établissement');
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A5', 'Catégorie');
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A6', 'Commune (Département)');
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B4', $elect->getEtablissement()
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('A4', 'Type d\'établissement');
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('A5', 'Catégorie');
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('A6', 'Commune (Département)');
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('B4', $elect->getEtablissement()
                 ->getTypeEtablissement()
                 ->getLibelle());
             if ($elect->getEtablissement()->getTypePrioritaire()) {
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B5', $elect->getEtablissement()
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue('B5', $elect->getEtablissement()
                     ->getTypePrioritaire()->getCode());
             } else {
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B5', 'N/A');
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue('B5', 'N/A');
             }
             if ($elect->getEtablissement()->getCommune()) {
                 $libelle_com = $elect->getEtablissement()
@@ -1482,23 +1455,23 @@ class ResultatController extends AbstractController {
                 $libelle_com = 'N/C';
                 $libelle_dep = 'N/C';
             }
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B6', $libelle_com . ' (' . $libelle_dep . ')');
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('B6', $libelle_com . ' (' . $libelle_dep . ')');
         }
 
         // Rappel
-        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A2', '- Rappel');
-        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A3', 'Campagne');
-        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B3', $campagne->getAnneeDebut() . ' - ' . $campagne->getAnneeFin());
+        $spreadsheet->setActiveSheetIndex(0)->setCellValue('A2', '- Rappel');
+        $spreadsheet->setActiveSheetIndex(0)->setCellValue('A3', 'Campagne');
+        $spreadsheet->setActiveSheetIndex(0)->setCellValue('B3', $campagne->getAnneeDebut() . ' - ' . $campagne->getAnneeFin());
 
         if (!empty($params['nationale']) || !empty($params['aca']) || !empty($params['dept'])) {
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A7', 'Nombre d\'établissements');
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B7', $elect->getNbEtabTotal());
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A8', 'Nombre d\'établissements exprimés');
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B8', $elect->getNbEtabExprimes());
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('A7', 'Nombre d\'établissements');
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('B7', $elect->getNbEtabTotal());
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('A8', 'Nombre d\'établissements exprimés');
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('B8', $elect->getNbEtabExprimes());
         }
         // Participation
         if (!empty($participation)) {
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A11', '- Participation');
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('A11', '- Participation');
             $sheet->getStyle('B11')->applyFromArray($styleArray);
             $ligne = 12;
 
@@ -1506,51 +1479,51 @@ class ResultatController extends AbstractController {
             if($typeElection->getId() == RefTypeElection::ID_TYP_ELECT_PARENT) {
                 if($isZone) {
                     $hasModaliteVote = true;
-                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B'. $ligne++, 'Modalité de vote');
-                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A'. $ligne, "Vote " . RefModaliteVote::LIBELLE_MODALITE_VOTE_URNE_CORRESPONDANCE);
-                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B'. $ligne++, $participation->getConsolidationVoteUrneCorrespondance());
-                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A'. $ligne, "Vote " . RefModaliteVote::LIBELLE_MODALITE_VOTE_CORRESPONDANCE);
-                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B'. $ligne++, $participation->getConsolidationVoteCorrespondance());
+                    $spreadsheet->setActiveSheetIndex(0)->setCellValue('B'. $ligne++, 'Modalité de vote');
+                    $spreadsheet->setActiveSheetIndex(0)->setCellValue('A'. $ligne, "Vote " . RefModaliteVote::LIBELLE_MODALITE_VOTE_URNE_CORRESPONDANCE);
+                    $spreadsheet->setActiveSheetIndex(0)->setCellValue('B'. $ligne++, $participation->getConsolidationVoteUrneCorrespondance());
+                    $spreadsheet->setActiveSheetIndex(0)->setCellValue('A'. $ligne, "Vote " . RefModaliteVote::LIBELLE_MODALITE_VOTE_CORRESPONDANCE);
+                    $spreadsheet->setActiveSheetIndex(0)->setCellValue('B'. $ligne++, $participation->getConsolidationVoteCorrespondance());
                     $ligne++;
                 } elseif (!$isZone && $elect->getIndCarence() == 0) {
                     $hasModaliteVote = true;
-                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A'. $ligne, 'Modalité de vote');
-                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B'. $ligne++, $participation->getModaliteVote() != null ? $participation->getModaliteVote()->getLibelle() : "");
+                    $spreadsheet->setActiveSheetIndex(0)->setCellValue('A'. $ligne, 'Modalité de vote');
+                    $spreadsheet->setActiveSheetIndex(0)->setCellValue('B'. $ligne++, $participation->getModaliteVote() != null ? $participation->getModaliteVote()->getLibelle() : "");
                     $ligne++;
                 }
             }
 
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B'. $ligne++, 'Résultats bruts');
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A'. $ligne, 'Nombre d\'inscrits');
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B'. $ligne++, $participation->getNbInscrits());
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A'. $ligne, 'Nombre de votants');
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B'. $ligne++, $participation->getNbVotants());
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A'. $ligne, 'Nombre de suffrages exprimés');
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B'. $ligne++, $participation->getNbExprimes());
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A'. $ligne, 'Nombre de votes blancs ou nuls');
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B'. $ligne++, $participation->getNbNulsBlancs());
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A'. $ligne, 'Taux de participation');
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B'. $ligne++, number_format($participation->getTaux(), 2) . '%');
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('B'. $ligne++, 'Résultats bruts');
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('A'. $ligne, 'Nombre d\'inscrits');
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('B'. $ligne++, $participation->getNbInscrits());
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('A'. $ligne, 'Nombre de votants');
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('B'. $ligne++, $participation->getNbVotants());
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('A'. $ligne, 'Nombre de suffrages exprimés');
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('B'. $ligne++, $participation->getNbExprimes());
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('A'. $ligne, 'Nombre de votes blancs ou nuls');
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('B'. $ligne++, $participation->getNbNulsBlancs());
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('A'. $ligne, 'Taux de participation');
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('B'. $ligne++, number_format($participation->getTaux(), 2) . '%');
 
             $ligne++;
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A'. $ligne++, '- Résultats');
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A'. $ligne, 'Nombre de sièges à pourvoir');
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B'. $ligne++, $participation->getNbSiegesPourvoir());
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A'. $ligne, 'Quotient');
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B'. $ligne++, $participation->getQuotient());
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('A'. $ligne++, '- Résultats');
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('A'. $ligne, 'Nombre de sièges à pourvoir');
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('B'. $ligne++, $participation->getNbSiegesPourvoir());
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('A'. $ligne, 'Quotient');
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('B'. $ligne++, $participation->getQuotient());
         } else {
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A11', 'Aucun résultat disponible');
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('A11', 'Aucun résultat disponible');
         }
 
         $ligne = $hasModaliteVote ? $ligne+2 : 24;
         // Résultats
         if (sizeof($resultats) != 0) {
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . $ligne, '- Répartition détaillée des sièges');
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('A' . $ligne, '- Répartition détaillée des sièges');
             $ligne++;
             // Répartition détaillée
             $libelle_plus_age = 'Plus âgé';
 
-            $phpExcelObject->setActiveSheetIndex(0)
+            $spreadsheet->setActiveSheetIndex(0)
                 ->setCellValue('A' . $ligne, 'Liste')
                 ->setCellValue('B' . $ligne, 'Nombre de candidats')
                 ->setCellValue('C' . $ligne, 'Nombre de suffrages')
@@ -1569,7 +1542,7 @@ class ResultatController extends AbstractController {
             $sommeNbSiegesSort = 0;
             $sommeTotal = 0;
             foreach ($resultats as $res) {
-                $phpExcelObject->setActiveSheetIndex(0)
+                $spreadsheet->setActiveSheetIndex(0)
                     ->setCellValue('A' . $ligne, $res->getOrganisation()
                         ->getLibelle())
                     ->setCellValue('B' . $ligne, $res->getNbCandidats())
@@ -1584,7 +1557,7 @@ class ResultatController extends AbstractController {
                     if ($resDetails != null) {
                         foreach ($resDetails as $resDetail) {
                             if ($resDetail->getOrganisation()->getId() == $res->getOrganisation()->getId()) {
-                                $phpExcelObject->setActiveSheetIndex(0)
+                                $spreadsheet->setActiveSheetIndex(0)
                                     ->setCellValue('A' . $ligne, "Dont " .$resDetail->getLibelle())
                                     ->setCellValue('B' . $ligne, $resDetail->getNbCandidats())
                                     ->setCellValue('C' . $ligne, $resDetail->getNbVoix())
@@ -1604,7 +1577,7 @@ class ResultatController extends AbstractController {
                 $sommeNbSiegesSort = $sommeNbSiegesSort + $res->getNbSiegesSort();
                 $sommeTotal = $sommeTotal + $res->getNbSieges() + $res->getNbSiegesSort();
             }
-            $phpExcelObject->setActiveSheetIndex(0)
+            $spreadsheet->setActiveSheetIndex(0)
                 ->setCellValue('A' . $ligne, 'TOTAL TOUTES LISTES')
                 ->setCellValue('B' . $ligne, $sommeNbCandidats)
                 ->setCellValue('C' . $ligne, $sommeNbVoix)
@@ -1615,19 +1588,19 @@ class ResultatController extends AbstractController {
 
         if (!empty($participation)) {
             if(($etablissementUai != 'tous' && $etablissement->getTypeEtablissement()->getDegre() == 1) or ($etablissementUai == 'tous' && $params['electZone']->getTypeEtablissement()->getDegre() == '1')){
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . ($ligne + 3), 'Nombre de sièges pourvus par tirage au sort');
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 3), $participation->getNbSiegesSort());
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue('A' . ($ligne + 3), 'Nombre de sièges pourvus par tirage au sort');
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 3), $participation->getNbSiegesSort());
                 $sheet->getStyle('A' . ($ligne + 3))->applyFromArray($styleArray);
                 $sheet->getStyle('B' . ($ligne + 3))->getAlignment()->setHorizontal('center');
             }
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . ($ligne + 2), 'Nombre de sièges pourvus');
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 2), $participation->getNbSiegesPourvus());
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('A' . ($ligne + 2), 'Nombre de sièges pourvus');
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('B' . ($ligne + 2), $participation->getNbSiegesPourvus());
             $sheet->getStyle('A' . ($ligne + 2))->applyFromArray($styleArray);
             $sheet->getStyle('B' . ($ligne + 2))->getAlignment()->setHorizontal('center');
         }
 
         // Activer la 1ère feuille
-        $phpExcelObject->setActiveSheetIndex(0);
+        $spreadsheet->setActiveSheetIndex(0);
 
         $sheet->getColumnDimension('A')->setWidth(45);
         $sheet->getColumnDimension('B')->setWidth(30);
@@ -1644,13 +1617,17 @@ class ResultatController extends AbstractController {
 
 
         // Création du writer
-        $writer = $this->get('phpexcel')->createWriter($phpExcelObject, 'Excel5');
+        $writer = new Xlsx($spreadsheet, 'Excel5');
 
         // Création du nom du fichier
         $fileName = EcecaExportUtils::generateFileName('Resultats', $params);
 
         // Créer la réponse
-        $response = $this->get('phpexcel')->createStreamedResponse($writer);
+        $response =  new StreamedResponse(
+            function () use ($writer) {
+                $writer->save('php://output');
+            }
+        );
         $response->headers->set('Content-Type', 'text/vnd.ms-excel; charset=utf-8');
         $response->headers->set('Content-Disposition', 'attachment;filename=' . $fileName . '.xls');
         return $response;
@@ -1679,9 +1656,7 @@ class ResultatController extends AbstractController {
             throw $this->createNotFoundException('Type élection inconnu');
         }
 
-        $user = $this->get('security.context')
-            ->getToken()
-            ->getUser();
+        $user = $this->getUser();
         if (!$user->canConsult($typeElection)) {
             throw new AccessDeniedException();
         }
@@ -1745,8 +1720,8 @@ class ResultatController extends AbstractController {
 
 
         // Génération du fichier Excel
-        $phpExcelObject = $this->get('phpexcel')->createPHPExcelObject();
-        $sheet = $phpExcelObject->getActiveSheet();
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
 
 
         if (!empty($params['dept'])) {
@@ -1766,7 +1741,7 @@ class ResultatController extends AbstractController {
         }
 
         // Création du titre
-        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A1', $typeElect->getLibelle() . ' - Résultats ' . $libelle_recherche);
+        $spreadsheet->setActiveSheetIndex(0)->setCellValue('A1', $typeElect->getLibelle() . ' - Résultats ' . $libelle_recherche);
 
         // Recuperation des oragnisations par campagne (prise en compte de son type d'election)
         $ordreAlphabetique = ($typeElection->getId() == RefTypeElection::ID_TYP_ELECT_PARENT) ? 'M' : 'L';
@@ -1774,77 +1749,77 @@ class ResultatController extends AbstractController {
         // Affiche des champs du filtre appliqué à la recherche
         // Informations généréles de la campagne
         if (!empty($params['dept'])) {
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A4', 'Académie');
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A5', 'Département');
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A6', 'Type d\'établissement');
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B4', $currentAcademie);
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B5', $filtre_dept);
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B6', ucwords($codeUrlTypeEtab));
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('A4', 'Académie');
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('A5', 'Département');
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('A6', 'Type d\'établissement');
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('B4', $currentAcademie);
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('B5', $filtre_dept);
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('B6', ucwords($codeUrlTypeEtab));
         }
 
-        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A3', 'Campagne');
-        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B3', $campagne->getAnneeDebut() . ' - ' . $campagne->getAnneeFin());
+        $spreadsheet->setActiveSheetIndex(0)->setCellValue('A3', 'Campagne');
+        $spreadsheet->setActiveSheetIndex(0)->setCellValue('B3', $campagne->getAnneeDebut() . ' - ' . $campagne->getAnneeFin());
 
         // RÉPARTITION DES VOIX
-        $phpExcelObject->setActiveSheetIndex(0)->setCellValue($ordreAlphabetique.'9', 'RÉPARTITION DES VOIX');
-        $phpExcelObject->setActiveSheetIndex(0)->getStyle($ordreAlphabetique.'9')->getFont()->setSize(15);// Taille de la police pour les deux titres
+        $spreadsheet->setActiveSheetIndex(0)->setCellValue($ordreAlphabetique.'9', 'RÉPARTITION DES VOIX');
+        $spreadsheet->setActiveSheetIndex(0)->getStyle($ordreAlphabetique.'9')->getFont()->setSize(15);// Taille de la police pour les deux titres
 
         // Contenu du tableau
         if (!empty($participation)) {
             // Ligne des libelles
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A10', 'RNE');
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B10', 'Type d\'établissement');
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C10', 'Nom');
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D10', 'Commune');
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('A10', 'RNE');
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('B10', 'Type d\'établissement');
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('C10', 'Nom');
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('D10', 'Commune');
 
             //Ajout de la modalite de vote pour les elections parents
             if($typeElection->getId() == RefTypeElection::ID_TYP_ELECT_PARENT) {
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('E10', 'Modalité de vote');
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('F10', 'Nombre d\'inscrits');
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('G10', 'Nombre de votants');
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('H10', 'Nombre de suffrages exprimés');
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('I10', 'Nombre de votes blancs ou nuls');
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('J10', 'Taux de Participation');
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('K10', 'Nombre de sièges à pourvoir');
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('L10', 'Nombre de sièges pourvus');
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue('E10', 'Modalité de vote');
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue('F10', 'Nombre d\'inscrits');
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue('G10', 'Nombre de votants');
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue('H10', 'Nombre de suffrages exprimés');
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue('I10', 'Nombre de votes blancs ou nuls');
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue('J10', 'Taux de Participation');
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue('K10', 'Nombre de sièges à pourvoir');
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue('L10', 'Nombre de sièges pourvus');
             } else {
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('E10', 'Nombre d\'inscrits');
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('F10', 'Nombre de votants');
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('G10', 'Nombre de suffrages exprimés');
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('H10', 'Nombre de votes blancs ou nuls');
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('I10', 'Taux de Participation');
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('J10', 'Nombre de sièges à pourvoir');
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('K10', 'Nombre de sièges pourvus');
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue('E10', 'Nombre d\'inscrits');
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue('F10', 'Nombre de votants');
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue('G10', 'Nombre de suffrages exprimés');
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue('H10', 'Nombre de votes blancs ou nuls');
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue('I10', 'Taux de Participation');
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue('J10', 'Nombre de sièges à pourvoir');
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue('K10', 'Nombre de sièges pourvus');
             }
 
             // Affichage de toutes les oragnisations en fonction du type d'election de cette campagne
             $arrayOrgasCollonesVoix = array();
             foreach ($organisationsExportComplet as $organisation) {
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue($ordreAlphabetique.'10', $organisation->getLibelle());
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue($ordreAlphabetique.'10', $organisation->getLibelle());
                 $arrayOrgasCollonesVoix[$organisation->getId()] = $ordreAlphabetique;
                 $ordreAlphabetique++;
             }
 
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue($ordreAlphabetique.'10', 'TOTAL');
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue($ordreAlphabetique.'10', 'TOTAL');
             $debutFusion = ($typeElection->getId() == RefTypeElection::ID_TYP_ELECT_PARENT) ? 'M9' : 'L9';
-            $phpExcelObject->setActiveSheetIndex(0)->mergeCells($debutFusion.':'.$ordreAlphabetique.'9');// Fusionnement de cellules
+            $spreadsheet->setActiveSheetIndex(0)->mergeCells($debutFusion.':'.$ordreAlphabetique.'9');// Fusionnement de cellules
             $ordreAlphabetique++;
             $debut = $ordreAlphabetique;
 
             // ATTRIBUTION DES SIÈGES
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue($ordreAlphabetique.'9', 'ATTRIBUTION DES SIÈGES');
-            $phpExcelObject->setActiveSheetIndex(0)->getStyle($ordreAlphabetique.'9')->getFont()->setSize(15);// Taille de la police pour les deux titres
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue($ordreAlphabetique.'9', 'ATTRIBUTION DES SIÈGES');
+            $spreadsheet->setActiveSheetIndex(0)->getStyle($ordreAlphabetique.'9')->getFont()->setSize(15);// Taille de la police pour les deux titres
 
             // Affichage de toutes les oragnisations en fonction du type d'election de cette campagne
             $arrayOrgasCollonesSieges = array();
             foreach ($organisationsExportComplet as $organisation) {
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue($ordreAlphabetique.'10', $organisation->getLibelle());
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue($ordreAlphabetique.'10', $organisation->getLibelle());
                 $arrayOrgasCollonesSieges[$organisation->getId()] = $ordreAlphabetique;
                 $ordreAlphabetique++;
             }
 
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue($ordreAlphabetique.'10', 'TOTAL');
-            $phpExcelObject->setActiveSheetIndex(0)->mergeCells($debut.'9:'.$ordreAlphabetique.'9');
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue($ordreAlphabetique.'10', 'TOTAL');
+            $spreadsheet->setActiveSheetIndex(0)->mergeCells($debut.'9:'.$ordreAlphabetique.'9');
 
 
             // Remplir le tableau Etab par Etab
@@ -1860,35 +1835,35 @@ class ResultatController extends AbstractController {
                 $resultatsDet = $em->getRepository(EleResultatDetail::class)->findByEleEtablissement($eleEtab);
 
 
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A'.$ligne, $refEtab->getUai());
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B'.$ligne, $refEtab->getTypeEtablissement()->getLibelle());
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C'.$ligne, $refEtab->getLibelle());
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue('A'.$ligne, $refEtab->getUai());
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue('B'.$ligne, $refEtab->getTypeEtablissement()->getLibelle());
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue('C'.$ligne, $refEtab->getLibelle());
                 if ($refEtab->getCommune()) {
                     $libelle_com = $refEtab->getCommune()->getLibelle();
                     $libelle_dep = $refEtab->getCommune()->getDepartement()->getLibelle();
-                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D'.$ligne, $libelle_com);
+                    $spreadsheet->setActiveSheetIndex(0)->setCellValue('D'.$ligne, $libelle_com);
                 } else {
                     $libelle_com = 'N/C';
                     $libelle_dep = 'N/C';
                 }
 
                 if($typeElection->getId() == RefTypeElection::ID_TYP_ELECT_PARENT) {
-                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('E'.$ligne, $participation->getModaliteVote() != null ? $participation->getModaliteVote()->getLibelle() : "");
-                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('F'.$ligne, $participation->getNbInscrits());
-                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('G'.$ligne, $participation->getNbVotants());
-                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('H'.$ligne, $participation->getNbExprimes());
-                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('I'.$ligne, $participation->getNbNulsBlancs());
-                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('J'.$ligne, number_format($participation->getTaux(), 2) . '%');
-                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('K'.$ligne, $participation->getNbSiegesPourvoir());
-                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('L'.$ligne, $participation->getNbSiegesPourvus());
+                    $spreadsheet->setActiveSheetIndex(0)->setCellValue('E'.$ligne, $participation->getModaliteVote() != null ? $participation->getModaliteVote()->getLibelle() : "");
+                    $spreadsheet->setActiveSheetIndex(0)->setCellValue('F'.$ligne, $participation->getNbInscrits());
+                    $spreadsheet->setActiveSheetIndex(0)->setCellValue('G'.$ligne, $participation->getNbVotants());
+                    $spreadsheet->setActiveSheetIndex(0)->setCellValue('H'.$ligne, $participation->getNbExprimes());
+                    $spreadsheet->setActiveSheetIndex(0)->setCellValue('I'.$ligne, $participation->getNbNulsBlancs());
+                    $spreadsheet->setActiveSheetIndex(0)->setCellValue('J'.$ligne, number_format($participation->getTaux(), 2) . '%');
+                    $spreadsheet->setActiveSheetIndex(0)->setCellValue('K'.$ligne, $participation->getNbSiegesPourvoir());
+                    $spreadsheet->setActiveSheetIndex(0)->setCellValue('L'.$ligne, $participation->getNbSiegesPourvus());
                 } else {
-                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('E'.$ligne, $participation->getNbInscrits());
-                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('F'.$ligne, $participation->getNbVotants());
-                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('G'.$ligne, $participation->getNbExprimes());
-                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('H'.$ligne, $participation->getNbNulsBlancs());
-                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('I'.$ligne, number_format($participation->getTaux(), 2) . '%');
-                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('J'.$ligne, $participation->getNbSiegesPourvoir());
-                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue('K'.$ligne, $participation->getNbSiegesPourvus());
+                    $spreadsheet->setActiveSheetIndex(0)->setCellValue('E'.$ligne, $participation->getNbInscrits());
+                    $spreadsheet->setActiveSheetIndex(0)->setCellValue('F'.$ligne, $participation->getNbVotants());
+                    $spreadsheet->setActiveSheetIndex(0)->setCellValue('G'.$ligne, $participation->getNbExprimes());
+                    $spreadsheet->setActiveSheetIndex(0)->setCellValue('H'.$ligne, $participation->getNbNulsBlancs());
+                    $spreadsheet->setActiveSheetIndex(0)->setCellValue('I'.$ligne, number_format($participation->getTaux(), 2) . '%');
+                    $spreadsheet->setActiveSheetIndex(0)->setCellValue('J'.$ligne, $participation->getNbSiegesPourvoir());
+                    $spreadsheet->setActiveSheetIndex(0)->setCellValue('K'.$ligne, $participation->getNbSiegesPourvus());
                 }
 
                 // Servant à remplir les champs: REPARTITION DES VOIX
@@ -1902,19 +1877,19 @@ class ResultatController extends AbstractController {
 
                         if ($resultat->getNbVoix() != null) {
                             $positionVoix = $arrayOrgasCollonesVoix[$resultat->getOrganisation()->getId()];
-                            $phpExcelObject->setActiveSheetIndex(0)->setCellValue($positionVoix.$ligne, $resultat->getNbVoix());
+                            $spreadsheet->setActiveSheetIndex(0)->setCellValue($positionVoix.$ligne, $resultat->getNbVoix());
                             $sommeNbRepartitionVoix += $resultat->getNbVoix();
                             $positionVoixDebut++;
 
                         } else {
                             $positionVoix = $arrayOrgasCollonesVoix[$resultat->getOrganisation()->getId()];
-                            $phpExcelObject->setActiveSheetIndex(0)->setCellValue($positionVoix.$ligne, '0');
+                            $spreadsheet->setActiveSheetIndex(0)->setCellValue($positionVoix.$ligne, '0');
                             $positionVoixDebut++;
                         }
                     }
 
                     // Somme des organistions
-                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue($positionVoixDebut.$ligne, $sommeNbRepartitionVoix);
+                    $spreadsheet->setActiveSheetIndex(0)->setCellValue($positionVoixDebut.$ligne, $sommeNbRepartitionVoix);
                     $positionVoixDebut++;
 
                     // Servant à remplir les champs: ATTRIBUTION DES SIÈGES
@@ -1934,7 +1909,7 @@ class ResultatController extends AbstractController {
                             }
 
                             $nbSiegeReel = $nbSiegeChange ? $nbSiegeReel : min($resultat->getNbSieges(), $resultat->getNbCandidats());
-                            $phpExcelObject->setActiveSheetIndex(0)->setCellValue(
+                            $spreadsheet->setActiveSheetIndex(0)->setCellValue(
                                 $positionSieges.$ligne,
                                 $nbSiegeReel
                             );
@@ -1942,12 +1917,12 @@ class ResultatController extends AbstractController {
                             $positionVoixDebut++;
                         } else {
                             $positionSieges = $arrayOrgasCollonesSieges[$resultat->getOrganisation()->getId()];
-                            $phpExcelObject->setActiveSheetIndex(0)->setCellValue($positionSieges.$ligne, '0');
+                            $spreadsheet->setActiveSheetIndex(0)->setCellValue($positionSieges.$ligne, '0');
                             $positionVoixDebut++;
                         }
                     }
                     // Somme des organisations
-                    $phpExcelObject->setActiveSheetIndex(0)->setCellValue(
+                    $spreadsheet->setActiveSheetIndex(0)->setCellValue(
                         $positionVoixDebut.$ligne,
                         $sommeNbRepartitionSieges
                     );
@@ -1958,11 +1933,11 @@ class ResultatController extends AbstractController {
             }
 
         } else {
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A10', 'Aucun résulatat disponible');
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('A10', 'Aucun résulatat disponible');
         }
 
         // Activer la 1ère feuille
-        $phpExcelObject->setActiveSheetIndex(0);
+        $spreadsheet->setActiveSheetIndex(0);
 
         $sheet->getColumnDimension('A')->setWidth(45);
         $sheet->getColumnDimension('B')->setWidth(25);
@@ -1971,7 +1946,7 @@ class ResultatController extends AbstractController {
         $sheet->getColumnDimension('E')->setWidth(25);
 
         // Création du writer
-        $writer = $this->get('phpexcel')->createWriter($phpExcelObject, 'Excel5');
+        $writer = $this->get('phpexcel')->createWriter($spreadsheet, 'Excel5');
 
         // Création du nom du fichier
         $fileName = EcecaExportUtils::generateFileName('Resultats', $params);

@@ -2,13 +2,13 @@
 
 namespace App\Form;
 
+use App\Entity\RefDepartement;
 use Doctrine\ORM\EntityRepository;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
-use App\Form\EventListener\DisableDepartementSubscriber;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
-use Symfony\Component\OptionsResolver\OptionsResolverInterface;
+use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class CommuneType extends AbstractType {
 
@@ -35,17 +35,16 @@ class CommuneType extends AbstractType {
                 return $er->createQueryBuilder('d')->orderBy('d.numero', 'ASC');
             },
                     'required' => true,
-                    'property' => 'libelle'));
+                    'choice_label' => 'libelle'));
     }
 
-    public function setDefaultOptions(OptionsResolverInterface $resolver) {
+    public function configureOptions(OptionsResolver $resolver) {
         $resolver->setDefaults(array(
             'data_class' => 'App\Entity\RefCommune'
         ));
     }
 
-    public function getName() {
+    public function getBlockPrefix() {
         return 'commune_type';
     }
-
 }

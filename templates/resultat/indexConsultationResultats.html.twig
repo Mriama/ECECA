@@ -156,7 +156,7 @@
 			{% if sousTypeElect is defined %}
 				<a class="xls" href="{{ path('EPLEElectionBundle_resultats_export_XLS', { 'codeUrlTypeElect': sousTypeElect.codeUrlById }) }}">Export XLS = résultats par liste</a>
 			{% else %}
-				<a class="xls" href="{{ path('EPLEElectionBundle_resultats_export_XLS', { 'codeUrlTypeElect': typeElect.codeUrlById }) }}">Export XLS = résultats par liste</a>
+				<a class="xls" href="{{ path('resultats_export_XLS', { 'codeUrlTypeElect': typeElect.codeUrlById }) }}">Export XLS = résultats par liste</a>
 			{% endif %}
 		{% endif %}
 	</div>

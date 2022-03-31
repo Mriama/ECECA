@@ -4,19 +4,20 @@ namespace App\Form;
 
 use App\Entity\RefAcademie;
 use App\Entity\RefDepartement;
+use App\Model\ContactModel;
 use Doctrine\ORM\EntityRepository;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
-use Symfony\Component\OptionsResolver\OptionsResolverInterface;
+use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class ContactType extends AbstractType {
     public function buildForm(FormBuilderInterface $builder, array $options = null)
     {
         $contactId = 0;
         $zone = null;
-        if (isset ($options ['data']) and $options ['data'] instanceof \App\Model\ContactModel) {
+        if (isset ($options ['data']) and $options ['data'] instanceof ContactModel) {
             $mc = $options ['data'];
             $contactId = $mc->getContact()->getId();
             $zone = ($mc->getDepartement() == null) ? $mc->getAcademie() : $mc->getDepartement();
@@ -32,7 +33,7 @@ class ContactType extends AbstractType {
                 },
                 'required' => true,
                 'read_only' => false,
-                'property' => 'libelle'
+                'choice_label' => 'libelle'
             ));
         } else if ($contactId === 0 and $zone instanceof RefAcademie) {
             $builder->add('academie', EntityType::class, array(
@@ -45,11 +46,11 @@ class ContactType extends AbstractType {
                 'required' => true,
                 'read_only' => true,
                 'error_bubbling' => true,
-                'property' => 'libelle'
+                'choice_label' => 'libelle'
             ));
         } else {
             $labelZone = ($zone instanceof RefAcademie) ? 'Académie' : 'Département';
-            $builder->add(($zone instanceof RefAcademie) ? 'academie' : 'departement', 'entity', array(
+            $builder->add(($zone instanceof RefAcademie) ? 'academie' : 'departement', EntityType::class, array(
                 'label' => '* ' . $labelZone,
                 'multiple' => false,
                 'class' => ($zone instanceof RefAcademie) ? RefAcademie::class : RefDepartement::class,
@@ -60,7 +61,7 @@ class ContactType extends AbstractType {
                 'read_only' => true,
                 'disabled' => true,
                 'error_bubbling' => true,
-                'property' => 'libelle'
+                'choice_label' => 'libelle'
             ));
         }
 
@@ -142,12 +143,12 @@ class ContactType extends AbstractType {
 
 
 	}
-	public function setDefaultOptions(OptionsResolverInterface $resolver) {
+	public function configureOptions(OptionsResolver $resolver) {
 		$resolver->setDefaults ( array (
 				'data_class' => 'App\Model\ContactModel' 
 		) );
 	}
-	public function getName() {
+	public function getBlockPrefix() {
 		return 'eple_edit_contact';
 	}
 }

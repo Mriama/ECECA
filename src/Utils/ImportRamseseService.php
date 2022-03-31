@@ -7,8 +7,11 @@ use App\Entity\RefEtablissement;
 use App\Entity\RefTypeEtablissement;
 use App\Entity\RefZoneNature;
 use App\Repository\RefEtablissementRepository;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use App\Repository\RefZoneNatureRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use App\Entity\RefCommune;
+use Psr\Log\LoggerInterface;
 use Doctrine\Tests\DBAL\Types\VarDateTimeTest;
 
 /**
@@ -22,10 +25,12 @@ class ImportRamseseService
 
     private $em; // EntityManager
     private $container; // Service container
-    public function __construct($doctrine, $container)
+	private $logger; // Log
+    public function __construct(EntityManagerInterface $em, ContainerInterface $container,LoggerInterface $logger)
     {
-        $this->em = $doctrine->getManager();
+        $this->em = $em;
         $this->container = $container;
+		$this->logger = $logger;
     }
 
     public function import($url)
@@ -41,15 +46,14 @@ class ImportRamseseService
         $commPattern = $this->container->getParameter('ramsese_comm_pattern');
         
         // Initialisation du logger
-        $logger = $this->container->get("import_logger");
         
-        $logger->info("Debut import fichier ...");
+        $this->logger->info("Debut import fichier ...");
         
         // Recuperation des infos dans les tables RefEtablissement, EleEtablissement, RefZoneNature, RefTypeEtablissement, RefCommune
         
        // Recuperation de UAI de tous les etablissements
         $arrayRefEtablissement = $this->em->getRepository(RefEtablissement::class)->getArrayRefEtablissementUai();
-        $logger->info("nb uai refEtablissement : " . sizeof($arrayRefEtablissement));
+        $this->logger->info("nb uai refEtablissement : " . sizeof($arrayRefEtablissement));
     	
         
       //  Recuperation de ID commune de tous les etablissements

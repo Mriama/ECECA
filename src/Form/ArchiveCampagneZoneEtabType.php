@@ -9,8 +9,8 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class ArchiveCampagneZoneEtabType extends ZoneEtabType {
-    public function buildForm(FormBuilderInterface $builder, array $options) {
 
+    public function buildForm(FormBuilderInterface $builder, array $options) {
         parent::buildForm($builder, $options);
 
         $datas = $options;
@@ -34,8 +34,6 @@ class ArchiveCampagneZoneEtabType extends ZoneEtabType {
         );
 
         $builder->add('campagne', EntityType::class, $params );
-
-
     }
 
     public function configureOptions(OptionsResolver $resolver) {

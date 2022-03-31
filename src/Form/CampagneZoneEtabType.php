@@ -3,10 +3,10 @@
 namespace App\Form;
 
 use App\Entity\EleCampagne;
+use Doctrine\ORM\EntityRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
-use Symfony\Component\OptionsResolver\OptionsResolverInterface;
 
 class CampagneZoneEtabType extends ZoneEtabType {
 
@@ -21,7 +21,7 @@ class CampagneZoneEtabType extends ZoneEtabType {
             'label' => '* Campagne',
             'multiple' => false,
             'class' => EleCampagne::class,
-            'query_builder' => function(\Doctrine\ORM\EntityRepository $er) use ($refTypeElection) {
+            'query_builder' => function(EntityRepository $er) use ($refTypeElection) {
                 return $er->createQueryBuilder('c')
                     ->where('c.typeElection = :typeElection')
                     ->setParameter('typeElection', $refTypeElection)

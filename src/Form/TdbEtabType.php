@@ -6,7 +6,7 @@ use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Security\Core\Security;
-use Symfony\Component\OptionsResolver\OptionsResolverInterface;
+
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use App\Entity\RefProfil;
 use App\Utils\RefUserPerimetre;
@@ -119,8 +119,8 @@ class TdbEtabType extends AbstractType {
                 ->add('typeElection', ChoiceType::class, array(
                     'label' => 'Type d\'élection',
                     'choices'   => array(
-                        'pe'   => 'PE',
-                        'rp' => 'RP',
+                        'PE'   => 'pe',
+                        'RP' => 'rp',
                     ),
                     'required' => false,
                     'empty_data' => 'Tous',
@@ -132,9 +132,6 @@ class TdbEtabType extends AbstractType {
                     'empty_data' => 'Tous',
                     'multiple'  => false));
     }
-    /**
-     * @param OptionsResolverInterface $resolver
-     */
     public function configureOptions(OptionsResolver $resolver)
     {
         $resolver->setRequired(array(
@@ -143,7 +140,7 @@ class TdbEtabType extends AbstractType {
         ));
     }
 
-    public function getName() { // Attention : Si changement ici ne pas oublier de modifier dans eple.js et eple.css
+    public function getBlockPrefix() { // Attention : Si changement ici ne pas oublier de modifier dans eple.js et eple.css
         return 'tdbEtabType';
     }
 

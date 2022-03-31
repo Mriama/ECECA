@@ -10,11 +10,8 @@ use App\Entity\RefTypeElection;
 use App\Entity\RefTypeEtablissement;
 use App\Entity\EleEtablissement;
 use App\Entity\RefProfil;
-
 use App\Controller\StatistiqueController;
-
 use App\Utils\EpleUtils;
-
 use Doctrine\ORM\Query\ResultSetMapping;
 use App\Entity\RefSousTypeElection;
 
@@ -683,10 +680,9 @@ class RefEtablissementRepository extends EntityRepository {
     public function getArrayRefEtablissementUai() {
         $sql = "SELECT ref_etablissement.uai FROM ref_etablissement";
         $stmt = $this->getEntityManager()->getConnection()->prepare($sql);
-        $stmt->execute();
-
+        $stmt->executeQuery();
         $array = array();
-        while ($row = $stmt->fetch()) {
+        while ($row = $stmt->fetchAll()) {
             $array[$row['uai']] = $row['uai'];
         }
 

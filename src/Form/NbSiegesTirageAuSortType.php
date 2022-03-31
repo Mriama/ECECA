@@ -10,7 +10,6 @@ namespace App\Form;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
-use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 
 class NbSiegesTirageAuSortType extends AbstractType {
 
@@ -25,7 +24,7 @@ class NbSiegesTirageAuSortType extends AbstractType {
 					));
     }
 
-    public function getName() {
+    public function getBlockPrefix() {
         return 'ececa_saisie_ts';
     }
 

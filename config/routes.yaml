@@ -16,12 +16,6 @@ EPLEElectionBundle_resultats_export_PDF:
   path:  /{codeUrlTypeElect}/resultats/exportPDF/
   controller: App\Controller\ResultatController:exportResultatsPDFAction
 
-EPLEElectionBundle_resultats_export_XLS:
-  path:  /{codeUrlTypeElect}/{etablissementUai}/resultats/exportXLS/
-  controller: App\Controller\ResultatController:exportResultatsXLSAction
-  defaults:
-    etablissementUai: tous
-
 EPLEElectionBundle_resultats_export_PDF_complet:
   path:  /{codeUrlTypeElect}/resultats/exportPDFComplet/
   controller: App\Controller\ResultatController:exportResultatsPDFCompletAction
@@ -85,14 +79,14 @@ EPLEElectionBundle_homepage:
 
 EPLEElectionBundle_login:
   path:  /login/
-  controller: App\Controller\Identification:loginAction
+  controller: App\Controller\IdentificationController:loginAction
 
 EPLEElectionBundle_login_check:
   path:  /login_check/
 
 EPLEElectionBundle_logout:
   path:  /logout/
-  controller: App\Controller\Identification:logoutAction
+  controller: App\Controller\IdentificationController:logoutAction
 
 EPLEElectionBundle_tableau_bord:
   path:  /tableauDeBord/
@@ -138,17 +132,17 @@ EPLEElectionBundle_statistiques_export_XLS_complet:
 
 EPLEElectionBundle_saisie_resultats_etab:
   path:  /saisieResultats/{codeUrlTypeElect}/{etablissementUai}/modifier/{retourLstRech}/
-  controller: App\Controller\SaisieResultat:editionAction
+  controller: App\Controller\SaisieResultatController:editionAction
   defaults:
     retourLstRech: 0
 
 EPLEElectionBundle_aide_nb_sieges:
   path:  /saisieResultats/aide/{typeElectionId}/{etablissementUai}
-  controller: App\Controller\SaisieResultat:aideNbSiegesAction
+  controller: App\Controller\SaisieResultatController:aideNbSiegesAction
 
 EPLEElectionBundle_saisie_nb_sieges_tirage_sort:
   path:  /saisieResultats/{codeUrlTypeElect}/{uai}/tirageAuSort/
-  controller: App\Controller\SaisieResultat:nbSiegesTirageAuSortAction
+  controller: App\Controller\SaisieResultatController:nbSiegesTirageAuSortAction
 
 EPLEElectionBundle_relance_courriel:
   path:  /courriel/{typeElectionId}/{idZone}/
@@ -178,15 +172,15 @@ EPLEElectionBundle_masse_envoi_courriel:
 
 EPLEElectionBundle_creation_PV:
   path:  /{codeUrlTypeElect}/{etablissementUai}/creationPV/{statut}/
-  controller: App\Controller\PV:creerPVAction
+  controller: App\Controller\PVController:creerPVAction
 
 EPLEElectionBundle_upload_PV:
   path:  /{codeUrlTypeElect}/{etablissementUai}/uploadPV/
-  controller: App\Controller\PV:indexAction
+  controller: App\Controller\PVController:indexAction
 
 EPLEElectionBundle_do_upload:
   path:  /{codeUrlTypeElect}/{etablissementUai}/upload/
-  controller: App\Controller\PV:uploadAction
+  controller: App\Controller\PVController:uploadAction
 
 EPLEElectionBundle_courriel_libre:
   path: /{codeUrlTypeElect}/envoyerCourrielLibre/
@@ -200,7 +194,7 @@ EPLEElectionBundle_ajax_getAllAcademie:
 
 EPLEElectionBundle_ajax_getDepartementsByCodeAcademie:
   path:  /departements/byCodeAcademie/
-  controller: App\Controller\Courriel:findDepartementsByCodeAcademieAction
+  controller: App\Controller\CourrielController:findDepartementsByCodeAcademieAction
   requirements:
     _method:  POST
 
@@ -242,11 +236,11 @@ EPLEElectionBundle_archives_export_XLS_complet:
 
 EPLEElectionBundle_recapitulatif_participation_export_XLS:
   path:  /recapitulatifParticipation/{codeUrlTypeElect}/exportXLS/
-  controller: App\Controller\RecapitulatifParticipation:exportXLSAction
+  controller: App\Controller\RecapitulatifParticipationController:exportXLSAction
 
 EPLEElectionBundle_recapitulatif_participation_detaillee_export_XLS:
   path:  /recapitulatifParticipationDetaillee/{codeUrlTypeElect}/exportXLS/
-  controller: App\Controller\RecapitulatifParticipationDetaillee:exportXLSAction
+  controller: App\Controller\RecapitulatifParticipationDetailleeController:exportXLSAction
 
 EPLEAdminBundle_homepage:
   path:  /
@@ -260,41 +254,41 @@ EPLEAdminBundle_ajax_getAcaDepComByZone:
 
 EPLEAdminBundle_contact_ajouter:
   path:  /contacts/ajouter/
-  controller: App\Controller\Contact:modifierContactAction
+  controller: App\Controller\ContactController:modifierContactAction
 
 EPLEAdminBundle_contact_modifier:
   path:  /contacts/{contactId}/modifier/
-  controller: App\Controller\Contact:modifierContactAction
+  controller: App\Controller\ContactController:modifierContactAction
 
 EPLEAdminBundle_federations:
   path:  /federations/
-  controller: App\Controller\Federation:indexAction
+  controller: App\Controller\FederationController:indexAction
 
 EPLEAdminBundle_federation_ajouter:
   path:  /federations/ajouter/
-  controller: App\Controller\Federation:modifierFederationAction
+  controller: App\Controller\FederationController:modifierFederationAction
 
 EPLEAdminBundle_federation_modifier:
   path:  /federations/{federationId}/modifier/
-  controller: App\Controller\Federation:modifierFederationAction
+  controller: App\Controller\FederationController:modifierFederationAction
 
 EPLEAdminBundle_federation_supprimer:
   path: /federations/{federationId}/supprimer/
-  controller: App\Controller\Federation:supprimerFederationAction
+  controller: App\Controller\FederationController:supprimerFederationAction
   requirements:
     _method: DELETE
 
 EPLEAdminBundle_organisation_ajouter:
   path:  /organisations/ajouter/
-  controller: App\Controller\Organisation:modifierOrganisationAction
+  controller: App\Controller\OrganisationController:modifierOrganisationAction
 
 EPLEAdminBundle_organisation_modifier:
   path:  /organisations/{organisationId}/modifier/
-  controller: App\Controller\Organisation:modifierOrganisationAction
+  controller: App\Controller\OrganisationController:modifierOrganisationAction
 
 EPLEAdminBundle_etablissement:
   path:  /etablissements/{page}/
-  controller: App\Controller\Etablissement:indexAction
+  controller: App\Controller\EtablissementController:indexAction
   defaults:
     page: 1
   requirements:
@@ -302,37 +296,37 @@ EPLEAdminBundle_etablissement:
 
 EPLEAdminBundle_etablissement_modifier:
   path:  /etablissements/{etablissementUai}/modifier/
-  controller: App\Controller\Etablissement:modifierEtablissementAction
+  controller: App\Controller\EtablissementController:modifierEtablissementAction
 
 EPLEAdminBundle_etablissement_ajouter:
   path:  /etablissements/ajouter/
-  controller: App\Controller\Etablissement:modifierEtablissementAction
+  controller: App\Controller\EtablissementController:modifierEtablissementAction
 
 EPLEAdminBundle_etablissement_supprimer:
   path:  /etablissements/{etablissementUai}/supprimer/
-  controller: App\Controller\Etablissement:supprimerEtablissementAction
+  controller: App\Controller\EtablissementController:supprimerEtablissementAction
   requirements:
     _method: DELETE
 
 EPLEAdminBundle_campagnes:
   path:  /campagnes/
-  controller: App\Controller\Campagne:indexAction
+  controller: App\Controller\CampagneController:indexAction
 
 EPLEAdminBundle_campagne_ajouter:
   path:  /campagnes/ajouter/
-  controller: App\Controller\Campagne:modifierAction
+  controller: App\Controller\CampagneController:modifierAction
 
 EPLEAdminBundle_campagne_modifier:
   path:  /campagnes/{campagneId}/modifier/
-  controller: App\Controller\Campagne:modifierAction
+  controller: App\Controller\CampagneController:modifierAction
 
 EPLEAdminBundle_campagne_archiver:
   path:  /campagnes/{campagneId}/archiver/
-  controller: App\Controller\Campagne:archiverAction
+  controller: App\Controller\CampagneController:archiverAction
 
 EPLEAdminBundle_statistiques:
   path:  /statistiques/{typeElectionId}/
-  controller: App\Controller\Statistiques:indexAction
+  controller: App\Controller\StatistiquesController:indexAction
   defaults:
     typeElectionId: 0
 

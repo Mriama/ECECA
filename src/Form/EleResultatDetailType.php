@@ -10,7 +10,7 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use App\Form\DataTransformer\OrganisationToIdTransformer;
 use Symfony\Component\Form\Extension\Core\Type\HiddenType;
-use Symfony\Component\OptionsResolver\OptionsResolverInterface;
+use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class EleResultatDetailType extends EleResultatType {
     
@@ -40,13 +40,13 @@ class EleResultatDetailType extends EleResultatType {
         
     }
     
-    public function setDefaultOptions(OptionsResolverInterface $resolver) {
+    public function configureOptions(OptionsResolver $resolver) {
     	$resolver->setDefaults(array(
     			'data_class' => 'App\Entity\EleResultatDetail'
     	));
     }
 
-    public function getName() {
+    public function getBlockPrefix() {
         return 'EleResultatDetailType';
     }
 }

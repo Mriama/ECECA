@@ -64,8 +64,8 @@ class FederationController extends BaseController
             ->getForm();
         
         if ($request->getMethod() == 'POST') {
-            $form->bind($request);
-            if ($form->isValid()) {
+            $form->handleRequest($request);
+            if ($form->isSubmitted() && $form->isValid()) {
                 $federationEnCours = $form->getData();
                 $em->persist($federationEnCours);
                 $em->flush();

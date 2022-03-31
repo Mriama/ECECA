@@ -2,6 +2,9 @@
 
 namespace App\Form;
 
+use App\Entity\RefCommune;
+use App\Entity\RefTypeEtablissement;
+use Doctrine\ORM\EntityRepository;
 use Symfony\Component\Form\FormEvent;
 use Symfony\Component\Form\FormEvents;
 use Symfony\Component\Form\AbstractType;
@@ -11,7 +14,8 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
-use Symfony\Component\OptionsResolver\OptionsResolverInterface;
+use Symfony\Component\OptionsResolver\OptionsResolver;
+
 
 
 class EtablissementType extends AbstractType {
@@ -32,18 +36,18 @@ class EtablissementType extends AbstractType {
 			    				'multiple' => false,
 			    				'class' => RefCommune::class,
 			    				'required' => true,
-			    				'property' => 'libelle',
+			    				'choice_label' => 'libelle',
 			    				'empty_data' => 'Veuillez saisir un code postal',
 			   				))
 	           ->add('etab.typeEtablissement', EntityType::class, array(
 			            		'label' => '* Type d\'établissement',
 			            		'multiple' => false,
 			            		'class' => RefTypeEtablissement::class,
-			            		'query_builder' => function(\Doctrine\ORM\EntityRepository $er) {
+			            		'query_builder' => function(EntityRepository $er) {
 			            					return $er->createQueryBuilder('t')->orderBy('t.id', 'ASC');
 			            				},
 			            		'required' => true,
-			            		'property' => 'code'
+			            		'choice_label' => 'code'
 							))
 	            ->add('etab.eclair', CheckboxType::class, array(
 			            		'required' => false, 
@@ -65,13 +69,13 @@ class EtablissementType extends AbstractType {
 	    						'data' => 'false'));  
     }
     
-    public function setDefaultOptions(OptionsResolverInterface $resolver) {
+    public function configureOptions(OptionsResolver $resolver) {
     	$resolver->setDefaults(array(
     			'data_class' => 'App\Model\Etablissementmodel'
     	));
     }
 
-    public function getName() {
+    public function getBlockPrefix() {
         return 'etabtype';
     }
 }

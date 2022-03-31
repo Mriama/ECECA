@@ -2,6 +2,7 @@
 
 namespace App\Form;
 
+use App\Entity\RefTypeElection;
 use Symfony\Component\Form\Form;
 use Symfony\Component\HttpFoundation\Request;
 use Doctrine\ORM\EntityManager;
@@ -22,9 +23,9 @@ class TypeElectionHandler {
 	public function process() {
 		if( $this->request->getMethod() == 'POST' ) {
 			
-			$this->form->bind($this->request);
+			$this->form->handleRequest($this->request);
 			
-			if( $this->form->isValid() ) {
+			if( $this->form->isSubmitted() && $this->form->isValid() ) {
 				$te_formArray = $this->form->getData();
 				$this->onSuccess($te_formArray["typeElection"]);
 				return true;					
@@ -36,9 +37,9 @@ class TypeElectionHandler {
 	public function processGestionContact() {
 		if( $this->request->getMethod() == 'POST' ) {
 				
-			$this->form->bind($this->request);
+			$this->form->handleRequest($this->request);
 				
-			if( $this->form->isValid() ) {
+			if( $this->form->isSubmitted() && $this->form->isValid() ) {
 				$formArray = $this->form->getData();
 				$this->typeZoneDefaultValue = ( isset($formArray["typeZone"]) ) ? $formArray["typeZone"] : null;
 				$this->onSuccess($formArray["typeElection"]);
@@ -56,7 +57,7 @@ class TypeElectionHandler {
 		return $this->typeZoneDefaultValue;
 	}
 	
-	public function onSuccess(\App\Entity\RefTypeElection $typeElectionForm) {
+	public function onSuccess(RefTypeElection $typeElectionForm) {
 		$this->teDefaultValue = $this->em->getRepository(RefTypeElection::class)->find($typeElectionForm->getId());
 	}
 

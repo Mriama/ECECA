@@ -1,23 +1,29 @@
 <?php
 namespace App\Form;
 
-use App\Entity\RefTypeEtablissement;
 use Doctrine\ORM\EntityRepository;
 use App\Form\ParticipationZoneEtabType;
 use App\Entity\RefUser;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
-use Symfony\Component\OptionsResolver\OptionsResolver;
-
+use Symfony\Component\OptionsResolver\OptionsResolverInterface;
+use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
 class RecapitulatifParticipationEtabType extends ParticipationZoneEtabType{
+	
+	protected $user;
+	public function __construct(TokenStorageInterface $tokenStorage) {
+		parent::__construct($tokenStorage);
+		$this->user = $tokenStorage->getToken()->getUser();
 
+	}
+	
 	public function buildForm(FormBuilderInterface $builder, array $options) {
+			
 		parent::buildForm($builder, $options);
-
-        $user = $options["user"] ?? null;
-		$degres = ($user != null && $user->getPerimetre()->getDegres() != null) ? $user->getPerimetre()->getDegres() : null;
+		
+		$degres = ($this->degresUser != null) ? $this->degresUser : null;
 		//$datas = $options['data'];
 		//$refTypeElection = $datas->getTypeElection();
 		
@@ -35,18 +41,18 @@ class RecapitulatifParticipationEtabType extends ParticipationZoneEtabType{
 				return $qb;
 			},
 			'required' => false,
-			'choice_label' => 'code',
+			'property' => 'code',
 			'empty_data' => 'Tous'));
 		
 	}
 	
-	public function configureOptions(OptionsResolver $resolver) {
+	public function setDefaultOptions(OptionsResolverInterface $resolver) {
 		$resolver->setDefaults(array(
 				'data_class' => 'App\Model\RecapitulatifParticipationEtabTypeModel'
 		));
 	}
 	
-	public function getBlockPrefix() {
+	public function getName() {
 		return 'recapitulatifParticipationEtabType';
 	}
 }

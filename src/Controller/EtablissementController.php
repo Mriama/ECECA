@@ -5,6 +5,8 @@ use App\Form\EtablissementType;
 use App\Model\EtablissementModel;
 use App\Form\EtablissementHandler;
 use App\Controller\BaseController;
+use Psr\Log\LoggerInterface;
+use App\Utils\ImportRamseseService;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
@@ -18,7 +20,7 @@ class EtablissementController extends BaseController
     /**
       * @Route("importRamsese", name="import_ramesese")
       */
-    public function importRamseseAction(ParameterBagInterface $parameters,Request $request)
+    public function importRamseseAction(ParameterBagInterface $parameters,Request $request,LoggerInterface $logger,ImportRamseseService $importService)
     {
         $user = $this->getUser();
         if (! $user->canImportRamsese()) {
@@ -26,7 +28,7 @@ class EtablissementController extends BaseController
         }
         
         $uploadDir = $parameters->get('ramsese_upload_dir');
-        //$logger = $this->get("import_logger");
+        //$logger->get("import_logger");
         
         $em = $this->getDoctrine()->getManager();
         
@@ -43,7 +45,6 @@ class EtablissementController extends BaseController
         if ($request->getMethod() == 'POST') {
             $form->handleRequest($request);
             if ($form->isSubmitted() && $form->isValid()) {
-
                 // Récupération de l'objet fichier
                 $fichier = $form['fichier']->getData();
                 
@@ -52,9 +53,9 @@ class EtablissementController extends BaseController
                 $url = $uploadDir . $fichier->getClientOriginalName();
                 
                 // Appel du service d'import
-                $params = $this->get('import_ramsese_service')->import($url);
+                $params = $importService->import($url);
                 
-             }
+            }
         }
         $params['form'] = $form->createView();
         return $this->render('Etablissement/importFichier.html.twig', $params);

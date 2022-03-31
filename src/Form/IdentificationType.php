@@ -3,8 +3,10 @@
 namespace App\Form;
 
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\PasswordType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
-use Symfony\Component\OptionsResolver\OptionsResolverInterface;
+
 
 
 class IdentificationType extends AbstractType {
@@ -15,14 +17,14 @@ class IdentificationType extends AbstractType {
          * 
          */
         
-        $builder->add('login', 'text',
+        $builder->add('login', TextType::class,
 								array('label'  => '* Votre identifiant',
 										'required' => true,
 										'trim' => true,
 										'error_bubbling' => true,
 										'attr' => array('autofocus' => 'autofocus'),
 										'invalid_message' => 'L\'identifiant est obligatoire.'))
-						->add('password', 'password',
+						->add('password', PasswordType::class,
 								array('label'  => '* Votre mot de passe',
 										'required' => true,
 										'error_bubbling' => true,
@@ -31,7 +33,7 @@ class IdentificationType extends AbstractType {
 
     }
     
-    public function getName() {
+    public function getBlockPrefix() {
         return 'IdentificationType';
     }
 }

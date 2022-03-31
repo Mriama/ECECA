@@ -7,7 +7,7 @@ use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
-use Symfony\Component\OptionsResolver\OptionsResolverInterface;
+
 
 class TdbZoneEtabType extends AbstractType {
 
@@ -20,8 +20,8 @@ class TdbZoneEtabType extends AbstractType {
             'multiple' => true,
             'expanded' => true,
             'choices' => array(
-                EleEtablissement::ETAT_NONEFF => 'Non effectuées',
-                EleEtablissement::ETAT_SAISIE => 'Enregistrées'
+                'Non effectuées' => EleEtablissement::ETAT_NONEFF,
+                'Enregistrées' => EleEtablissement::ETAT_SAISIE
             ),
             'required' => false)
         );
@@ -42,15 +42,15 @@ class TdbZoneEtabType extends AbstractType {
             'multiple' => true,
             'expanded' => true,
             'choices' => array(
-                EleEtablissement::ETAT_TRANSMISSION => 'Transmis',
-                EleEtablissement::ETAT_VALIDATION => 'Validés'
+                'Transmis' => EleEtablissement::ETAT_TRANSMISSION,
+                'Validés' => EleEtablissement::ETAT_VALIDATION
             ),
             'required' => false)
         );
         
 
     }
-    public function getName() {
+    public function getBlockPrefix() {
         return 'tdbZoneEtabType';
     }
 

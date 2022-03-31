@@ -24,9 +24,9 @@ class EtablissementHandler {
 		
 		if ($this->request->getMethod() == 'POST') {
 
-			$this->form->bind($this->request);
+			$this->form->handleRequest($this->request);
 			
-			if ($this->form->isValid()) {
+			if ($this->form->isSubmitted() && $this->form->isValid()) {
 				
 				$mon_etablissement = $this->form->getData();
 				
@@ -88,7 +88,7 @@ class EtablissementHandler {
 		return false;
 	}
 	
-	public function onSuccess(\App\Entity\RefEtablissement $etablissementForm) {
+	public function onSuccess(RefEtablissement $etablissementForm) {
 		$this->em->persist($etablissementForm);
 		$this->em->flush();
 		

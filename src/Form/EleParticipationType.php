@@ -2,13 +2,14 @@
 
 namespace App\Form;
 
+use App\Entity\RefModaliteVote;
 use App\Entity\RefTypeElection;
 use Doctrine\ORM\EntityRepository;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
-use Symfony\Component\OptionsResolver\OptionsResolverInterface;
+use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class EleParticipationType extends AbstractType {
     protected $class;
@@ -73,18 +74,18 @@ class EleParticipationType extends AbstractType {
                     return $qb;
                 },
                 'required' => true,
-                'property' => 'libelle',
+                'choice_label' => 'libelle',
                 'empty_data' => 'Votre sélection'));
         }
     }
 
-    public function setDefaultOptions(OptionsResolverInterface $resolver) {
+    public function configureOptions(OptionsResolver $resolver) {
         $resolver->setDefaults(array(
             'data_class' => 'App\Entity\EleParticipation'
         ));
     }
 
-    public function getName() {
+    public function getBlockPrefix() {
         return 'EleParticipationType';
     }
 }

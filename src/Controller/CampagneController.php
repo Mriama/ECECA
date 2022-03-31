@@ -280,11 +280,11 @@ class CampagneController extends BaseController
 		// 1) Arrivée sur la page
 		// 2) Retour après erreur suite au submit
 		return $this->render('campagne/edit.html.twig', array("form"=>$form->createView(),
-				                                                              "isTypeElectionParent"=>$isTypeElectionParent,
-				                                                              "annee"=>$anneeDebutCampagne,
-				                                                              "isArchivee"=>$isArchivee,
-		                                                                      "isArchivable"=>$isArchivable,
-																			  "isClosed"=>$isClosed));
+			"isTypeElectionParent"=>$isTypeElectionParent,
+			"annee"=>$anneeDebutCampagne,
+			"isArchivee"=>$isArchivee,
+			"isArchivable"=>$isArchivable,
+			"isClosed"=>$isClosed));
 	}
 	
 	// *******************************************************************************************

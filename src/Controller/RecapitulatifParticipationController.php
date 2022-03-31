@@ -2,6 +2,7 @@
 namespace App\Controller;
 
 use App\Entity\EleCampagne;
+use App\Entity\RefUser;
 use App\Utils\EpleUtils;
 use App\Entity\RefProfil;
 use App\Entity\EleResultat;
@@ -15,12 +16,15 @@ use App\Entity\EleEtablissement;
 use App\Entity\EleParticipation;
 use App\Entity\RefEtablissement;
 use App\Entity\RefTypeEtablissement;
+use App\Utils\RefUserPerimetre;
+use phpDocumentor\Reflection\DocBlock\Tags\Uses;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use App\Form\RecapitulatifParticipationEtabType;
 use App\Model\RecapitulatifParticipationEtabTypeModel;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Controller\BaseController;
+use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 class RecapitulatifParticipationController extends BaseController
