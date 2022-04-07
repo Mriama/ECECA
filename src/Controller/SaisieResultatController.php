@@ -24,8 +24,9 @@ use App\Form\EleEtablissementType;
 use App\Form\NbSiegesTirageAuSortType;
 use App\Entity\RefTypeEtablissement;
 use App\Entity\RefAcademie;
+use App\Controller\BaseController;
 
-class SaisieResultatController extends AbstractController {
+class SaisieResultatController extends BaseController {
 
 	/**
 	 * Fonction permettant d'afficher la page d'édition des résultats (Participations et Résultats)
@@ -59,11 +60,13 @@ class SaisieResultatController extends AbstractController {
 		$params['typeElect'] = $typeElection;
 		$request->getSession()->set('typeElectionId', $typeElection->getId());
 		
-		$user = $this->get('security.context')->getToken()->getUser();
+		$user = $this->getUser();
 		//$zoneGlobalUser = EpleUtils::getZone($em, $user->getIdZone());
 
 		$campagne = $em->getRepository(EleCampagne::class)->getLastCampagneNonArchive($typeElection);
-		if (empty($campagne)) { throw $this->createNotFoundException('Aucune campagne ouverte pour ce type d\'élection n\'a pas été trouvé.'); }
+		// if (empty($campagne)) { 
+		// 	throw $this->createNotFoundException('Aucune campagne ouverte pour ce type d\'élection n\'a pas été trouvé.'); 
+		// }
 		$params['campagne'] = $campagne;
 
 		$etablissement = $em->getRepository(RefEtablissement::class)->findOneByUai($etablissementUai);
