@@ -6,6 +6,7 @@ use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use App\Form\EleParticipationType;
 
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -20,7 +21,7 @@ class EleEtablissementType extends AbstractType {
     
     public function buildForm(FormBuilderInterface $builder, array $options) {
 
-		$builder->add('participation', new EleParticipationType($options["data"]->getCampagne()->getTypeElection()), array('label' => '* Participation'))
+		$builder->add('participation', EleParticipationType::class,array('label' => '* Participation'))
 				->add('resultats', CollectionType::class, array(
 					    'entry_type'   => new EleResultatType(),
 					    'entry_options'  => array('required'  => false)))
