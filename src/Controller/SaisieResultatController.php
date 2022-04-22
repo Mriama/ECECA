@@ -17,149 +17,138 @@ use App\Entity\EleResultatDetail;
 use App\Form\EleEtablissementType;
 use App\Entity\RefSousTypeElection;
 use App\Entity\RefTypeEtablissement;
-use App\Form\NbSiegesTirageAuSortType;
-use Doctrine\Persistence\ManagerRegistry;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\RequestStack;
-use Symfony\Component\HttpFoundation\RedirectResponse;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\Security\Core\Exception\AccessDeniedException;
+use App\Controller\BaseController;
 
-class SaisieResultatController extends AbstractController {
+class SaisieResultatController extends BaseController {
 
-    private $request;
-    private $doctrine;
+	/**
+	 * Fonction permettant d'afficher la page d'édition des résultats (Participations et Résultats)
+	 * et de sauvegarder ces résultats après vérification des données entrées
+	 * @param \Symfony\Component\HttpFoundation\Request $request
+	 * @param string $etablissementUai
+	 * @param string $codeUrlTypeElect
+	 * @param string $statut modifie le statut de l'objet
+	 * @throws AccessDeniedException
+	 */
+	public function editionAction(\Symfony\Component\HttpFoundation\Request $request, $etablissementUai, $codeUrlTypeElect, $retourLstRech)
+	{
+		$em = $this->getDoctrine()->getManager();
+		$params = array();
+		$joursCalendaires = $this->getParameter('jours_calendaires');
+		$typeElectionId = RefTypeElection::getIdRefTypeElectionByCodeUrl($codeUrlTypeElect);
+		$sousTypeElection = null;		
+		// anomalie 0168664
+		if(null == $typeElectionId || $codeUrlTypeElect == RefSousTypeElection::CODE_URL_A_ATTE || $codeUrlTypeElect == RefSousTypeElection::CODE_URL_SS){
+			$sousTypeElectionId = RefSousTypeElection::getIdRefSousTypeElectionByCodeUrl($codeUrlTypeElect);
+			$sousTypeElection = $em->getRepository(RefSousTypeElection::class)->find($sousTypeElectionId);
+			$typeElection = $sousTypeElection->getTypeElection();
+			$typeElectionId = $typeElection->getId();
+			$params['sousTypeElect'] = $sousTypeElection;
+			$request->getSession()->set('sousTypeElectionId', $sousTypeElectionId);
+		} else {
+			$typeElection = $em->getRepository(RefTypeElection::class)->find($typeElectionId);
+		}
+		
+		if (empty($typeElection) && null != $sousTypeElection) { throw $this->createNotFoundException('Le type d\'élection '.$codeUrlTypeElect.' n\'a pas été trouvé.'); }
+		$params['typeElect'] = $typeElection;
+		$request->getSession()->set('typeElectionId', $typeElection->getId());
+		
+		$user = $this->getUser();
+		//$zoneGlobalUser = EpleUtils::getZone($em, $user->getIdZone());
 
-    public function __construct(RequestStack $request, ManagerRegistry $doctrine) {
-        $this->request = $request->getCurrentRequest();
-        $this->doctrine = $doctrine;
-    }
+		$campagne = $em->getRepository(EleCampagne::class)->getLastCampagneNonArchive($typeElection);
+		// if (empty($campagne)) { 
+		// 	throw $this->createNotFoundException('Aucune campagne ouverte pour ce type d\'élection n\'a pas été trouvé.'); 
+		// }
+		$params['campagne'] = $campagne;
 
-    /**
-     * Fonction permettant d'afficher la page d'édition des résultats (Participations et Résultats)
-     * et de sauvegarder ces résultats après vérification des données entrées
-     * @param string $etablissementUai
-     * @param string $codeUrlTypeElect
-     * @param string $statut modifie le statut de l'objet
-     * @throws AccessDeniedException
-     */
-    public function editionAction($etablissementUai, $codeUrlTypeElect, $retourLstRech)
-    {
-        $em = $this->doctrine->getManager();
-        $params = array();
-        $joursCalendaires = $this->getParameter('jours_calendaires');
-        $typeElectionId = RefTypeElection::getIdRefTypeElectionByCodeUrl($codeUrlTypeElect);
-        $sousTypeElection = null;
-        // anomalie 0168664
-        if(null == $typeElectionId || $codeUrlTypeElect == RefSousTypeElection::CODE_URL_A_ATTE || $codeUrlTypeElect == RefSousTypeElection::CODE_URL_SS){
-            $sousTypeElectionId = RefSousTypeElection::getIdRefSousTypeElectionByCodeUrl($codeUrlTypeElect);
-            $sousTypeElection = $sousTypeElectionId != null ? $em->getRepository(RefSousTypeElection::class)->find($sousTypeElectionId) : null;
-            $typeElection = $sousTypeElection->getTypeElection();
-            $typeElectionId = $typeElection->getId();
-            $params['sousTypeElect'] = $sousTypeElection;
-            $this->request->getSession()->set('sousTypeElectionId', $sousTypeElectionId);
-        } else {
-            $typeElection = $em->getRepository(RefTypeElection::class)->find($typeElectionId);
-        }
+		$etablissement = $em->getRepository(RefEtablissement::class)->findOneByUai($etablissementUai);
+		if (empty($etablissement)) { throw $this->createNotFoundException('L\'établissement  n\'a pas été trouvé.'); }
+		$params['etablissement'] = $etablissement;
+		
+		$eleEtab = $em->getRepository(EleEtablissement::class)->getEleEtablissementGlobale($campagne, $etablissement, $sousTypeElection);
+		
+		if (!$user->canEditEtab($etablissement, $campagne, $joursCalendaires, $eleEtab)) {
+			throw new AccessDeniedException();
+		}
+		
+		if (!empty($eleEtab)) {
+			$eleEtablissement = $eleEtab;
+		} else {
+			$eleEtablissement = new EleEtablissement();
+			$eleEtablissement->setCampagne($campagne);
+			$eleEtablissement->setEtablissement($etablissement);
+			$eleEtablissement->setParticipation(new EleParticipation());
+			$eleEtablissement->setSousTypeElection($sousTypeElection);
 
-        if (empty($typeElection) && null != $sousTypeElection) { throw $this->createNotFoundException('Le type d\'élection '.$codeUrlTypeElect.' n\'a pas été trouvé.'); }
-        $params['typeElect'] = $typeElection;
-        $this->request->getSession()->set('typeElectionId', $typeElection->getId());
+			// Données par défaut pour le nombre de sièges
+			// Chiffres définis dans settings.yml
+			$settings = $this->getParameter('nb_sieges_typeElection_typeEtab');
+			if (isset($settings[$typeElection->getCode()][$etablissement->getTypeEtablissement()->getCode()])) {
+				$eleEtablissement->getParticipation()->setNbSiegesPourvoir($settings[$typeElection->getCode()][$etablissement->getTypeEtablissement()->getCode()]);
+			}
+			
+			// RG_AIDE_SAISIE_10 élections des Personnels PEE, et ASS/ATE : EREA, ERPD [4 sièges PEE, 2 sièges ASS, 2 sièges ATE]
+			// i.e type election = PEE && type etablissement = EREA-ERPD => nb sieges à pourvoir = EREA-ERPD-PEE
+			// i.e type election = A et ATTE && type etablissement = EREA-ERPD => nb sieges à pourvoir = EREA-ERPD-ATE
+			// i.e type election = SS && type etablissement = EREA-ERPD => nb sieges à pourvoir = EREA-ERPD-ASS
+			if ($etablissement->getTypeEtablissement()->getCode() == RefTypeEtablissement::CODE_EREA_ERPD) {
+				if ($typeElection->getId() == RefTypeElection::ID_TYP_ELECT_PEE) {
+					$eleEtablissement->getParticipation()->setNbSiegesPourvoir($settings[$typeElection->getCode()]['EREA-ERPD-PEE']);
+				} else if ( null != $sousTypeElection && $sousTypeElection->getId() == RefSousTypeElection::ID_TYP_ELECT_A_ATTE) {
+					$eleEtablissement->getParticipation()->setNbSiegesPourvoir($settings[$typeElection->getCode()]['EREA-ERPD-ATE']);
+				} else if ( null != $sousTypeElection && $sousTypeElection->getId() == RefSousTypeElection::ID_TYP_ELECT_SS) {
+					$eleEtablissement->getParticipation()->setNbSiegesPourvoir($settings[$typeElection->getCode()]['EREA-ERPD-ASS']);
+				}
+			}
+		}
 
-        $user = $this->getUser();
-        //$zoneGlobalUser = EpleUtils::getZone($em, $user->getIdZone());
+		// 014E retour au tdb déplié
+		$request->getSession()->set('dept_num', $etablissement->getCommune()->getDepartement()->getNumero());
+		$params['tdbRetour'] = $request->getSession()->get('tdbRetour');
+		
+		$listeOrganisation = $em->getRepository(RefOrganisation::class)->findBy(array('typeElection'=>$typeElectionId, 'obsolete'=>false), array('detaillee' => 'asc', 'ordre'=>'asc', 'libelle' => 'asc'));
+		$params['nb_organisation'] = sizeof($listeOrganisation);
+		foreach ($listeOrganisation as $organisation) {
+			$existe = false;
+			foreach ($eleEtablissement->getResultats() as $resultat) {
+				if ($resultat->getOrganisation()->getId() == $organisation->getId()) {
+					$existe = true;
+				}
+			}
+			if (!$existe) {
+				$eleResultat = new EleResultat();
+				$eleResultat->setOrganisation($organisation);
+				$eleResultat->setElectionEtab($eleEtablissement);
+				$eleEtablissement->addResultat($eleResultat);
+			}
+		}
 
-        $campagne = $em->getRepository(EleCampagne::class)->getLastCampagneNonArchive($typeElection);
-        if (empty($campagne)) { throw $this->createNotFoundException('Aucune campagne ouverte pour ce type d\'élection n\'a pas été trouvé.'); }
-        $params['campagne'] = $campagne;
+		$params['eleEtablissement'] = $eleEtablissement;
 
-        $etablissement = $em->getRepository(RefEtablissement::class)->findOneByUai($etablissementUai);
-        if (empty($etablissement)) { throw $this->createNotFoundException('L\'établissement  n\'a pas été trouvé.'); }
-        $params['etablissement'] = $etablissement;
+		$params['nb_resultats_detailles'] = sizeof($eleEtablissement->getResultatsDetailles());
+				
+		$form = $this->createForm(EleEtablissementType::class, $eleEtablissement);
+		
+		/** ####################### SOUMISSION DU FORMULAIRE ############################## */
+		
+		if ($request->getMethod() == 'POST') {
+			$form->handleRequest($request);
+			if ($form->isSubmitted() && $form->isValid()) {
 
-        $eleEtab = $em->getRepository(EleEtablissement::class)->getEleEtablissementGlobale($campagne, $etablissement, $sousTypeElection);
+				$datasEleEtablissement = $form->getData();
+				$datasEleEtablissement->setSousTypeElection($sousTypeElection);
 
-        if (!$user->canEditEtab($etablissement, $campagne, $joursCalendaires, $eleEtab)) {
-            throw new AccessDeniedException();
-        }
-
-        if (!empty($eleEtab)) {
-            $eleEtablissement = $eleEtab;
-        } else {
-            $eleEtablissement = new EleEtablissement();
-            $eleEtablissement->setCampagne($campagne);
-            $eleEtablissement->setEtablissement($etablissement);
-            $eleEtablissement->setParticipation(new EleParticipation());
-            $eleEtablissement->setSousTypeElection($sousTypeElection);
-
-            // Données par défaut pour le nombre de sièges
-            // Chiffres définis dans settings.yml
-            $settings = $this->getParameter('nb_sieges_typeElection_typeEtab');
-            if (isset($settings[$typeElection->getCode()][$etablissement->getTypeEtablissement()->getCode()])) {
-                $eleEtablissement->getParticipation()->setNbSiegesPourvoir($settings[$typeElection->getCode()][$etablissement->getTypeEtablissement()->getCode()]);
-            }
-
-            // RG_AIDE_SAISIE_10 élections des Personnels PEE, et ASS/ATE : EREA, ERPD [4 sièges PEE, 2 sièges ASS, 2 sièges ATE]
-            // i.e type election = PEE && type etablissement = EREA-ERPD => nb sieges à pourvoir = EREA-ERPD-PEE
-            // i.e type election = A et ATTE && type etablissement = EREA-ERPD => nb sieges à pourvoir = EREA-ERPD-ATE
-            // i.e type election = SS && type etablissement = EREA-ERPD => nb sieges à pourvoir = EREA-ERPD-ASS
-            if ($etablissement->getTypeEtablissement()->getCode() == RefTypeEtablissement::CODE_EREA_ERPD) {
-                if ($typeElection->getId() == RefTypeElection::ID_TYP_ELECT_PEE) {
-                    $eleEtablissement->getParticipation()->setNbSiegesPourvoir($settings[$typeElection->getCode()]['EREA-ERPD-PEE']);
-                } else if ( null != $sousTypeElection && $sousTypeElection->getId() == RefSousTypeElection::ID_TYP_ELECT_A_ATTE) {
-                    $eleEtablissement->getParticipation()->setNbSiegesPourvoir($settings[$typeElection->getCode()]['EREA-ERPD-ATE']);
-                } else if ( null != $sousTypeElection && $sousTypeElection->getId() == RefSousTypeElection::ID_TYP_ELECT_SS) {
-                    $eleEtablissement->getParticipation()->setNbSiegesPourvoir($settings[$typeElection->getCode()]['EREA-ERPD-ASS']);
-                }
-            }
-        }
-
-        // 014E retour au tdb déplié
-        $this->request->getSession()->set('dept_num', $etablissement->getCommune()->getDepartement()->getNumero());
-        $params['tdbRetour'] = $this->request->getSession()->get('tdbRetour');
-
-        $listeOrganisation = $em->getRepository(RefOrganisation::class)->findBy(array('typeElection'=>$typeElectionId, 'obsolete'=>false), array('detaillee' => 'asc', 'ordre'=>'asc', 'libelle' => 'asc'));
-        $params['nb_organisation'] = sizeof($listeOrganisation);
-        foreach ($listeOrganisation as $organisation) {
-            $existe = false;
-            foreach ($eleEtablissement->getResultats() as $resultat) {
-                if ($resultat->getOrganisation()->getId() == $organisation->getId()) {
-                    $existe = true;
-                }
-            }
-            if (!$existe) {
-                $eleResultat = new EleResultat();
-                $eleResultat->setOrganisation($organisation);
-                $eleResultat->setElectionEtab($eleEtablissement);
-                $eleEtablissement->addResultat($eleResultat);
-            }
-        }
-
-        $params['eleEtablissement'] = $eleEtablissement;
-
-        $params['nb_resultats_detailles'] = sizeof($eleEtablissement->getResultatsDetailles());
-
-        $form = $this->createForm(EleEtablissementType::class, $eleEtablissement);
-
-        /** ####################### SOUMISSION DU FORMULAIRE ############################## */
-
-        if ($this->request->getMethod() == 'POST') {
-            $form->handleRequest($this->request);
-            if ($form->isSubmitted() && $form->isValid()) {
-
-                $datasEleEtablissement = $form->getData();
-                $datasEleEtablissement->setSousTypeElection($sousTypeElection);
-
-                $datasCampagne = $datasEleEtablissement->getCampagne();
-                $datasEtablissementUai = $datasEleEtablissement->getEtablissement()->getUai();
-                $datasParticipation = $datasEleEtablissement->getParticipation();
-
-                // 013E initialisation indCarence, indDeficit, indTirageSort et de la liste des alertes pour $datasEleEtablissement
-                $datasEleEtablissement->setIndCarence(0);
-                $datasEleEtablissement->setIndDeficit(0);
-                if($datasEleEtablissement->getIndTirageSort() == null) { $datasEleEtablissement->setIndTirageSort(0); } //SESAM 0316056 : garder indice Tirage apres retour pour anomalie
-
-                // 013E initialisation de nbSiegesSort pour $datasParticipation
+				$datasCampagne = $datasEleEtablissement->getCampagne();
+				$datasEtablissementUai = $datasEleEtablissement->getEtablissement()->getUai();
+				$datasParticipation = $datasEleEtablissement->getParticipation();
+				
+				// 013E initialisation indCarence, indDeficit, indTirageSort et de la liste des alertes pour $datasEleEtablissement
+				$datasEleEtablissement->setIndCarence(0);
+				$datasEleEtablissement->setIndDeficit(0);
+				if($datasEleEtablissement->getIndTirageSort() == null) { $datasEleEtablissement->setIndTirageSort(0); } //SESAM 0316056 : garder indice Tirage apres retour pour anomalie
+				
+				// 013E initialisation de nbSiegesSort pour $datasParticipation
                 $datasParticipation->setNbSiegesSort(null);
 
                 // mantis 146200 : suppression des eleAlertes au moment de l'enregistrement de la nouvelle élection mais plus au téléchargement du PV

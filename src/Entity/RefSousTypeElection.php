@@ -12,12 +12,12 @@ use Doctrine\ORM\Mapping as ORM;
  */
 class RefSousTypeElection
 {
-
-    const ID_TYP_ELECT_A_ATTE = 10;
-    const ID_TYP_ELECT_SS = 11;
-    const CODE_URL_A_ATTE = 'a_atte';
-    const CODE_URL_SS = 'ss';
-
+	
+	const ID_TYP_ELECT_A_ATTE = 10;
+	const ID_TYP_ELECT_SS = 11;
+	const CODE_URL_A_ATTE = 'a_atte';
+	const CODE_URL_SS = 'SS';
+	
     /**
      * @var integer
      *
