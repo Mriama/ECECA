@@ -28,46 +28,42 @@
 	</nav>
 	<header role="banner" aria-labelledby="labheader">
 		<p id="labheader" class="arialabel">Entete</p>
-		<a href="http://www.education.gouv.fr/" title="Ministère de l'éducation nationale" id="men" target="_blank"><img src="{{ asset('images/design/2019_logoMENESR_web.jpg') }}" alt="Ministère de l'éducation nationale" width="91" height="150" /></a>
+		<a href="https://www.education.gouv.fr/les-parents-d-eleves-11834" title="Ministère de l'éducation nationale" id="men" target="_blank"><img src="{{ asset('images/design/2019_logoMENESR_web.jpg') }}" alt="Ministère de l'éducation nationale" width="91" height="150" /></a>
 		<h1 class="{{ app.environment }}">ECECA</h1>
 		<h2>{% block h2 %}Élections Conseil d'École et Conseil d'Administration{% endblock %}</h2>
 	</header>
 	<div id="centre">
 		{% block menu %}
 			<nav id="menu" role="navigation">
-				{#% render "Bundle:Controller:getMenu" - dépend du profil %#}
 				<ul class="neutre">
-					{# <li><a href="{{ app.user.perimetre.getUrlEduscol() }}" target="_blank">Éduscol</a></li> #}
-					{# {% if app.user.profil.code != constant('\\App\\Entity\\RefProfil::CODE_PROFIL_DGESCO') and not app.user.perimetre.isPerimetreVide %}  <!-- anomalie signalée par BALTIMOR --> #}
-						{# {% if is_granted('ROLE_DOCUMENTATION') %}<li><a href="{{ app.user.perimetre.getUrlDocumentation() }}" target="_blank">Documentation</a></li>{% endif %} #}
-						{# IF/ELSE STATEMENT -> Documentation return depending on user code #}
-						{# CE #}
+					<li><a href="{{ url_eduscol }}" target="_blank">Éduscol</a></li>
+					{% if app.user.profil.code != constant('\\App\\Entity\\RefProfil::CODE_PROFIL_DGESCO') and not app.user.perimetre.isPerimetreVide %}  <!-- anomalie signalée par BALTIMOR -->
 						{% if is_granted('ROLE_DOCUMENTATION') %}
 							{% if app.user.profil.code == constant('\\App\\Entity\\RefProfil::CODE_PROFIL_CE') %}
-								<li><a href="{{ app.user.perimetre.getUrlCE() }}"  target="_blank">Documentation</a></li>
+								<li><a href="{{ url_documentation_ce }}"  target="_blank">Documentation</a></li>
 								{# DE #}
 							{% elseif app.user.profil.code == constant('\\App\\Entity\\RefProfil::CODE_PROFIL_DE') %}
-								<li><a href="{{ app.user.perimetre.getUrlDE() }}"  target="_blank">Documentation</a></li>
+								<li><a href="{{ url_documentation_de }}"  target="_blank">Documentation</a></li>
 								{# OTHER ROLE #}
 							{% else %}
-								<li><a href="{{ app.user.perimetre.getUrlDocumentation() }}"  target="_blank">Documentation</a></li>
+								<li><a href="{{ url_documentation }}"  target="_blank">Documentation</a></li>
 							{% endif %}
 						{% endif %}
 
-						{# {% if app.user.profil.code != constant('\\App\\Entity\\RefProfil::CODE_PROFIL_RECT') %} #}
-							{# <li><a href="mailto:{{ app.user.perimetre.getEmailContact(app.user) }}">Contact</a></li> #}
-						{# {% endif %} #}
-					{# {% endif %} #}
+						{% if app.user.profil.code != constant('\\App\\Entity\\RefProfil::CODE_PROFIL_RECT') %}
+							<li><a href="mailto:{{ app.user.perimetre.getEmailContact(app.user) }}">Contact</a></li>
+						{% endif %}
+					{% endif %}
 				</ul>
 				{% if app.user is defined and app.user.perimetre.hasElectionsASS_ATE and not app.user.perimetre.isPerimetreVide %}
 					<ul class="pliable election">
 						<li>ASS et ATE</li>
 						<li>
 							<ul>
-								{% if is_granted('ROLE_RES_ETAB_PE') or is_granted('ROLE_RES_GLO_PE') %}<li><a href="{{ path('EPLEElectionBundle_resultats', { 'codeUrlTypeElect':constant('\\App\\Entity\\RefTypeElection::CODE_URL_ASS_ATE') }) }}">Résultats</a></li>{% endif %}
-								{% if is_granted('ROLE_STATS') %}<li><a href="{{ path('EPLEElectionBundle_statistiques', { 'codeUrlTypeElect' :constant('\\App\\Entity\\RefTypeElection::CODE_URL_ASS_ATE')}) }}">Statistiques</a></li>{% endif %}
-								{% if app.user.profil.code == constant('\\App\\Entity\\RefProfil::CODE_PROFIL_DGESCO') %}<li><a href="{{ path('EPLEElectionBundle_archives', { 'codeUrlTypeElect' :constant('\\App\\Entity\\RefTypeElection::CODE_URL_ASS_ATE')}) }}">Archives</a></li>{% endif %}
-								{% if is_granted('ROLE_ENV_COUR_LIB_CE') %}<li><a href="{{ path('EPLEElectionBundle_courriel_libre', { 'codeUrlTypeElect' :constant('\\App\\Entity\\RefTypeElection::CODE_URL_ASS_ATE')}) }}">Courriel</a></li>{% endif %}
+								{% if is_granted('ROLE_RES_ETAB_PE') or is_granted('ROLE_RES_GLO_PE') %}<li><a href="{{ path('ECECA_resultats', { 'codeUrlTypeElect':constant('\\App\\Entity\\RefTypeElection::CODE_URL_ASS_ATE') }) }}">Résultats</a></li>{% endif %}
+								{% if is_granted('ROLE_STATS') %}<li><a href="{{ path('ECECA_statistiques', { 'codeUrlTypeElect' :constant('\\App\\Entity\\RefTypeElection::CODE_URL_ASS_ATE')}) }}">Statistiques</a></li>{% endif %}
+								{% if app.user.profil.code == constant('\\App\\Entity\\RefProfil::CODE_PROFIL_DGESCO') %}<li><a href="{{ path('ECECA_archives', { 'codeUrlTypeElect' :constant('\\App\\Entity\\RefTypeElection::CODE_URL_ASS_ATE')}) }}">Archives</a></li>{% endif %}
+								{% if is_granted('ROLE_ENV_COUR_LIB_CE') %}<li><a href="{{ path('ECECA_courriel_libre', { 'codeUrlTypeElect' :constant('\\App\\Entity\\RefTypeElection::CODE_URL_ASS_ATE')}) }}">Courriel</a></li>{% endif %}
 							</ul>
 						</li>
 					</ul>
@@ -77,10 +73,10 @@
 						<li>PEE</li>
 						<li>
 							<ul>
-								{% if is_granted('ROLE_RES_ETAB_PE') or is_granted('ROLE_RES_GLO_PE') %}<li><a href="{{ path('EPLEElectionBundle_resultats', { 'codeUrlTypeElect':constant('\\App\\Entity\\RefTypeElection::CODE_URL_PEE') }) }}">Résultats</a></li>{% endif %}
-								{% if is_granted('ROLE_STATS') %}<li><a href="{{ path('EPLEElectionBundle_statistiques', { 'codeUrlTypeElect' :constant('\\App\\Entity\\RefTypeElection::CODE_URL_PEE')}) }}">Statistiques</a></li>{% endif %}
-								{% if app.user.profil.code == constant('\\App\\Entity\\RefProfil::CODE_PROFIL_DGESCO') %}<li><a href="{{ path('EPLEElectionBundle_archives', { 'codeUrlTypeElect' :constant('\\App\\Entity\\RefTypeElection::CODE_URL_PEE')}) }}">Archives</a></li>{% endif %}
-								{% if is_granted('ROLE_ENV_COUR_LIB_CE') %}<li><a href="{{ path('EPLEElectionBundle_courriel_libre', { 'codeUrlTypeElect' :constant('\\App\\Entity\\RefTypeElection::CODE_URL_PEE')}) }}">Courriel</a></li>{% endif %}
+								{% if is_granted('ROLE_RES_ETAB_PE') or is_granted('ROLE_RES_GLO_PE') %}<li><a href="{{ path('ECECA_resultats', { 'codeUrlTypeElect':constant('\\App\\Entity\\RefTypeElection::CODE_URL_PEE') }) }}">Résultats</a></li>{% endif %}
+								{% if is_granted('ROLE_STATS') %}<li><a href="{{ path('ECECA_statistiques', { 'codeUrlTypeElect' :constant('\\App\\Entity\\RefTypeElection::CODE_URL_PEE')}) }}">Statistiques</a></li>{% endif %}
+								{% if app.user.profil.code == constant('\\App\\Entity\\RefProfil::CODE_PROFIL_DGESCO') %}<li><a href="{{ path('ECECA_archives', { 'codeUrlTypeElect' :constant('\\App\\Entity\\RefTypeElection::CODE_URL_PEE')}) }}">Archives</a></li>{% endif %}
+								{% if is_granted('ROLE_ENV_COUR_LIB_CE') %}<li><a href="{{ path('ECECA_courriel_libre', { 'codeUrlTypeElect' :constant('\\App\\Entity\\RefTypeElection::CODE_URL_PEE')}) }}">Courriel</a></li>{% endif %}
 							</ul>
 						</li>
 					</ul>
@@ -90,12 +86,12 @@
 						<li>Parents d'élèves</li>
 						<li>
 							<ul>
-								{% if is_granted('ROLE_RES_ETAB_PAR') or is_granted('ROLE_RES_GLO_PAR') %}<li><a href="{{ path('EPLEElectionBundle_resultats', { 'codeUrlTypeElect':constant('\\App\\Entity\\RefTypeElection::CODE_URL_PARENT') }) }}">Résultats</a></li>{% endif %}
-								{% if is_granted('ROLE_STATS') %}<li><a href="{{ path('EPLEElectionBundle_statistiques', { 'codeUrlTypeElect' :constant('\\App\\Entity\\RefTypeElection::CODE_URL_PARENT') }) }}">Statistiques</a></li>{% endif %}
-								{% if is_granted('ROLE_STATS_TAUX_PART') %}<li><a href="{{ path('recapitulatifParticipation', { 'codeUrlTypeElect' :constant('\\App\\Entity\\RefTypeElection::CODE_URL_PARENT') }) }}">Statistiques taux de participation</a></li>{% endif %}
-								{% if is_granted('ROLE_STATS_EDU_PRIO') %}<li><a href="{{ path('recapitulatifParticipationDetaillee', { 'codeUrlTypeElect' :constant('\\App\\Entity\\RefTypeElection::CODE_URL_PARENT') }) }}">Statistiques éducation prioritaire</a></li>{% endif %}
-								{% if app.user.profil.code == constant('\\App\\Entity\\RefProfil::CODE_PROFIL_DGESCO') %}<li><a href="{{ path('EPLEElectionBundle_archives', { 'codeUrlTypeElect' :constant('\\App\\Entity\\RefTypeElection::CODE_URL_PARENT') }) }}">Archives</a></li>{% endif %}
-								{% if is_granted('ROLE_ENV_COUR_LIB_CE') %}<li><a href="{{ path('EPLEElectionBundle_courriel_libre', { 'codeUrlTypeElect' :constant('\\App\\Entity\\RefTypeElection::CODE_URL_PARENT')}) }}">Courriel</a></li>{% endif %}
+								{% if is_granted('ROLE_RES_ETAB_PAR') or is_granted('ROLE_RES_GLO_PAR') %}<li><a href="{{ path('ECECA_resultats', { 'codeUrlTypeElect':constant('\\App\\Entity\\RefTypeElection::CODE_URL_PARENT') }) }}">Résultats</a></li>{% endif %}
+								{% if is_granted('ROLE_STATS') %}<li><a href="{{ path('ECECA_statistiques', { 'codeUrlTypeElect' :constant('\\App\\Entity\\RefTypeElection::CODE_URL_PARENT') }) }}">Statistiques</a></li>{% endif %}
+								{% if is_granted('ROLE_STATS_TAUX_PART') %}<li><a href="{{ path('ECECA_recapitulatif_participation', { 'codeUrlTypeElect' :constant('\\App\\Entity\\RefTypeElection::CODE_URL_PARENT') }) }}">Statistiques taux de participation</a></li>{% endif %}
+								{% if is_granted('ROLE_STATS_EDU_PRIO') %}<li><a href="{{ path('ECECA_recapitulatif_participation_detaillee', { 'codeUrlTypeElect' :constant('\\App\\Entity\\RefTypeElection::CODE_URL_PARENT') }) }}">Statistiques éducation prioritaire</a></li>{% endif %}
+								{% if app.user.profil.code == constant('\\App\\Entity\\RefProfil::CODE_PROFIL_DGESCO') %}<li><a href="{{ path('ECECA_archives', { 'codeUrlTypeElect' :constant('\\App\\Entity\\RefTypeElection::CODE_URL_PARENT') }) }}">Archives</a></li>{% endif %}
+								{% if is_granted('ROLE_ENV_COUR_LIB_CE') %}<li><a href="{{ path('ECECA_courriel_libre', { 'codeUrlTypeElect' :constant('\\App\\Entity\\RefTypeElection::CODE_URL_PARENT')}) }}">Courriel</a></li>{% endif %}
 							</ul>
 						</li>
 					</ul>
@@ -105,13 +101,13 @@
 						<li>Administration</li>
 						<li>
 							<ul>
-								{% if is_granted('ROLE_IMPORT_RAMSESE') %}<li><a href="{{ path('import_ramesese') }}">Import RAMSESE</a></li>{% endif %}
-								{% if is_granted('ROLE_GEST_CAMP') %}<li><a href="{{ path('EPLEAdminBundle_campagnes') }}">Campagnes</a></li>{% endif %}
-								{% if is_granted('ROLE_GEST_ETAB') %}<li><a href="{{ path('EPLEAdminBundle_etablissement', { 'page' : 0 }) }}">Établissements</a></li>{% endif %}
-								{% if is_granted('ROLE_GEST_FEDE') %}<li><a href="{{ path('EPLEAdminBundle_federations') }}">Fédérations</a></li>{% endif %}
-								{% if is_granted('ROLE_GEST_ORG') %}<li><a href="{{ path('organisations') }}">Organisations</a></li>{% endif %}
-								{% if is_granted('ROLE_RECH_UAI') %}<li><a href="{{ path('rechercheEtablissements') }}">UAIs</a></li>{% endif %}
-								{% if is_granted('ROLE_GEST_CONTACT') %}<li><a href="{{ path('contacts') }}">Contacts</a></li>{% endif %}
+								{% if is_granted('ROLE_IMPORT_RAMSESE') %}<li><a href="{{ path('ECECA_import') }}">Import RAMSESE</a></li>{% endif %}
+								{% if is_granted('ROLE_GEST_CAMP') %}<li><a href="{{ path('ECECA_campagnes') }}">Campagnes</a></li>{% endif %}
+								{% if is_granted('ROLE_GEST_ETAB') %}<li><a href="{{ path('ECECA_etablissement', { 'page' : 0 }) }}">Établissements</a></li>{% endif %}
+								{% if is_granted('ROLE_GEST_FEDE') %}<li><a href="{{ path('ECECA_federations') }}">Fédérations</a></li>{% endif %}
+								{% if is_granted('ROLE_GEST_ORG') %}<li><a href="{{ path('ECECA_organisations') }}">Organisations</a></li>{% endif %}
+								{% if is_granted('ROLE_RECH_UAI') %}<li><a href="{{ path('ECECA_page_formulaire_recherche_etablissement') }}">UAIs</a></li>{% endif %}
+								{% if is_granted('ROLE_GEST_CONTACT') %}<li><a href="{{ path('ECECA_contacts') }}">Contacts</a></li>{% endif %}
 
 							</ul>
 						</li>
@@ -119,18 +115,17 @@
 				{% endif %}
 				{% if app.user.roles is defined %}
 					<ul class="neutre" id="deconnexion">
-						<li><a href="{{ path('EPLEElectionBundle_logout') }}">Déconnexion</a></li>
+						<li><a href="{{ path('ECECA_logout') }}">Déconnexion</a></li>
 					</ul>
 				{% endif %}
-				<nav id="version">v{{ app.user.perimetre.getVersion() }}</nav>
+				<nav id="version">v{{ version }}</nav>
 			</nav>
-
 		{% endblock %}
 
 		<section id="page" role="main" aria-labelledby="labmain">
 			<p id="labmain" class="arialabel">Contenu principal</p>
 			{% block ariane %}<ul id="ariane">
-				<li><a href="{{ path('EPLEElectionBundle_tableau_bord') }}">Tableau de bord</a></li>
+				<li><a href="{{ path('ECECA_tableau_bord') }}">Tableau de bord</a></li>
 				{% block arianeComplements %}{% endblock %}
 				</ul>{% endblock %}
 			{% block contentPage %}{% endblock %}
@@ -141,7 +136,7 @@
 	<footer id="footer">
 		Ministère de l'éducation nationale, de l'enseignement supérieur et de la recherche
 		<br/>
-		<a target="_blank" href="{{ app.user.perimetre.getRgaaDeclarationLink() }}">Accessibilité : {{ app.user.perimetre.getRgaaStatus() }}</a>
+		<a target="_blank" href="{{ rgaa_declaration_link }}">Accessibilité : {{ rgaa_status }}</a>
 	</footer>
 
 </div>

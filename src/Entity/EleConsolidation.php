@@ -2,6 +2,8 @@
 
 namespace App\Entity;
 
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
@@ -20,14 +22,14 @@ class EleConsolidation
      * @ORM\GeneratedValue(strategy="AUTO")
      */
     private $id;
-    
+
     /**
      * @var string idZone
      *
      * @ORM\Column(name="id_zone", type="string", length=10)
      */
     private $idZone;
-    
+
     /**
      * @var integer
      *
@@ -48,58 +50,58 @@ class EleConsolidation
      * @ORM\JoinColumn(name="id_campagne", referencedColumnName="id", nullable=false, onDelete="CASCADE")
      */
     private $campagne;
-    
-    
+
+
     /**
      * @ORM\OneToOne(targetEntity="App\Entity\EleParticipation", cascade={"persist"})
      * @ORM\JoinColumn(name="id_participation", referencedColumnName="id", onDelete="CASCADE")
      */
     private $participation;
-    
+
     /**
      * @ORM\ManyToOne(targetEntity="App\Entity\RefTypeEtablissement")
      * @ORM\JoinColumn(name="id_type_etablissement", referencedColumnName="id", nullable=false)
      */
     private $typeEtablissement;
-    
+
     /**
      * @var ArrayCollection $resultats
      */
     private $resultats;
-    
+
     /**
      * Constructeur par défaut
      */
     public function __construct() {
-    	$this->resultats = new \Doctrine\Common\Collections\ArrayCollection();
+        $this->resultats = new ArrayCollection();
     }
-    
+
     /**
      * Get id
      *
-     * @return integer 
+     * @return integer
      */
     public function getId()
     {
         return $this->id;
     }
-    
+
     /**
      * Set idZone
      *
      * @param string $idZone
      */
     public function setIdZone($idZone) {
-    	$this->idZone = $idZone;
+        $this->idZone = $idZone;
     }
-    
+
     /**
      * Get idZone
      *
      * @return string
      */
     public function getIdZone() {
-    	return $this->idZone;
+        return $this->idZone;
     }
 
     /**
@@ -111,14 +113,14 @@ class EleConsolidation
     public function setNbEtabExprimes($nbEtabExprimes)
     {
         $this->nbEtabExprimes = $nbEtabExprimes;
-    
+
         return $this;
     }
 
     /**
      * Get nbEtabExprimes
      *
-     * @return integer 
+     * @return integer
      */
     public function getNbEtabExprimes()
     {
@@ -134,152 +136,152 @@ class EleConsolidation
     public function setNbEtabTotal($nbEtabTotal)
     {
         $this->nbEtabTotal = $nbEtabTotal;
-    
+
         return $this;
     }
 
     /**
      * Get nbEtabTotal
      *
-     * @return integer 
+     * @return integer
      */
     public function getNbEtabTotal()
     {
         return $this->nbEtabTotal;
     }
-    
+
     /**
      * Set campagne
      *
-     * @param App\Entity\EleCampagne $campagne
+     * @param EleCampagne $campagne
      */
     public function setCampagne(
-    		\App\Entity\EleCampagne $campagne) {
-    	$this->campagne = $campagne;
+        EleCampagne $campagne) {
+        $this->campagne = $campagne;
     }
-    
+
     /**
      * Get campagne
      *
-     * @return App\Entity\EleCampagne
+     * @return EleCampagne
      */
     public function getCampagne() {
-    	return $this->campagne;
+        return $this->campagne;
     }
-    
+
     /**
      * Set participation
      *
-     * @param App\Entity\EleParticipation $participation
+     * @param EleParticipation $participation
      */
     public function setParticipation(
-    		\App\Entity\EleParticipation $participation) {
-    	$this->participation = $participation;
+        EleParticipation $participation) {
+        $this->participation = $participation;
     }
-    
+
     /**
      * Get participation
      *
-     * @return App\Entity\EleParticipation
+     * @return EleParticipation
      */
     public function getParticipation() {
-    	return $this->participation;
+        return $this->participation;
     }
-    
+
     /**
      * Set typeEtablissement
      *
-     * @param App\Entity\RefTypeEtablissement $typeEtablissement
+     * @param RefTypeEtablissement $typeEtablissement
      */
     public function setTypeEtablissement(
-    		\App\Entity\RefTypeEtablissement $typeEtablissement) {
-    	$this->typeEtablissement = $typeEtablissement;
+        RefTypeEtablissement $typeEtablissement) {
+        $this->typeEtablissement = $typeEtablissement;
     }
-    
+
     /**
      * Get typeEtablissement
      *
-     * @return App\Entity\RefTypeEtablissement
+     * @return RefTypeEtablissement
      */
     public function getTypeEtablissement() {
-    	return $this->typeEtablissement;
+        return $this->typeEtablissement;
     }
-    
+
     /**
      * Add resultat
      *
-     * @param App\Entity\EleResultat $resultat
+     * @param EleResultat $resultat
      */
-    public function addResultat(\App\Entity\EleResultat $resultat) {
-    	$this->resultats[] = $resultat;
+    public function addResultat(EleResultat $resultat) {
+        $this->resultats[] = $resultat;
     }
-    
+
     /**
      * Remove resultat
      *
-     * @param App\Entity\EleResultat $resultat
+     * @param EleResultat $resultat
      */
-    public function removeResultat(\App\Entity\EleResultat $resultat) {
-    	$this->resultats->removeElement($resultat);
+    public function removeResultat(EleResultat $resultat) {
+        $this->resultats->removeElement($resultat);
     }
-    
+
     /**
      * Get resultats
      *
-     * @return Doctrine\Common\Collections\Collection
+     * @return Collection
      */
     public function getResultats() {
-    	return $this->resultats;
+        return $this->resultats;
     }
-    
+
     /**
      * Set resultats
      *
      * @param array of \App\Entity\EleResultat $resultats
      */
     public function setResultats($resultats) {
-    	$this->resultats = $resultats;
+        $this->resultats = $resultats;
     }
-    
+
     /******************************** LOGIQUE METIER **************************************/
-    
+
     /***************** Données Calculées *****************************/
-    
+
     /**
      *
      *
      * @return integer
      */
     public function getPourcentageNbEtabsExprimes() {
-    	return empty($this->nbEtabTotal)? 0 : ( ($this->nbEtabExprimes / $this->nbEtabTotal) * 100 );
+        return empty($this->nbEtabTotal)? 0 : ( ($this->nbEtabExprimes / $this->nbEtabTotal) * 100 );
     }
-    
+
     /***************** Données Calculées *****************************/
-    
+
     /**
      * Get nbVoixTotal = somme(nbVoix)
      *
      * @return integer
      */
     public function getNbVoixTotal() {
-    	$nbVoixTotal = 0;
-    	foreach ($this->resultats as $resultat) {
-    		$nbVoixTotal = $nbVoixTotal + $resultat->getNbVoix();
-    	}
-    	return $nbVoixTotal;
+        $nbVoixTotal = 0;
+        foreach ($this->resultats as $resultat) {
+            $nbVoixTotal = $nbVoixTotal + $resultat->getNbVoix();
+        }
+        return $nbVoixTotal;
     }
-    
+
     /**
      * Get nbSiegesTotal = somme(nbSieges)
      *
      * @return integer
      */
     public function getNbSiegesTotal() {
-    	$nbSiegesTotal = 0;
-    	foreach ($this->resultats as $resultat) {
-    		$nbSiegesTotal = $nbSiegesTotal + min($resultat->getNbSieges(), $resultat->getNbCandidats()) + $resultat->getNbSiegesSort();
-    	}
-    	return $nbSiegesTotal;
+        $nbSiegesTotal = 0;
+        foreach ($this->resultats as $resultat) {
+            $nbSiegesTotal = $nbSiegesTotal + min($resultat->getNbSieges(), $resultat->getNbCandidats()) + $resultat->getNbSiegesSort();
+        }
+        return $nbSiegesTotal;
     }
-    
+
 }

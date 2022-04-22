@@ -7,15 +7,15 @@ use Doctrine\ORM\EntityRepository;
  * EleFichierRepository
  */
 class EleFichierRepository extends EntityRepository
-{    
+{
     /**
-     * 
-     * @param unknown $yearOld
+     *
+     * @param $yearOld
      */
     public function findObsolete($yearOld){
-    	$qb = $this->createQueryBuilder('eleFichier');
-    	$qb->where('eleFichier.date < :date');
-    	$qb->setParameter('date', new \DateTime('-'.$yearOld.' year'));
-    	return $qb->getQuery()->getResult();
+        $qb = $this->createQueryBuilder('eleFichier');
+        $qb->where('eleFichier.date < :date');
+        $qb->setParameter('date', new \DateTime('-'.$yearOld.' year'));
+        return $qb->getQuery()->getResult();
     }
 }

@@ -1,132 +1,132 @@
-<html>
+<html lang="fr">
 {% block stylesheets %}
-<link href="css/eple_pv.css" type="text/css" rel="stylesheet" />
+	<link href="css/eple_pv.css" type="text/css" rel="stylesheet" />
 {% endblock %}
 <body>
-	{% block contentPage %}
-	
-	<div class="text-center">
-		<h1 class="u">PROCES-VERBAL</h1>
-		{% if typeElect.codeUrlById == constant('\\EPLE\\ElectionBundle\\Entity\\RefTypeElection::CODE_URL_PARENT') and electEtablissement.etablissement.typeEtablissement.degre == 1 %}
-		{% else %}
-			<p>
-			{% if electEtablissement.etablissement.typeEtablissement.id == 2 
-				or electEtablissement.etablissement.typeEtablissement.id == 3 
+{% block contentPage %}
+
+<div class="text-center">
+	<h1 class="u">PROCES-VERBAL</h1>
+	{% if typeElect.codeUrlById == constant('App\\Entity\\RefTypeElection::CODE_URL_PARENT') and electEtablissement.etablissement.typeEtablissement.degre == 1 %}
+	{% else %}
+		<p>
+			{% if electEtablissement.etablissement.typeEtablissement.id == 2
+				or electEtablissement.etablissement.typeEtablissement.id == 3
 				or electEtablissement.etablissement.typeEtablissement.id == 4 %}
 				Collèges - Lycées - Lycées professionnels
-			{% elseif electEtablissement.etablissement.typeEtablissement.id == 5 %} 
-				{{ electEtablissement.etablissement.typeEtablissement.libelle }} 
+			{% elseif electEtablissement.etablissement.typeEtablissement.id == 5 %}
+				{{ electEtablissement.etablissement.typeEtablissement.libelle }}
 			{% endif %}
-			</p><br />
-		{% endif %}
-		<p class="u b">Élection des représentants des 
-		{% if typeElect.codeUrlById == constant('\\EPLE\\ElectionBundle\\Entity\\RefTypeElection::CODE_URL_PARENT') %}
-			  parents d'élèves
+		</p><br />
+	{% endif %}
+	<p class="u b">Élection des représentants des
+		{% if typeElect.codeUrlById == constant('App\\Entity\\RefTypeElection::CODE_URL_PARENT') %}
+			parents d'élèves
 		{% else %}
-			  personnels
+			personnels
 		{% endif %}
-		 au conseil 
+		au conseil
 		{% if electEtablissement.etablissement.typeEtablissement.degre == 1 %}
-			d'école 
-		{% else %} 
+			d'école
+		{% else %}
 			d'administration
 		{%- endif -%}
 		{% if (sousTypeElect is defined
-				and (sousTypeElect.codeUrlById == constant('\\EPLE\\ElectionBundle\\Entity\\RefSousTypeElection::CODE_URL_A_ATTE')
-					or sousTypeElect.codeUrlById == constant('\\EPLE\\ElectionBundle\\Entity\\RefSousTypeElection::CODE_URL_SS')))
-			or typeElect.codeUrlById == constant('\\EPLE\\ElectionBundle\\Entity\\RefTypeElection::CODE_URL_PEE')
-			or typeElect.codeUrlById == constant('\\EPLE\\ElectionBundle\\Entity\\RefTypeElection::CODE_URL_ASS_ATE') %}
-			  :
+			and (sousTypeElect.codeUrlById == constant('App\\Entity\\RefSousTypeElection::CODE_URL_A_ATTE')
+			or sousTypeElect.codeUrlById == constant('App\\Entity\\RefSousTypeElection::CODE_URL_SS')))
+			or typeElect.codeUrlById == constant('App\\Entity\\RefTypeElection::CODE_URL_PEE')
+			or typeElect.codeUrlById == constant('App\\Entity\\RefTypeElection::CODE_URL_ASS_ATE') %}
+			:
 		{%- endif -%}
-		</p>
-		
-		{% if sousTypeElect is defined %}
-			{% if sousTypeElect.codeUrlById == constant('\\EPLE\\ElectionBundle\\Entity\\RefSousTypeElection::CODE_URL_A_ATTE') %}
-				<p><img src="images/pictos/checkbox.jpg" /> Deuxième collège : Personnels d’administration, techniques, ouvriers, de service, de laboratoire</p>
-			{% elseif sousTypeElect.codeUrlById == constant('\\EPLE\\ElectionBundle\\Entity\\RefSousTypeElection::CODE_URL_SS') %}
-			  	<p><img src="images/pictos/checkbox.jpg" /> Troisième collège : Personnels sociaux et de santé</p>
-			{% endif %}
-		{% else %}
-			{% if typeElect.codeUrlById == constant('\\EPLE\\ElectionBundle\\Entity\\RefTypeElection::CODE_URL_PEE') %}
-			  <p><img src="images/pictos/checkbox.jpg" /> Premier collège : Personnels d’enseignement, de direction, d’éducation, de surveillance,
-			  <br />d’assistance éducative ou pédagogique et de documentation</p>
-            {% elseif typeElect.codeUrlById == constant('\\EPLE\\ElectionBundle\\Entity\\RefTypeElection::CODE_URL_ASS_ATE') %}
-			  <p><img src="images/pictos/checkbox.jpg" /> Second collège : Personnels d’administration, de santé, sociaux, techniques, ouvriers, de service, de laboratoire</p>
-			{% endif %}
+	</p>
+
+	{% if sousTypeElect is defined %}
+		{% if sousTypeElect.codeUrlById == constant('App\\Entity\\RefSousTypeElection::CODE_URL_A_ATTE') %}
+			<p><img src="images/pictos/checkbox.jpg" alt="case à cocher" /> Deuxième collège : Personnels d’administration, techniques, ouvriers, de service, de laboratoire</p>
+		{% elseif sousTypeElect.codeUrlById == constant('App\\Entity\\RefSousTypeElection::CODE_URL_SS') %}
+			<p><img src="images/pictos/checkbox.jpg" alt="case à cocher" /> Troisième collège : Personnels sociaux et de santé</p>
 		{% endif %}
-		
-		<br />
-		<p class="u b">Année scolaire {{campagne.anneeDebut }} - {{campagne.anneeFin }}</p>
-	</div>
+	{% else %}
+		{% if typeElect.codeUrlById == constant('App\\Entity\\RefTypeElection::CODE_URL_PEE') %}
+			<p><img src="images/pictos/checkbox.jpg" alt="case à cocher" /> Premier collège : Personnels d’enseignement, de direction, d’éducation, de surveillance,
+				<br />d’assistance éducative ou pédagogique et de documentation</p>
+		{% elseif typeElect.codeUrlById == constant('App\\Entity\\RefTypeElection::CODE_URL_ASS_ATE') %}
+			<p><img src="images/pictos/checkbox.jpg" alt="case à cocher" /> Second collège : Personnels d’administration, de santé, sociaux, techniques, ouvriers, de service, de laboratoire</p>
+		{% endif %}
+	{% endif %}
+
+	<br />
+	<p class="u b">Année scolaire {{campagne.anneeDebut }} - {{campagne.anneeFin }}</p>
+</div>
 
 
 
 
 
-	<table>
-		<tr>
-			<td scope="row">Académie</td>
-			<td>
-				{% if electEtablissement.etablissement.commune.departement.academie is not empty
-					and (campagne.anneeDebut ~ "-01-01")|date('Y-m-d') >= electEtablissement.etablissement.commune.departement.academie.dateDesactivation|date('Y-m-d')
-					and electEtablissement.etablissement.commune.departement.academie.academiefusion is not empty
-				%}
-					{{electEtablissement.etablissement.commune.departement.academie.academiefusion.libelle}}
-				{% elseif electEtablissement.etablissement.commune.departement.academie is not empty %}
-					{{electEtablissement.etablissement.commune.departement.academie.libelle}}
-				{% else %}
-					Non communiqué
-				{% endif %}
-			</td>
-		</tr>
-		<tr>
-			<td scope="row">Département</td>
-			<td>
-				{% if electEtablissement.etablissement.commune is not empty %}
-					{{electEtablissement.etablissement.commune.departement.libelle}}
-				{% else %}
-					Non communiqué
-				{% endif %}
-			</td>
-		</tr>
-		<tr>
-			<td scope="row">Commune</td>
-			<td>
-				{% if electEtablissement.etablissement.commune is not empty %}
-					{{electEtablissement.etablissement.commune.libelle }} 
-				{% else %}
-					Non communiqué
-				{% endif %}
-			</td>
-		</tr>
-		<tr>
-			<td scope="row">
-				{% if electEtablissement.etablissement.typeEtablissement.degre == 1 %}
-					Type d'école
-				{% else %}
-					Type d'établissement
-				{% endif %}
-			</td>
-			<td>
-				{% if electEtablissement.etablissement.typeEtablissement is not empty %}
-					{{electEtablissement.etablissement.typeEtablissement.libelle}} 
-				{% else %}
-					Non communiqué
-				{% endif %}
-			</td>
-		</tr>
-		<tr>
-			<td scope="row">N°UAI</td>
-			<td>{{electEtablissement.etablissement.uai }}</td>
-		</tr>
-	</table>
-	<br/><br/>
-	<table>
-		<tr>
-			<td style="font-weight: bold">Participation</td>
-			<td></td>
-		</tr>
-		{% if typeElect.codeUrlById == constant('\\EPLE\\ElectionBundle\\Entity\\RefTypeElection::CODE_URL_PARENT') %}
+<table>
+	<tr>
+		<td scope="row">Académie</td>
+		<td>
+			{% if electEtablissement.etablissement.commune.departement.academie is not empty
+				and (campagne.anneeDebut ~ "-01-01")|date('Y-m-d') >= electEtablissement.etablissement.commune.departement.academie.dateDesactivation|date('Y-m-d')
+				and electEtablissement.etablissement.commune.departement.academie.academiefusion is not empty
+			%}
+				{{electEtablissement.etablissement.commune.departement.academie.academiefusion.libelle}}
+			{% elseif electEtablissement.etablissement.commune.departement.academie is not empty %}
+				{{electEtablissement.etablissement.commune.departement.academie.libelle}}
+			{% else %}
+				Non communiqué
+			{% endif %}
+		</td>
+	</tr>
+	<tr>
+		<td scope="row">Département</td>
+		<td>
+			{% if electEtablissement.etablissement.commune is not empty %}
+				{{electEtablissement.etablissement.commune.departement.libelle}}
+			{% else %}
+				Non communiqué
+			{% endif %}
+		</td>
+	</tr>
+	<tr>
+		<td scope="row">Commune</td>
+		<td>
+			{% if electEtablissement.etablissement.commune is not empty %}
+				{{electEtablissement.etablissement.commune.libelle }}
+			{% else %}
+				Non communiqué
+			{% endif %}
+		</td>
+	</tr>
+	<tr>
+		<td scope="row">
+			{% if electEtablissement.etablissement.typeEtablissement.degre == 1 %}
+				Type d'école
+			{% else %}
+				Type d'établissement
+			{% endif %}
+		</td>
+		<td>
+			{% if electEtablissement.etablissement.typeEtablissement is not empty %}
+				{{electEtablissement.etablissement.typeEtablissement.libelle}}
+			{% else %}
+				Non communiqué
+			{% endif %}
+		</td>
+	</tr>
+	<tr>
+		<td scope="row">N°UAI</td>
+		<td>{{electEtablissement.etablissement.uai }}</td>
+	</tr>
+</table>
+<br/><br/>
+<table>
+	<tr>
+		<td style="font-weight: bold">Participation</td>
+		<td></td>
+	</tr>
+	{% if typeElect.codeUrlById == constant('App\\Entity\\RefTypeElection::CODE_URL_PARENT') %}
 		<tr>
 			<td scope="row">Modalité de vote</td>
 			<td>
@@ -135,263 +135,263 @@
 				{% endif %}
 			</td>
 		</tr>
-		{% endif %}
-		<tr>
-			<td scope="row">Nombre d'inscrits</td>
-			<td>
-				{% if vierge is not defined and electEtablissement.participation is defined %}
-					{{ electEtablissement.participation.nbInscrits }}
-				{% endif %}
-			</td>
-		</tr>
-		<tr>
-			<td scope="row">Nombre de votants</td>
-			<td>
-				{% if vierge is not defined and electEtablissement.participation is defined %}
-					{{ electEtablissement.participation.nbVotants }}
-				{% endif %}
-			</td>
-		</tr>
-		<tr>
-			<td scope="row">Nombre de bulletins blancs ou nuls</td>
-			<td>
-				{% if vierge is not defined and electEtablissement.participation is defined %}
-					{{ electEtablissement.participation.nbNulsBlancs }}
-				{% endif %}
-			</td>
-		</tr>
-		<tr>
-			<td scope="row">Nombre de suffrages exprimés (S)</td>
-			<td>
-				{% if vierge is not defined and electEtablissement.participation is defined %}
-					{{ electEtablissement.participation.nbExprimes }}
-				{% endif %}
-			</td>
-		</tr>
-		<tr>
-			<td scope="row">Taux de participation</td>
-			<td>
-				{% if vierge is not defined and electEtablissement.participation is defined%}
-					{{electEtablissement.participation.taux|number_format(2, '.', ',')}}%
-				{% endif %}</td> 
-			{% if prioritaire is defined %}
-				<td>
-					{{electEtablissement.participation.detailPrioritaireEclair.taux|number_format(2, '.', ',') }}%
-				</td>
+	{% endif %}
+	<tr>
+		<td scope="row">Nombre d'inscrits</td>
+		<td>
+			{% if vierge is not defined and electEtablissement.participation is defined %}
+				{{ electEtablissement.participation.nbInscrits }}
 			{% endif %}
-		</tr>
-	</table>
-	<br/><br/>
-	<table>
-		<tr>
-			<td style="font-weight: bold">Résultats</td>
-			<td></td>
-		</tr>
-		<tr>
-			<td scope="row">Nombre de sièges à pourvoir (N)</td>
+		</td>
+	</tr>
+	<tr>
+		<td scope="row">Nombre de votants</td>
+		<td>
+			{% if vierge is not defined and electEtablissement.participation is defined %}
+				{{ electEtablissement.participation.nbVotants }}
+			{% endif %}
+		</td>
+	</tr>
+	<tr>
+		<td scope="row">Nombre de bulletins blancs ou nuls</td>
+		<td>
+			{% if vierge is not defined and electEtablissement.participation is defined %}
+				{{ electEtablissement.participation.nbNulsBlancs }}
+			{% endif %}
+		</td>
+	</tr>
+	<tr>
+		<td scope="row">Nombre de suffrages exprimés (S)</td>
+		<td>
+			{% if vierge is not defined and electEtablissement.participation is defined %}
+				{{ electEtablissement.participation.nbExprimes }}
+			{% endif %}
+		</td>
+	</tr>
+	<tr>
+		<td scope="row">Taux de participation</td>
+		<td>
+			{% if vierge is not defined and electEtablissement.participation is defined%}
+				{{electEtablissement.participation.taux|number_format(2, '.', ',')}}%
+			{% endif %}</td>
+		{% if prioritaire is defined %}
 			<td>
-				{% if vierge is not defined and electEtablissement.participation is defined %}
-					{{ electEtablissement.participation.nbSiegesPourvoir }}
-				{% endif %}
+				{{electEtablissement.participation.detailPrioritaireEclair.taux|number_format(2, '.', ',') }}%
 			</td>
-		</tr>
-		<tr>
-			<td scope="row">Quotient (S/N)</td>
-			<td>
-				{% if vierge is not defined and electEtablissement.participation is defined %}
-					{{ electEtablissement.participation.quotient|number_format(2, '.', ',') }}
-				{% endif %}
-			</td>
-		</tr>
-	</table>
-	<div style="page-break-inside: avoid;">
+		{% endif %}
+	</tr>
+</table>
+<br/><br/>
+<table>
+	<tr>
+		<td style="font-weight: bold">Résultats</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td scope="row">Nombre de sièges à pourvoir (N)</td>
+		<td>
+			{% if vierge is not defined and electEtablissement.participation is defined %}
+				{{ electEtablissement.participation.nbSiegesPourvoir }}
+			{% endif %}
+		</td>
+	</tr>
+	<tr>
+		<td scope="row">Quotient (S/N)</td>
+		<td>
+			{% if vierge is not defined and electEtablissement.participation is defined %}
+				{{ electEtablissement.participation.quotient|number_format(2, '.', ',') }}
+			{% endif %}
+		</td>
+	</tr>
+</table>
+<div style="page-break-inside: avoid;">
 
-		<h4>Répartition détaillée des sièges</h4>
-		<table class="repartition">
+	<h4>Répartition détaillée des sièges</h4>
+	<table class="repartition">
+		<tr>
+			<td scope="col" style="font-weight: bold; text-align: center;">Listes</td>
+			<td scope="col" style="font-weight: bold; text-align: center;">Nombre de candidats (titulaires)</td>
+			{% if electEtablissement.etablissement.typeEtablissement.degre == 1 and typeElect.codeUrlById == constant('App\\Entity\\RefTypeElection::CODE_URL_PARENT') %}
+				<td scope="col" style="font-weight: bold; text-align: center;">Suffrages obtenus</td>
+			{% else %}
+				<td scope="col" style="font-weight: bold; text-align: center;">Nombre de suffrages</td>
+			{% endif %}
+			<td scope="col" style="font-weight: bold; text-align: center;">Sièges attribués au quotient et au plus fort reste</td>
+			<td scope="col" style="font-weight: bold; text-align: center;">Sièges attribués au candidat le plus âgé</td>
+			<td scope="col" style="font-weight: bold; text-align: center;">Total</td>
+			<td scope="col" style="font-weight: bold; text-align: center;">Sièges pourvus</td>
+		</tr>
+		{% set nbCandidatsTotal = 0 %}
+		{% set nbVoixTotal = 0 %}
+		{% set nbSiegesTotal = 0 %}
+		{% set nbSiegesSortTotal = 0 %}
+		{% set nbSommeSiegesTotal = 0 %}
+		{% set nbSommeMinTotal = 0 %}
+		{% for res in electEtablissement.resultats %}
+			{% set nbCandidatsTotal = nbCandidatsTotal + res.nbCandidats %}
+			{% set nbVoixTotal = nbVoixTotal + res.nbVoix %}
+			{% set nbSiegesTotal = nbSiegesTotal + res.nbSieges %}
+			{% set nbSiegesSortTotal = nbSiegesSortTotal + res.nbSiegesSort %}
+			{% set nbSommeSiegesTotal = nbSiegesTotal + nbSiegesSortTotal %}
 			<tr>
-				<td scope="col" style="font-weight: bold; text-align: center;">Listes</td>
-				<td scope="col" style="font-weight: bold; text-align: center;">Nombre de candidats (titulaires)</td>
-				{% if electEtablissement.etablissement.typeEtablissement.degre == 1 and typeElect.codeUrlById == constant('\\EPLE\\ElectionBundle\\Entity\\RefTypeElection::CODE_URL_PARENT') %}
-			  		 <td scope="col" style="font-weight: bold; text-align: center;">Suffrages obtenus</td>
-			  	{% else %}
-			  		 <td scope="col" style="font-weight: bold; text-align: center;">Nombre de suffrages</td>
-			  	{% endif %}
-				<td scope="col" style="font-weight: bold; text-align: center;">Sièges attribués au quotient et au plus fort reste</td>
-				<td scope="col" style="font-weight: bold; text-align: center;">Sièges attribués au candidat le plus âgé</td>
-				<td scope="col" style="font-weight: bold; text-align: center;">Total</td>
-				<td scope="col" style="font-weight: bold; text-align: center;">Sièges pourvus</td>
-			</tr>
-			{% set nbCandidatsTotal = 0 %}
-			{% set nbVoixTotal = 0 %} 
-			{% set nbSiegesTotal = 0 %} 
-			{% set nbSiegesSortTotal = 0 %} 
-			{% set nbSommeSiegesTotal = 0 %}
-			{% set nbSommeMinTotal = 0 %} 
-			{% for res in electEtablissement.resultats %} 
-				{% set nbCandidatsTotal = nbCandidatsTotal + res.nbCandidats %}
-				{% set nbVoixTotal = nbVoixTotal + res.nbVoix %} 
-				{% set nbSiegesTotal = nbSiegesTotal + res.nbSieges %}
-				{% set nbSiegesSortTotal = nbSiegesSortTotal + res.nbSiegesSort %} 
-				{% set nbSommeSiegesTotal = nbSiegesTotal + nbSiegesSortTotal %}
-				<tr>
-					<td>{{ res.organisation.libelle }}</td>
-					<td class="resultats">{%if vierge is not defined and res.nbCandidats > 0 %}{{ res.nbCandidats }}{% endif %}</td>
-					<td class="resultats">{%if vierge is not defined and res.nbVoix >= 0 and res.nbCandidats > 0 %}{{ res.nbVoix }}{% endif %}</td>
-					<td class="resultats">{%if vierge is not defined and res.nbSieges > 0 %}{{ res.nbSieges }}{% endif %}</td>
-					<td class="resultats">{%if vierge is not defined and res.nbSiegesSort > 0 %}{{res.nbSiegesSort }}{% endif %}</td>
-					<td class="resultats">{%if vierge is not defined and res.nbSiegesTotal > 0 %}{{res.nbSieges+res.nbSiegesSort }}{% endif %}</td>
-					<td class="resultats">
-						{%if vierge is not defined and (res.nbCandidats > 0 or res.nbSiegesTotal > 0) %}
-							{% if res.organisation.detaillee %}
-								<!-- calcul somme des min details -->
-								{% set nbSommeMinDetail = 0 %}
-								{% set nbDetail = 0 %}
-								{% for resDetail in electEtablissement.resultatsDetailles %} 
-									{% if resDetail.organisation.id == res.organisation.id %}
-										{%if (resDetail.nbCandidats > 0 or resDetail.nbSiegesTotal > 0)  %}
-											{% set nbSommeMinDetail = nbSommeMinDetail + min(resDetail.nbCandidats, resDetail.nbSiegesTotal) %}
-											{% set nbDetail = nbDetail + 1 %}
-										{% endif %}
-									{% endif %} 
-								{% endfor %}
-								<!-- calcul somme des min details -->
-								
-								{% if nbDetail > 0 %}
-									{{ nbSommeMinDetail }}
-									{% set nbSommeMinTotal = nbSommeMinTotal + nbSommeMinDetail %}
-								{% else %}
-									{{ min(res.nbCandidats, res.nbSiegesTotal) }}
-									{% set nbSommeMinTotal = nbSommeMinTotal + min(res.nbCandidats, res.nbSiegesTotal) %}
-							{% endif %}
+				<td>{{ res.organisation.libelle }}</td>
+				<td class="resultats">{%if vierge is not defined and res.nbCandidats > 0 %}{{ res.nbCandidats }}{% endif %}</td>
+				<td class="resultats">{%if vierge is not defined and res.nbVoix >= 0 and res.nbCandidats > 0 %}{{ res.nbVoix }}{% endif %}</td>
+				<td class="resultats">{%if vierge is not defined and res.nbSieges > 0 %}{{ res.nbSieges }}{% endif %}</td>
+				<td class="resultats">{%if vierge is not defined and res.nbSiegesSort > 0 %}{{res.nbSiegesSort }}{% endif %}</td>
+				<td class="resultats">{%if vierge is not defined and res.nbSiegesTotal > 0 %}{{res.nbSieges+res.nbSiegesSort }}{% endif %}</td>
+				<td class="resultats">
+					{%if vierge is not defined and (res.nbCandidats > 0 or res.nbSiegesTotal > 0) %}
+						{% if res.organisation.detaillee %}
+							<!-- calcul somme des min details -->
+							{% set nbSommeMinDetail = 0 %}
+							{% set nbDetail = 0 %}
+							{% for resDetail in electEtablissement.resultatsDetailles %}
+								{% if resDetail.organisation.id == res.organisation.id %}
+									{%if (resDetail.nbCandidats > 0 or resDetail.nbSiegesTotal > 0)  %}
+										{% set nbSommeMinDetail = nbSommeMinDetail + min(resDetail.nbCandidats, resDetail.nbSiegesTotal) %}
+										{% set nbDetail = nbDetail + 1 %}
+									{% endif %}
+								{% endif %}
+							{% endfor %}
+							<!-- calcul somme des min details -->
+
+							{% if nbDetail > 0 %}
+								{{ nbSommeMinDetail }}
+								{% set nbSommeMinTotal = nbSommeMinTotal + nbSommeMinDetail %}
 							{% else %}
 								{{ min(res.nbCandidats, res.nbSiegesTotal) }}
 								{% set nbSommeMinTotal = nbSommeMinTotal + min(res.nbCandidats, res.nbSiegesTotal) %}
 							{% endif %}
+						{% else %}
+							{{ min(res.nbCandidats, res.nbSiegesTotal) }}
+							{% set nbSommeMinTotal = nbSommeMinTotal + min(res.nbCandidats, res.nbSiegesTotal) %}
 						{% endif %}
-					</td>
-				</tr>
-				{% if res.organisation.detaillee %} 
-					{% for resDetail in electEtablissement.resultatsDetailles %} 
-						{% if resDetail.organisation.id == res.organisation.id %}
-							<tr>
-								<td class="italique">Dont {{ resDetail.libelle }}</td>
-								<td class="resultats italique">{%if vierge is not defined and resDetail.nbCandidats > 0 %}{{ resDetail.nbCandidats }}{% endif %}</td>
-								<td class="resultats italique">{%if vierge is not defined and resDetail.nbVoix >= 0 and resDetail.nbCandidats > 0 %}{{ resDetail.nbVoix }}{% endif %}</td>
-								<td class="resultats italique">{%if vierge is not defined and resDetail.nbSieges > 0  %}{{ resDetail.nbSieges }}{% endif %}</td>
-								<td class="resultats italique">{%if vierge is not defined and resDetail.nbSiegesSort > 0  %}{{ resDetail.nbSiegesSort }}{% endif %}</td>
-								<td class="resultats italique">{%if vierge is not defined and resDetail.nbSiegesTotal > 0  %}{{ resDetail.nbSieges+resDetail.nbSiegesSort }}{% endif %}</td>
-								<td class="resultats italique">{%if vierge is not defined and (resDetail.nbCandidats > 0 or resDetail.nbSiegesTotal > 0)  %}{{ min(resDetail.nbCandidats, resDetail.nbSiegesTotal) }}{% endif %}</td>
-							</tr>
-						{% endif %} 
-					{% endfor %} 
-				{% endif %} 
-				{% else %}
-			{% endfor %}
-			
-			<tr class="total">
-				<td>TOTAL TOUTES LISTES</td>
-				<td colspan="1" class="resultats">{%if vierge is not defined %}{{nbCandidatsTotal }}{% endif %}</td>
-				<td colspan="1" class="resultats">{%if vierge is not defined %}{{nbVoixTotal }}{% endif %}</td>
-				<td colspan="1" class="resultats">{%if vierge is not defined %}{{nbSiegesTotal }}{% endif %}</td>
-				<td colspan="1" class="resultats">{%if vierge is not defined %}{{nbSiegesSortTotal }}{% endif %}</td>
-				<td colspan="1" class="resultats">{%if vierge is not defined %}{{nbSommeSiegesTotal }}{% endif %}</td>
-				<td colspan="1" class="resultats">{%if vierge is not defined %}{{nbSommeMinTotal}}{% endif %}</td>
+					{% endif %}
+				</td>
 			</tr>
-		</table>
-        <br/>
-        <br/>
-		<table class="siegesPourvus">
-			<tr>
-				  <td scope="col" style="width:80%;">Nombre de sièges pourvus</td>
-				  <td style="width:20%;text-align:center;">
-				  	{% if vierge is not defined and electEtablissement.participation is defined %}
-				  		{{ electEtablissement.participation.nbSiegesPourvus }}
-				  	{% endif %}
-				  </td>
-			</tr>
-			<tr>
-			  	{% if electEtablissement.etablissement.typeEtablissement.degre == 1 and typeElect.codeUrlById == constant('\\EPLE\\ElectionBundle\\Entity\\RefTypeElection::CODE_URL_PARENT') %}
-			  		 <td scope="col" style="width:80%;">Nombre de sièges à pourvoir par tirage au sort</td>
-			  	{% else %}
-			  		 <td scope="col" style="width:80%;">Nombre de sièges non pourvus</td>
-			  	{% endif %}
-				  <td style="width:20%;text-align:center;">
-				  	{% if vierge is not defined and electEtablissement.participation is defined %}
-						{% set nbSiegesNonPourvus = electEtablissement.participation.nbSiegesPourvoir - electEtablissement.participation.nbSiegesPourvus %}	
-						{{ nbSiegesNonPourvus }}
-				  	{% endif %}
-				  </td>
-			</tr>
-		</table>
-    </div>
-    
-    <div style="page-break-inside: avoid;">
-    
-    <h1>CANDIDATS PROCLAMÉS ÉLUS<br/>TITULAIRES-SUPPLÉANTS</h1>
-	
-	<table>
-	<tr><td><ul><li>Nom Prénom</li></ul></td><td><ul><li>Liste</li></ul></td><td><ul><li>Qualité</li></ul></td></tr>
-	<tr><td></td><td></td><td></td></tr>
-	<tr><td></td><td></td><td></td></tr>
-	<tr><td></td><td></td><td></td></tr>
-	<tr><td></td><td></td><td></td></tr>
-	<tr><td></td><td></td><td></td></tr>
-	<tr><td></td><td></td><td></td></tr>
-	<tr><td></td><td></td><td></td></tr>
-	<tr><td></td><td></td><td></td></tr>
-	<tr><td></td><td></td><td></td></tr>
-	<tr><td></td><td></td><td></td></tr>
-	<tr><td></td><td></td><td></td></tr>
-	<tr><td></td><td></td><td></td></tr>
-	<tr><td></td><td></td><td></td></tr>
-	<tr><td></td><td></td><td></td></tr>
-	<tr><td></td><td></td><td></td></tr>
-	<tr><td></td><td></td><td></td></tr>
-	<tr><td></td><td></td><td></td></tr>
-	<tr><td></td><td></td><td></td></tr>
-	<tr><td></td><td></td><td></td></tr>
-	<tr><td></td><td></td><td></td></tr>
-	<tr><td></td><td></td><td></td></tr>
-	<tr><td></td><td></td><td></td></tr>
-	<tr><td></td><td></td><td></td></tr>
-	<tr><td></td><td></td><td></td></tr>
-	<tr><td></td><td></td><td></td></tr>
-	<tr><td></td><td></td><td></td></tr>
-	<tr><td></td><td></td><td></td></tr>
-	<tr><td></td><td></td><td></td></tr>
+			{% if res.organisation.detaillee %}
+				{% for resDetail in electEtablissement.resultatsDetailles %}
+					{% if resDetail.organisation.id == res.organisation.id %}
+						<tr>
+							<td class="italique">Dont {{ resDetail.libelle }}</td>
+							<td class="resultats italique">{%if vierge is not defined and resDetail.nbCandidats > 0 %}{{ resDetail.nbCandidats }}{% endif %}</td>
+							<td class="resultats italique">{%if vierge is not defined and resDetail.nbVoix >= 0 and resDetail.nbCandidats > 0 %}{{ resDetail.nbVoix }}{% endif %}</td>
+							<td class="resultats italique">{%if vierge is not defined and resDetail.nbSieges > 0  %}{{ resDetail.nbSieges }}{% endif %}</td>
+							<td class="resultats italique">{%if vierge is not defined and resDetail.nbSiegesSort > 0  %}{{ resDetail.nbSiegesSort }}{% endif %}</td>
+							<td class="resultats italique">{%if vierge is not defined and resDetail.nbSiegesTotal > 0  %}{{ resDetail.nbSieges+resDetail.nbSiegesSort }}{% endif %}</td>
+							<td class="resultats italique">{%if vierge is not defined and (resDetail.nbCandidats > 0 or resDetail.nbSiegesTotal > 0)  %}{{ min(resDetail.nbCandidats, resDetail.nbSiegesTotal) }}{% endif %}</td>
+						</tr>
+					{% endif %}
+				{% endfor %}
+			{% endif %}
+		{% else %}
+		{% endfor %}
+
+		<tr class="total">
+			<td>TOTAL TOUTES LISTES</td>
+			<td colspan="1" class="resultats">{%if vierge is not defined %}{{nbCandidatsTotal }}{% endif %}</td>
+			<td colspan="1" class="resultats">{%if vierge is not defined %}{{nbVoixTotal }}{% endif %}</td>
+			<td colspan="1" class="resultats">{%if vierge is not defined %}{{nbSiegesTotal }}{% endif %}</td>
+			<td colspan="1" class="resultats">{%if vierge is not defined %}{{nbSiegesSortTotal }}{% endif %}</td>
+			<td colspan="1" class="resultats">{%if vierge is not defined %}{{nbSommeSiegesTotal }}{% endif %}</td>
+			<td colspan="1" class="resultats">{%if vierge is not defined %}{{nbSommeMinTotal}}{% endif %}</td>
+		</tr>
 	</table>
-	
+	<br/>
+	<br/>
+	<table class="siegesPourvus">
+		<tr>
+			<td scope="col" style="width:80%;">Nombre de sièges pourvus</td>
+			<td style="width:20%;text-align:center;">
+				{% if vierge is not defined and electEtablissement.participation is defined %}
+					{{ electEtablissement.participation.nbSiegesPourvus }}
+				{% endif %}
+			</td>
+		</tr>
+		<tr>
+			{% if electEtablissement.etablissement.typeEtablissement.degre == 1 and typeElect.codeUrlById == constant('App\\Entity\\RefTypeElection::CODE_URL_PARENT') %}
+				<td scope="col" style="width:80%;">Nombre de sièges à pourvoir par tirage au sort</td>
+			{% else %}
+				<td scope="col" style="width:80%;">Nombre de sièges non pourvus</td>
+			{% endif %}
+			<td style="width:20%;text-align:center;">
+				{% if vierge is not defined and electEtablissement.participation is defined %}
+					{% set nbSiegesNonPourvus = electEtablissement.participation.nbSiegesPourvoir - electEtablissement.participation.nbSiegesPourvus %}
+					{{ nbSiegesNonPourvus }}
+				{% endif %}
+			</td>
+		</tr>
+	</table>
+</div>
+
+<div style="page-break-inside: avoid;">
+
+	<h1>CANDIDATS PROCLAMÉS ÉLUS<br/>TITULAIRES-SUPPLÉANTS</h1>
+
+	<table>
+		<tr><td><ul><li>Nom Prénom</li></ul></td><td><ul><li>Liste</li></ul></td><td><ul><li>Qualité</li></ul></td></tr>
+		<tr><td></td><td></td><td></td></tr>
+		<tr><td></td><td></td><td></td></tr>
+		<tr><td></td><td></td><td></td></tr>
+		<tr><td></td><td></td><td></td></tr>
+		<tr><td></td><td></td><td></td></tr>
+		<tr><td></td><td></td><td></td></tr>
+		<tr><td></td><td></td><td></td></tr>
+		<tr><td></td><td></td><td></td></tr>
+		<tr><td></td><td></td><td></td></tr>
+		<tr><td></td><td></td><td></td></tr>
+		<tr><td></td><td></td><td></td></tr>
+		<tr><td></td><td></td><td></td></tr>
+		<tr><td></td><td></td><td></td></tr>
+		<tr><td></td><td></td><td></td></tr>
+		<tr><td></td><td></td><td></td></tr>
+		<tr><td></td><td></td><td></td></tr>
+		<tr><td></td><td></td><td></td></tr>
+		<tr><td></td><td></td><td></td></tr>
+		<tr><td></td><td></td><td></td></tr>
+		<tr><td></td><td></td><td></td></tr>
+		<tr><td></td><td></td><td></td></tr>
+		<tr><td></td><td></td><td></td></tr>
+		<tr><td></td><td></td><td></td></tr>
+		<tr><td></td><td></td><td></td></tr>
+		<tr><td></td><td></td><td></td></tr>
+		<tr><td></td><td></td><td></td></tr>
+		<tr><td></td><td></td><td></td></tr>
+		<tr><td></td><td></td><td></td></tr>
+	</table>
+
 	<ul>
-		<li>Une copie du procès-verbal est affichée dans 
-			{% if electEtablissement.etablissement.typeEtablissement.degre == 1 %}	
-		  		un lieu facilement accessible au public.
+		<li>Une copie du procès-verbal est affichée dans
+			{% if electEtablissement.etablissement.typeEtablissement.degre == 1 %}
+				un lieu facilement accessible au public.
 			{% else %}
 				la salle de vote.
 			{% endif %}
 		</li>
-	  	<li>Une copie du procès-verbal est conservée dans 
-		 	 {% if electEtablissement.etablissement.typeEtablissement.degre == 1 %}
+		<li>Une copie du procès-verbal est conservée dans
+			{% if electEtablissement.etablissement.typeEtablissement.degre == 1 %}
 				l'école.
 			{% else %}
 				l'établissement.
 			{% endif %}
 		</li>
 	</ul>
-		
+
 	<h4>&nbsp;</h4>
 	<h4>&nbsp;</h4>
-	
+
 	<table class="signatures">
 		<tr>
 			<td scope="col"></td>
 			<td scope="col">Fait à ......................., le</td>
 		</tr>
 	</table>
-		
+
 	<h4>&nbsp;</h4>
 	<h4>&nbsp;</h4>
 	<h4>&nbsp;</h4>
-	
+
 	<table class="signatures">
 		<tr>
 			<td scope="col"  style="width:60%;">Le président du bureau de vote<br/>(Signature)</td>
@@ -400,7 +400,7 @@
 	</table>
 	{% endblock %}
 
-    </div>
+</div>
 
 </body>
 </html>

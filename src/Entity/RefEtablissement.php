@@ -2,6 +2,8 @@
 
 namespace App\Entity;
 
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
@@ -51,54 +53,54 @@ class RefEtablissement
     private $actif;
 
     /**
-     * 
-     * 
+     *
+     *
      * @ORM\ManyToOne(targetEntity="App\Entity\RefTypeEtablissement")
      * @ORM\JoinColumn(name="id_type_etablissement", referencedColumnName="id", nullable=false)
      */
     private $typeEtablissement;
-    
+
     /**
      * @ORM\ManyToOne(targetEntity="App\Entity\RefCommune")
      * @ORM\JoinColumn(name="id_commune", nullable=true, referencedColumnName="id")
      */
-    private $commune;  
-    
+    private $commune;
+
     /**
      * @var ArrayCollection $electionsEtabs
      */
     private $electionsEtabs;
-    
-    
+
+
     /**
      * @var \DateTime @ORM\Column(name="date_fermeture", type="date", nullable=true)
      */
     private $date_fermeture;
-    
-    
-     
+
+
+
     /**
      * @ORM\ManyToOne(targetEntity="App\Entity\RefZoneNature")
      * @ORM\JoinColumn(name="uai_nature", referencedColumnName="uai_nature")
      */
     private $uai_nature;
-    
-    
+
+
     /**
      * Constructeur de base
      * @param string $uai
      */
     public function __construct($uai=null) {
-    	if (empty($uai)) { $this->uai=0; }
-    	$this->actif = true;
-    	$this->electionsEtabs = new \Doctrine\Common\Collections\ArrayCollection();
+        if (empty($uai)) { $this->uai=0; }
+        $this->actif = true;
+        $this->electionsEtabs = new ArrayCollection();
     }
-    
-    
-   
-    
-    
-    
+
+
+
+
+
+
     /**
      * Set uai
      *
@@ -108,14 +110,14 @@ class RefEtablissement
     public function setUai($uai)
     {
         $this->uai = $uai;
-    
+
         return $this;
     }
 
     /**
      * Get uai
      *
-     * @return string 
+     * @return string
      */
     public function getUai()
     {
@@ -131,14 +133,14 @@ class RefEtablissement
     public function setLibelle($libelle)
     {
         $this->libelle = $libelle;
-    
+
         return $this;
     }
 
     /**
      * Get libelle
      *
-     * @return string 
+     * @return string
      */
     public function getLibelle()
     {
@@ -154,21 +156,21 @@ class RefEtablissement
     public function setContact($contact)
     {
         $this->contact = $contact;
-    
+
         return $this;
     }
 
     /**
      * Get contact
      *
-     * @return string 
+     * @return string
      */
     public function getContact()
     {
         return $this->contact;
     }
 
-    
+
 
     /**
      * Set actif
@@ -179,97 +181,96 @@ class RefEtablissement
     public function setActif($actif)
     {
         $this->actif = $actif;
-    
+
         return $this;
     }
 
     /**
      * Get actif
      *
-     * @return integer 
+     * @return integer
      */
     public function getActif()
     {
         return $this->actif;
     }
-    
-    
+
+
     /**
      * Set commune
      *
-     * @param App\Entity\RefCommune $commune
+     * @param RefCommune $commune
      */
     public function setCommune(
-    		\App\Entity\RefCommune $commune = null) {
-    	$this->commune = $commune;
+        RefCommune $commune = null) {
+        $this->commune = $commune;
     }
-    
+
     /**
      * Get commune
      *
-     * @return App\Entity\RefCommune
+     * @return RefCommune
      */
     public function getCommune() {
-    	return $this->commune;
+        return $this->commune;
     }
-    
+
     /**
      * Set typeEtablissement
      *
-     * @param App\Entity\RefTypeEtablissement $typeEtablissement
+     * @param RefTypeEtablissement $typeEtablissement
      */
     public function setTypeEtablissement(
-    		\App\Entity\RefTypeEtablissement $typeEtablissement) {
-    	$this->typeEtablissement = $typeEtablissement;
+        RefTypeEtablissement $typeEtablissement) {
+        $this->typeEtablissement = $typeEtablissement;
     }
-    
+
     /**
      * Get typeEtablissement
      *
-     * @return App\Entity\RefTypeEtablissement
+     * @return RefTypeEtablissement
      */
     public function getTypeEtablissement() {
-    	return $this->typeEtablissement;
+        return $this->typeEtablissement;
     }
-    
+
     /**
      * Get electionsEtabs
      *
-     * @return Doctrine\Common\Collections\Collection
+     * @return Collection
      */
     public function getElectionsEtabs() {
-    	return $this->electionsEtabs;
+        return $this->electionsEtabs;
     }
-    
+
     /**
      * Set electionsEtabs
      *
      * @param array of \App\Entity\EleEtablissement $electionsEtabs
      */
     public function setElectionsEtabs($electionsEtabs) {
-    	$this->electionsEtabs = $electionsEtabs;
+        $this->electionsEtabs = $electionsEtabs;
     }
 
 
-  
+
 
     /**
      * Set typePrioritaire
      *
-     * @param \App\Entity\RefTypePrioritaire $typePrioritaire
+     * @param RefTypePrioritaire $typePrioritaire
      * @return RefEtablissement
      */
-    public function setTypePrioritaire(\App\Entity\RefTypePrioritaire $typePrioritaire = null)
+    public function setTypePrioritaire(RefTypePrioritaire $typePrioritaire = null)
     {
         $this->typePrioritaire = $typePrioritaire;
-    
+
         return $this;
     }
 
     /**
      * Get typePrioritaire
      *
-     * @return \App\Entity\RefTypePrioritaire 
      */
     public function getTypePrioritaire()
     {
@@ -279,20 +280,20 @@ class RefEtablissement
     /**
      * Set uai_nature
      *
-     * @param \App\Entity\RefZoneNature $uaiNature
+     * @param RefZoneNature $uaiNature
      * @return RefEtablissement
      */
-    public function setUaiNature(\App\Entity\RefZoneNature $uaiNature = null)
+    public function setUaiNature(RefZoneNature $uaiNature = null)
     {
         $this->uai_nature = $uaiNature;
-    
+
         return $this;
     }
 
     /**
      * Get uai_nature
      *
-     * @return \App\Entity\RefZoneNature 
+     * @return RefZoneNature
      */
     public function getUaiNature()
     {
@@ -308,27 +309,26 @@ class RefEtablissement
     public function setDateFermeture($dateFermeture)
     {
         $this->date_fermeture = $dateFermeture;
-    
+
         return $this;
     }
 
     /**
      * Get date_fermeture
      *
-     * @return \DateTime 
+     * @return \DateTime
      */
     public function getDateFermeture()
     {
-        
-    	//Lors de l'import RAMSESE, l'absence de date de fermeture est valorisée en base de données
-    	//par la valeur 0000-00-00 qui esst récupérée comme suit : -0001-11-30 00:00:00
-    	$valeurDateFermeture = $this->date_fermeture;
-    	if ($this->date_fermeture != null) {
-    		if ($this->date_fermeture->format('Y') == "-0001") {
-    			$valeurDateFermeture = null;    		
-    		} 
-    	}    	
-    	return $valeurDateFermeture;
+        //Lors de l'import RAMSESE, l'absence de date de fermeture est valorisée en base de données
+        //par la valeur 0000-00-00 qui esst récupérée comme suit : -0001-11-30 00:00:00
+        $valeurDateFermeture = $this->date_fermeture;
+        if ($this->date_fermeture != null) {
+            if ($this->date_fermeture->format('Y') == "-0001") {
+                $valeurDateFermeture = null;
+            }
+        }
+        return $valeurDateFermeture;
     }
 }
 

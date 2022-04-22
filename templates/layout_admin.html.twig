@@ -1,0 +1,14 @@
+{% extends 'base.html.twig' %}
+
+{% block js %}{{ parent() }}{% endblock %}
+
+{% block title %} - Administration{% endblock %}
+
+{% block arianeComplements %}<li>Administration</li>{% endblock %}
+
+{% block contentPage %}
+	{% block h3 %}{% endblock %}
+	{% include 'flash.html.twig' with {'flash':'info'} %}
+	{% include 'flash.html.twig' with {'flash':'erreur'} %}
+	{% block content %}{% endblock %}
+{% endblock %}	

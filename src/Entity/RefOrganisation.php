@@ -44,42 +44,42 @@ class RefOrganisation
 
 
     /**
-     * @var App\Entity\RefTypeElection
-     * 
+     * @var RefTypeElection
+     *
      * @ORM\ManyToOne(targetEntity="App\Entity\RefTypeElection")
      * @ORM\JoinColumn(name="id_type_election", referencedColumnName="id", nullable=false)
      */
     protected $typeElection;
-    
+
     /**
-     * @var App\Entity\RefFederation
-     * 
+     * @var RefFederation
+     *
      * @ORM\ManyToOne(targetEntity="App\Entity\RefFederation")
      * @ORM\JoinColumn(name="id_federation", referencedColumnName="id", nullable=true)
-     * 
+     *
      */
     protected $federation;
-    
+
     /**
      * @var integer
      *
      * @ORM\Column(name="detaillee", type="boolean")
      */
     protected $detaillee;
-    
-    
-    public function __construct(\App\Entity\RefTypeElection $typeElection = null) {
-    	$this->id = 0;
-    	$this->obsolete = false;
-    	$this->detaillee = false;
-    	if($typeElection !=null) { $this->typeElection = $typeElection; }
+
+
+    public function __construct(RefTypeElection $typeElection = null) {
+        $this->id = 0;
+        $this->obsolete = false;
+        $this->detaillee = false;
+        if($typeElection !=null) { $this->typeElection = $typeElection; }
     }
-    
-    
+
+
     /**
      * Get id
      *
-     * @return integer 
+     * @return integer
      */
     public function getId()
     {
@@ -95,14 +95,14 @@ class RefOrganisation
     public function setLibelle($libelle)
     {
         $this->libelle = $libelle;
-    
+
         return $this;
     }
 
     /**
      * Get libelle
      *
-     * @return string 
+     * @return string
      */
     public function getLibelle()
     {
@@ -118,14 +118,14 @@ class RefOrganisation
     public function setOrdre($ordre)
     {
         $this->ordre = $ordre;
-    
+
         return $this;
     }
 
     /**
      * Get ordre
      *
-     * @return integer 
+     * @return integer
      */
     public function getOrdre()
     {
@@ -141,56 +141,56 @@ class RefOrganisation
     public function setObsolete($obsolete)
     {
         $this->obsolete = $obsolete;
-    
+
         return $this;
     }
 
     /**
      * Get obsolete
      *
-     * @return integer 
+     * @return integer
      */
     public function getObsolete()
     {
         return $this->obsolete;
     }
-    
+
     /**
      * Set federation
      *
-     * @param App\Entity\RefFederation $federation
+     * @param RefFederation $federation
      */
-    public function setFederation(\App\Entity\RefFederation $federation=null) {
-    	$this->federation = $federation;
+    public function setFederation(RefFederation $federation=null) {
+        $this->federation = $federation;
     }
-    
+
     /**
      * Get federation
      *
-     * @return App\Entity\RefFederation
+     * @return RefFederation
      */
     public function getFederation() {
-    	return $this->federation;
+        return $this->federation;
     }
-    
+
     /**
      * Set typeElection
      *
-     * @param App\Entity\RefTypeElection $federation
+     * @param RefTypeElection $federation
      */
-    public function setTypeElection(\App\Entity\RefTypeElection $typeElection=null) {
-    	$this->typeElection = $typeElection;
+    public function setTypeElection(RefTypeElection $typeElection=null) {
+        $this->typeElection = $typeElection;
     }
-    
+
     /**
      * Get typeElection
      *
-     * @return App\Entity\RefTypeElection
+     * @return RefTypeElection
      */
     public function getTypeElection() {
-    	return $this->typeElection;
+        return $this->typeElection;
     }
-    
+
     /**
      *
      */
@@ -198,20 +198,20 @@ class RefOrganisation
     {
         return $this->detaillee;
     }
-    
+
     /**
      *
-     * @param unknown $detaillee
-     * @return \App\Entity\RefOrganisation
+     * @param $detaillee
+     * @return RefOrganisation
      */
     public function setDetaillee($detaillee)
     {
         $this->detaillee = $detaillee;
         return $this;
     }
-    
+
     public function __sleep() {
-    
+
         return array('id', 'libelle');
     }
 }

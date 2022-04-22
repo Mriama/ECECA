@@ -2,68 +2,68 @@
 <p class="message info">{{ libelle_aide_titre }}.</p>
 <ul>
 	{% if typeEtablissement.code == '1er degré' %}
-    	<li>{{ libelle_aide_ecole }} {{ nombre_limite_ecole }}</li>
+		<li>{{ libelle_aide_ecole }} {{ nombre_limite_ecole }}</li>
 	{% else %}
-	    <li>{{ libelle_aide_college_moins_600 }} : {{ tabSettings["COLLEGES-600"] }} sièges</li>
-	    <li>{{ libelle_aide_college }} : {{ tabSettings["COLLEGES+600"] }} sièges</li>
-	    <li>{{ libelle_aide_lycee }} : {{ tabSettings["LYCEES"] }} sièges</li>
-	    
-	    {% if tabSettings["EREA"] is defined %} <!-- Election de type Parents -->
-	    	<li>{{ libelle_aide_erea }} : {{ tabSettings["EREA"] }} sièges</li>
-	    	<li>{{ libelle_aide_erpd }} : {{ tabSettings["ERPD"] }} sièges</li>
+		<li>{{ libelle_aide_college_moins_600 }} : {{ tabSettings["COLLEGES-600"] }} sièges</li>
+		<li>{{ libelle_aide_college }} : {{ tabSettings["COLLEGES+600"] }} sièges</li>
+		<li>{{ libelle_aide_lycee }} : {{ tabSettings["LYCEES"] }} sièges</li>
+
+		{% if tabSettings["EREA"] is defined %} <!-- Election de type Parents -->
+			<li>{{ libelle_aide_erea }} : {{ tabSettings["EREA"] }} sièges</li>
+			<li>{{ libelle_aide_erpd }} : {{ tabSettings["ERPD"] }} sièges</li>
 		{% endif %}
-	    <!-- RG_AIDE_SAISIE_10 élections des Personnels PEE, et ASS/ATE : EREA, ERPD [4 sièges PEE, 2 sièges ASS, 2 sièges ATE] -->
-	    {% if typeElection.id is constant('\\EPLE\\ElectionBundle\\Entity\\RefTypeElection::ID_TYP_ELECT_PEE') %}
-	    	<li>{{ libelle_aide_erea_et_erpd }} : {{ tabSettings["EREA-ERPD-PEE"] }} sièges</li>
-	    {% endif %}
-	    {% if typeElection.id is constant('\\EPLE\\ElectionBundle\\Entity\\RefTypeElection::ID_TYP_ELECT_ASS_ATE') %}
-	    	<li>{{ libelle_aide_erea_et_erpd }} : {{ tabSettings["EREA-ERPD-ASS"] }} sièges SS, {{ tabSettings["EREA-ERPD-ATE"] }} sièges A/ATTE</li>
-	    {% endif %}
+		<!-- RG_AIDE_SAISIE_10 élections des Personnels PEE, et ASS/ATE : EREA, ERPD [4 sièges PEE, 2 sièges ASS, 2 sièges ATE] -->
+		{% if typeElection.id is constant('App\\Entity\\RefTypeElection::ID_TYP_ELECT_PEE') %}
+			<li>{{ libelle_aide_erea_et_erpd }} : {{ tabSettings["EREA-ERPD-PEE"] }} sièges</li>
+		{% endif %}
+		{% if typeElection.id is constant('App\\Entity\\RefTypeElection::ID_TYP_ELECT_ASS_ATE') %}
+			<li>{{ libelle_aide_erea_et_erpd }} : {{ tabSettings["EREA-ERPD-ASS"] }} sièges SS, {{ tabSettings["EREA-ERPD-ATE"] }} sièges A/ATTE</li>
+		{% endif %}
 	{% endif %}
 </ul>
 
 {% if typeEtablissement.code == '1er degré' %}
-    <p>{{ libelle_aide_indiquer_nombre_classes }} :</p>
-    <form method="get" id="form_aide_nbsieges">
-        <label for="aide_nbsieges_nbclasses">{{ libelle_aide_nombre_classes }} :</label> <input type="number" value="" name="aide_nbsieges" id="aide_nbsieges_nbclasses" />
-        <input type="submit" value="Valider" />
-    </form>
+	<p>{{ libelle_aide_indiquer_nombre_classes }} :</p>
+	<form method="get" id="form_aide_nbsieges">
+		<label for="aide_nbsieges_nbclasses">{{ libelle_aide_nombre_classes }} :</label> <input type="number" value="" name="aide_nbsieges" id="aide_nbsieges_nbclasses" />
+		<input type="submit" value="Valider" />
+	</form>
 {% endif %}
 
 {% if typeEtablissement.code == 'COLLEGES' %}
-    <p>{{ libelle_aide_question_college }} ?</p>
-    <form method="get" id="form_aide_nbsieges">
-        <input type="radio" value="{{ tabSettings["COLLEGES-600"] }}" name="aide_nbsieges" id="aide_nbsieges_oui" /> <label for="aide_nbsieges_oui">Oui</label>
-        <input type="radio" value="{{ tabSettings["COLLEGES+600"] }}" name="aide_nbsieges" id="aide_nbsieges_non" /> <label for="aide_nbsieges_non">Non</label>
-        <input type="submit" value="Valider" />
-    </form>
+	<p>{{ libelle_aide_question_college }} ?</p>
+	<form method="get" id="form_aide_nbsieges">
+		<input type="radio" value="{{ tabSettings["COLLEGES-600"] }}" name="aide_nbsieges" id="aide_nbsieges_oui" /> <label for="aide_nbsieges_oui">Oui</label>
+		<input type="radio" value="{{ tabSettings["COLLEGES+600"] }}" name="aide_nbsieges" id="aide_nbsieges_non" /> <label for="aide_nbsieges_non">Non</label>
+		<input type="submit" value="Valider" />
+	</form>
 {% endif %}
 
 {% if typeEtablissement.code == 'EREA-ERPD' and tabSettings["EREA"] is defined %} <!-- Election de type Parents -->
-    <p>{{ libelle_aide_indiquer_type_etablissement }} :</p>
-    <form method="get" id="form_aide_nbsieges">
-        <input type="radio" value="{{ tabSettings["EREA"] }}" name="aide_nbsieges" id="aide_nbsieges_erea" /> <label for="aide_nbsieges_erea">EREA</label>
-        <input type="radio" value="{{ tabSettings["ERPD"] }}" name="aide_nbsieges" id="aide_nbsieges_erpd" /> <label for="aide_nbsieges_erpd">ERPD</label>
-        <input type="submit" value="Valider" />
-    </form>
+	<p>{{ libelle_aide_indiquer_type_etablissement }} :</p>
+	<form method="get" id="form_aide_nbsieges">
+		<input type="radio" value="{{ tabSettings["EREA"] }}" name="aide_nbsieges" id="aide_nbsieges_erea" /> <label for="aide_nbsieges_erea">EREA</label>
+		<input type="radio" value="{{ tabSettings["ERPD"] }}" name="aide_nbsieges" id="aide_nbsieges_erpd" /> <label for="aide_nbsieges_erpd">ERPD</label>
+		<input type="submit" value="Valider" />
+	</form>
 {% endif %}
 
 <script type="text/javascript">
-    $('#colorboxclose').click(function() {
-        $.colorbox.close();
-    });
-    
-    function resetSousListeCandidat(i) {
-    	var nb_detail = $("[id^=ligne_"+i+"_]").length;
+	$('#colorboxclose').click(function() {
+		$.colorbox.close();
+	});
+
+	function resetSousListeCandidat(i) {
+		var nb_detail = $("[id^=ligne_"+i+"_]").length;
 		if (nb_detail > 0) {
 			for (var j = 0; j < nb_detail; j++) {
 				$("#EleEtablissementType_resultatsDetailles_"+i+"_"+j+"_nbCandidats").val(0);
 			}
 		}
-    }
-    
-    function checkSousListeCandidat(i, siegeUnique) { // 258946
-    	var nb_detail = $("[id^=ligne_"+i+"_]").length;
+	}
+
+	function checkSousListeCandidat(i, siegeUnique) { // 258946
+		var nb_detail = $("[id^=ligne_"+i+"_]").length;
 		if (nb_detail > 0) {
 			for (var j = 0; j < nb_detail; j++) {
 				nbCandidats = $("#EleEtablissementType_resultatsDetailles_"+i+"_"+j+"_nbCandidats").val();
@@ -77,44 +77,44 @@
 				}
 			}
 		}
-    }
-    
-    
-    // On remplit le nombre de sièges avec la valeur déterminée par le miniformulaire
-    $('#form_aide_nbsieges').submit(function(event) {
-        var nombre_limite_ecole = {{ nombre_limite_ecole }};
-        var nbSieges = '';
-        
-        if ($("input#aide_nbsieges_nbclasses").length) {
-            nbSieges = $('input#aide_nbsieges_nbclasses').val();
-            // defect #200
-            if (nbSieges <= 0 || parseFloat(nbSieges) != parseInt(nbSieges)) {
+	}
+
+
+	// On remplit le nombre de sièges avec la valeur déterminée par le miniformulaire
+	$('#form_aide_nbsieges').submit(function(event) {
+		var nombre_limite_ecole = {{ nombre_limite_ecole }};
+		var nbSieges = '';
+
+		if ($("input#aide_nbsieges_nbclasses").length) {
+			nbSieges = $('input#aide_nbsieges_nbclasses').val();
+			// defect #200
+			if (nbSieges <= 0 || parseFloat(nbSieges) != parseInt(nbSieges)) {
 				alert("Le nombre de classes doit être un entier positif.");
 				return false;
-            }
-        }
-        else {
-            nbSieges = $('input[type=radio][name=aide_nbsieges]:checked').val();
-        }
-        
-        if (!nbSieges) {
-            alert('{{ alert[001] }}');
-        }
-        else {
-            if ($.isNumeric(nbSieges)) {
-                if (nbSieges > nombre_limite_ecole) {
-                    var msg_erreur = "{{ message_erreur_nombre_limite_ecole }}";
-                    msg_erreur = msg_erreur.replace("%nb_max", "{{ nombre_limite_ecole }}");
-                	if (confirm(msg_erreur)) {
-                		nbSieges = nombre_limite_ecole; // limite écoles
-                    } else {
-                		return false;
-                    }
-                }
-                $('#EleEtablissementType_participation_nbSiegesPourvoir').val(nbSieges);
-                        		
-        		
-        		// Lorsque le nombre de siège à pourvoir est modifié, vérifier tous les candidats titulaires.
+			}
+		}
+		else {
+			nbSieges = $('input[type=radio][name=aide_nbsieges]:checked').val();
+		}
+
+		if (!nbSieges) {
+			alert('{{ alert[001] }}');
+		}
+		else {
+			if ($.isNumeric(nbSieges)) {
+				if (nbSieges > nombre_limite_ecole) {
+					var msg_erreur = "{{ message_erreur_nombre_limite_ecole }}";
+					msg_erreur = msg_erreur.replace("%nb_max", "{{ nombre_limite_ecole }}");
+					if (confirm(msg_erreur)) {
+						nbSieges = nombre_limite_ecole; // limite écoles
+					} else {
+						return false;
+					}
+				}
+				$('#EleEtablissementType_participation_nbSiegesPourvoir').val(nbSieges);
+
+
+				// Lorsque le nombre de siège à pourvoir est modifié, vérifier tous les candidats titulaires.
 				if (nbSieges == 1) {
 					var nbCandidats;
 					var error = false;
@@ -126,7 +126,7 @@
 							resetSousListeCandidat(i);
 							error = true;
 						} else {
-						 	checkSousListeCandidat(i, (nbSieges == 1));
+							checkSousListeCandidat(i, (nbSieges == 1));
 						}
 					}
 					if (error) {
@@ -143,26 +143,26 @@
 							resetSousListeCandidat(i);
 							error = true;
 						} else {
-						 	checkSousListeCandidat(i, (nbSieges == 1));
+							checkSousListeCandidat(i, (nbSieges == 1));
 						}
 					}
 					if (error) {
 						alert("le nombre de sièges à pourvoir étant supérieur à 1, le nombre de candidats titulaires ne peut être égal à 1.");
 					}
 				}
-		
-                calculQuotientElectoral();
 
-                calculRepartitionDesSieges();
-        		calculLigneToutesListes();
-        		calculNombreTotalCandidats();
-                $.colorbox.close();
-            }
-            else {
-                alert('{{ alert[002] }}');
-            }
-        }
-        
-        event.preventDefault();
-    })
+				calculQuotientElectoral();
+
+				calculRepartitionDesSieges();
+				calculLigneToutesListes();
+				calculNombreTotalCandidats();
+				$.colorbox.close();
+			}
+			else {
+				alert('{{ alert[002] }}');
+			}
+		}
+
+		event.preventDefault();
+	})
 </script>

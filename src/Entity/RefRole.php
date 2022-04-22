@@ -34,12 +34,12 @@ class RefRole
      * @ORM\Column(name="role", type="string", length=20)
      */
     private $role;
-    
-    
+
+
     /**
      * Get id
      *
-     * @return integer 
+     * @return integer
      */
     public function getId()
     {
@@ -55,14 +55,14 @@ class RefRole
     public function setNom($nom)
     {
         $this->nom = $nom;
-    
+
         return $this;
     }
 
     /**
      * Get nom
      *
-     * @return string 
+     * @return string
      */
     public function getNom()
     {
@@ -78,34 +78,34 @@ class RefRole
     public function setRole($role)
     {
         $this->role = $role;
-    
+
         return $this;
     }
 
     /**
      * Get role
      *
-     * @return string 
+     * @return string
      */
     public function getRole()
     {
         return $this->role;
     }
-    
-    
+
+
     public function serialize() {
-    	return \json_encode(array(
-    			$this->id,
-    			$this->nom,
-    			$this->role,
-    	));
+        return \json_encode(array(
+            $this->id,
+            $this->nom,
+            $this->role,
+        ));
     }
-    
+
     public function unserialize($serialized) {
-    	list(
-    			$this->id,
-    			$this->nom,
-    			$this->role,
-    	) = \json_decode($serialized);
+        list(
+            $this->id,
+            $this->nom,
+            $this->role,
+            ) = \json_decode($serialized);
     }
 }

@@ -1,10 +1,10 @@
-{% extends 'layout.html.twig' %}
+{% extends 'layout_admin.html.twig' %}
 
 {% block title %}{{ parent() }} - Résultats de recherche{% endblock %}
 
 {% block arianeComplements %}{{ parent() }}
 	<li>
-		<a href="{{ path('EPLEAdminBundle_page_formulaire_recherche_etablissement') }}">Recherche d'établissements</a>
+		<a href="{{ path('ECECA_page_formulaire_recherche_etablissement') }}">Recherche d'établissements</a>
 	</li>
 {% endblock %}
 
@@ -14,10 +14,12 @@
 
 {% block content %}
 
-	<form action="{{ path('EPLEAdminBundle_affichage_resultat_recherche_etablissements') }}" method="post" accept-charset="UTF-8">
+	<form action="{{ path('ECECA_affichage_resultat_recherche_etablissements') }}" method="post" accept-charset="UTF-8">
+		{{ form_start(form) }}
 		<p class="note">Un astérisque * marque un champ obligatoire</p>
 		{{ form_widget(form) }}
 		<div class="boutons"><input type="submit" value="Rechercher" /></div>
+		{{ form_end(form) }}
 	</form>
 
 	{# 	old IE n'interprete pas la propriété required	#}
@@ -73,7 +75,7 @@
 				</tr>
 			</table>
 			{% if canDisableEtab is defined and canDisableEtab == true %}
-				<form action="{{ path('EPLEAdminBundle_ouvrir_fermer_etablissement') }}" method="post" accept-charset="UTF-8">
+				<form action="{{ path('ECECA_ouvrir_fermer_etablissement') }}" method="post" accept-charset="UTF-8">
 					<input type="hidden" name="uai" value="{{ etablissement.uai }}">
 					{% if etablissement.actif == 1 %}
 						<div class="boutons"><input type="submit" value="Désactiver l'établissement" /></div>
@@ -85,7 +87,7 @@
 		{% endif %}
 		<br/>
 		<div class="pageactions">
-			<a href="{{ path('EPLEAdminBundle_page_formulaire_recherche_etablissement') }}" class="retour">Retour</a>
+			<a href="{{ path('ECECA_page_formulaire_recherche_etablissement') }}" class="retour">Retour</a>
 		</div>
 	{% endif %}
 

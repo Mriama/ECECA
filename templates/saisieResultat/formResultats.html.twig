@@ -1,8 +1,8 @@
 <form id="form_edit_resultats" action="
 	{% if sousTypeElect is defined %}
-		{{ path('EPLEElectionBundle_saisie_resultats_etab', { 'etablissementUai': etablissement.uai, 'codeUrlTypeElect': sousTypeElect.getCodeUrlById(), 'retourLstRech': retourLstRech }) }}
+		{{ path('ECECA_saisie_resultats_etab', { 'etablissementUai': etablissement.uai, 'codeUrlTypeElect': sousTypeElect.getCodeUrlById(), 'retourLstRech': retourLstRech }) }}
 	{% else %}
-		{{ path('EPLEElectionBundle_saisie_resultats_etab', { 'etablissementUai': etablissement.uai, 'codeUrlTypeElect': typeElect.getCodeUrlById(), 'retourLstRech': retourLstRech  }) }}
+		{{ path('ECECA_saisie_resultats_etab', { 'etablissementUai': etablissement.uai, 'codeUrlTypeElect': typeElect.getCodeUrlById(), 'retourLstRech': retourLstRech  }) }}
 	{% endif %}
 	" method="post" accept-charset="UTF-8">
 
@@ -10,20 +10,20 @@
 	<p class="note">Un astérisque * marque un champ obligatoire</p>
 
 	{# Election Parent 1er et 2nd degré uniquement #}
-	{% if typeElect is defined and typeElect.id == constant('\\EPLE\\ElectionBundle\\Entity\\RefTypeElection::ID_TYP_ELECT_PARENT') %}
+	{% if typeElect is defined and typeElect.id == constant('App\\Entity\\RefTypeElection::ID_TYP_ELECT_PARENT') %}
 		<div id="modalite_vote">
 			{{ form_errors(form) }}
-			<div>{{ form_label(form['participation'].modaliteVote) }}{{ form_widget(form['participation'].modaliteVote) }}</div>
+			<div>{{ form_label(form.participation.modaliteVote) }}{{ form_widget(form.participation.modaliteVote) }}</div>
 		</div>
 	{% endif %}
 
 	<div id="form_participation">
 		{{ form_errors(form) }}
-		<div>{{ form_label(form['participation'].nbInscrits) }}{{ form_widget(form['participation'].nbInscrits) }}</div>
-		<div>{{ form_label(form['participation'].nbVotants) }}{{ form_widget(form['participation'].nbVotants) }}</div>
-		<div>{{ form_label(form['participation'].nbNulsBlancs) }}{{ form_widget(form['participation'].nbNulsBlancs) }}</div>
-		<div>{{ form_label(form['participation'].nbExprimes) }}{{ form_widget(form['participation'].nbExprimes) }}</div>
-		<div>{{ form_label(form['participation'].nbSiegesPourvoir) }}{{ form_widget(form['participation'].nbSiegesPourvoir) }}</div>
+		<div>{{ form_label(form.participation.nbInscrits) }}{{ form_widget(form.participation.nbInscrits) }}</div>
+		<div>{{ form_label(form.participation.nbVotants) }}{{ form_widget(form.participation.nbVotants) }}</div>
+		<div>{{ form_label(form.participation.nbNulsBlancs) }}{{ form_widget(form.participation.nbNulsBlancs) }}</div>
+		<div>{{ form_label(form.participation.nbExprimes) }}{{ form_widget(form.participation.nbExprimes) }}</div>
+		<div>{{ form_label(form.participation.nbSiegesPourvoir) }}{{ form_widget(form.participation.nbSiegesPourvoir) }}</div>
 	</div>
 
 	<table>
@@ -100,7 +100,7 @@
 	</table>
 
 	<div id="detailNbSort">
-		<div>{{ form_label(form['participation'].nbSiegesPourvus) }}{{ form_widget(form['participation'].nbSiegesPourvus) }}</div>
+		<div>{{ form_label(form.participation.nbSiegesPourvus) }}{{ form_widget(form.participation.nbSiegesPourvus) }}</div>
 		<div><label>Nombre de sièges à répartir</label><input id='nb_sieges_au_sort' disabled /></div>
 	</div>
 	<div id="formRest" style="display:none;">
@@ -154,7 +154,7 @@
 		inputNbSieges.after('<img id="aideNbSiegesImg" src="{{ asset("images/pictos/information.png") }}" class="picto" alt="Aide" title="Aide à la saisie du nombre de sièges à pourvoir" />');
 
 		$('#aideNbSiegesImg').colorbox({
-			href: "{{ path('EPLEElectionBundle_aide_nb_sieges', { 'etablissementUai': etablissement.uai, 'typeElectionId': typeElect.id }) }}",
+			href: "{{ path('ECECA_aide_nb_sieges', { 'etablissementUai': etablissement.uai, 'typeElectionId': typeElect.id }) }}",
 			closeButton: false,
 			title: '',
 			width: 700,

@@ -1,62 +1,53 @@
 <?php
 namespace App\Controller;
 
-use App\Entity\EleCampagne;
-use App\Entity\RefUser;
-use App\Utils\EpleUtils;
 use App\Entity\RefProfil;
-use App\Entity\EleResultat;
+use App\Entity\EleCampagne;
 use App\Entity\RefAcademie;
-use App\Entity\ElePrioritaire;
 use App\Entity\RefDepartement;
 use App\Entity\RefTypeElection;
-use App\Utils\EcecaExportUtils;
-use App\Entity\EleConsolidation;
 use App\Entity\EleEtablissement;
-use App\Entity\EleParticipation;
 use App\Entity\RefEtablissement;
 use App\Entity\RefTypeEtablissement;
-use App\Utils\RefUserPerimetre;
-use phpDocumentor\Reflection\DocBlock\Tags\Uses;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
-use App\Form\RecapitulatifParticipationEtabType;
-use App\Model\RecapitulatifParticipationEtabTypeModel;
+use Doctrine\Persistence\ManagerRegistry;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\Routing\Annotation\Route;
-use App\Controller\BaseController;
-use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
+use App\Form\RecapitulatifParticipationEtabType;
+use Symfony\Component\HttpFoundation\RequestStack;
+use App\Model\RecapitulatifParticipationEtabTypeModel;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
-class RecapitulatifParticipationController extends BaseController
+class RecapitulatifParticipationController extends AbstractController
 {
+    private $request;
+    private $doctrine;
 
-    /**
-    * @Route("/recapitulatifParticipation/{codeUrlTypeElect}", name="recapitulatifParticipation")
-    */
-    public function indexAction(Request $request, $codeUrlTypeElect)
+    public function __construct(RequestStack $request, ManagerRegistry $doctrine) {
+        $this->request = $request->getCurrentRequest();
+        $this->doctrine = $doctrine;
+    }
+
+    public function indexAction($codeUrlTypeElect)
     {
-        $em = $this->getDoctrine()->getManager();
-        $user = $this->getUser();
         // reset session
-        $request->getSession()->set('recap_part_campagne_annee_deb', null);
-        $request->getSession()->set('recap_part_niveau', 'departement');
-        $request->getSession()->set('recap_part_type_etab', null);
+        $this->request->getSession()->set('recap_part_campagne_annee_deb', null);
+        $this->request->getSession()->set('recap_part_niveau', 'departement');
+        $this->request->getSession()->set('recap_part_type_etab', null);
 
-        if (false === $this->get('security.authorization_checker')->isGranted('ROLE_STATS_TAUX_PART')) {
+        if (false === $this->isGranted('ROLE_STATS_TAUX_PART')) {
             throw new AccessDeniedException();
         }
         $user = $this->getUser();
-
-        $academies = $user->getPerimetre()->getAcademies();
-        $params = $this->getParametresStatistiques($request, $codeUrlTypeElect, $user);
-
+        $params = $this->getParametresStatistiques($codeUrlTypeElect, $user);
         return $this->render('recapitulatifParticipation/indexRecapitulatifParticipation.html.twig', $params);
     }
 
-    private function getParametresStatistiques($request, $codeUrlTypeElect, $user)
+    private function getParametresStatistiques($codeUrlTypeElect, $user)
     {
-        $em = $this->getDoctrine()->getManager();
-        $academies = $user->getPerimetre()->getAcademies();
+        $em = $this->doctrine->getManager();
         $params = array();
         $campagneAnneeDeb = null;
         $niveau = 'departement';
@@ -67,7 +58,8 @@ class RecapitulatifParticipationController extends BaseController
         /**
          * **** Récupération du type d'election *****
          */
-        $typeElection = $em->getRepository(RefTypeElection::class)->find(RefTypeElection::getIdRefTypeElectionByCodeUrl($codeUrlTypeElect));
+        $idTypeElect = RefTypeElection::getIdRefTypeElectionByCodeUrl($codeUrlTypeElect);
+        $typeElection = $idTypeElect != null ? $em->getRepository(RefTypeElection::class)->find($idTypeElect) : null;
         if (empty($typeElection)) {
             throw $this->createNotFoundException('Le type d\'élection n\'a pas été trouvé.');
         }
@@ -76,17 +68,17 @@ class RecapitulatifParticipationController extends BaseController
         $cze_current = new RecapitulatifParticipationEtabTypeModel($typeElection);
 
         $form = $this->createForm(RecapitulatifParticipationEtabType::class, $cze_current, ['user'=>$user]);
-        if ($request->getMethod() == 'POST') {
-            $form->handleRequest($request);
+        if ($this->request->getMethod() == 'POST') {
+            $form->handleRequest($this->request);
             if ($form->isSubmitted() && $form->isValid()) {
 
                 $options_recherche = $form->getData(); /* "options_recherche" : un objet "RecapitulatifPaticipationEtabTypeModel",
                                                         * contenant les données de recherche suivantes: 
                 										* campagne, niveau, typeEtab, et typeElect */
 
-                $request->getSession()->remove('recap_part_campagne_annee_deb');
-                $request->getSession()->remove('recap_part_niveau');
-                $request->getSession()->remove('recap_part_type_etab');
+                $this->request->getSession()->remove('recap_part_campagne_annee_deb');
+                $this->request->getSession()->remove('recap_part_niveau');
+                $this->request->getSession()->remove('recap_part_type_etab');
 
                 $campagneAnneeDeb = $options_recherche->getCampagne()->getAnneeDebut();
                 $niveau = $options_recherche->getNiveau();
@@ -98,14 +90,18 @@ class RecapitulatifParticipationController extends BaseController
                 }
 
                 // Mise en place des variables en session pour l'export excel
-                $request->getSession()->set('recap_part_campagne_annee_deb', $campagneAnneeDeb);
-                $request->getSession()->set('recap_part_niveau', $niveau);
-                $request->getSession()->set('recap_part_type_etab', null != $typeEtab ? $typeEtab->getId() : null);
+                $this->request->getSession()->set('recap_part_campagne_annee_deb', $campagneAnneeDeb);
+                $this->request->getSession()->set('recap_part_niveau', $niveau);
+                $this->request->getSession()->set('recap_part_type_etab', null != $typeEtab ? $typeEtab->getId() : null);
             }
         } else {
-            $campagneAnneeDeb = $request->getSession()->get('recap_part_campagne_annee_deb');
-            $niveau = $request->getSession()->get('recap_part_niveau');
-            $typeEtab = $em->getRepository(RefTypeEtablissement::class)->find($request->getSession()->get('recap_part_type_etab'));
+            $campagneAnneeDeb = $this->request->getSession()->get('recap_part_campagne_annee_deb');
+            $niveau = $this->request->getSession()->get('recap_part_niveau');
+            if(!empty($this->request->getSession()->get('recap_part_type_etab'))) {
+                $typeEtab = $em->getRepository(RefTypeEtablissement::class)->find($this->request->getSession()->get('recap_part_type_etab'));
+            } else {
+                $typeEtab = null;
+            }
         }
 
         /**
@@ -124,18 +120,11 @@ class RecapitulatifParticipationController extends BaseController
         }
 
         $params['campagne'] = $campagne;
-
         $listeCampagnePrec = $em->getRepository(EleCampagne::class)->getCampagneParTypeElectionAnneeDebut($typeElection, $campagne->getAnneeDebut() - 1);
         $campagnePrec = (! empty($listeCampagnePrec)) ? $listeCampagnePrec[0] : null;
         $params['campagnePrec'] = $campagnePrec;
 
-        // récuperation de la liste des informations à afficher      findConsolidationByNiveauCampagne   
-        // $listParticipation = $em->getRepository(EleConsolidation::class)->findConsolidationByNiveauCampagne($campagne->getId(), $campagnePrec->getId(), $niveau, $typeEtab, $user->getPerimetre());
         $listParticipation = $em->getRepository(EleEtablissement::class)->findParticipationByNiveauCampagne($campagne->getId(), $campagnePrec->getId(), $niveau, $typeEtab, $user->getPerimetre(), $user, $campagneAnneeDeb);
-
-        ///Anomalie 0220201 ($sumEtabList commented)
-        //$sumEtabList = $em->getRepository(EleConsolidation::class)->findListEtabTotalByNiveauCampagne($campagne->getId(), $niveau, $typeEtab, $user->getPerimetre());
-        //TODO : Revoir le code pour cette partie  pour optimiser la performance
 
         $listEtabConso = array();
         $sumInscrits = 0;
@@ -193,19 +182,19 @@ class RecapitulatifParticipationController extends BaseController
                         $listEtabConso[$line['libelle']]['p2'] = '-';
                         $listEtabConso[$line['libelle']]['etabExprimes'] = '-';
                         $listEtabConso[$line['libelle']]['etabTotal'] = '-';
-                        $listEtabConso[$line['libelle']]['rappel1'] = round(floatval($line['p1']), 2) . ' %';
+                        $listEtabConso[$line['libelle']]['rappel1'] = round(floatval($line['p1']), 2);
                         $listEtabConso[$line['libelle']]['variation1'] = '-';
-                        $listEtabConso[$line['libelle']]['rappel2'] = round(floatval($line['p2']), 2) . ' %';
+                        $listEtabConso[$line['libelle']]['rappel2'] = round(floatval($line['p2']), 2);
                         $listEtabConso[$line['libelle']]['variation2'] = '-';
                     } else {
                         // On inscrit les données pour la campagne en cours
                         $listEtabConso[$line['libelle']]['inscrits'] = $line['sumInscrits'];
                         $listEtabConso[$line['libelle']]['votants'] = $line['sumVotants'];
                         $listEtabConso[$line['libelle']]['exprimes'] = $line['sumExprimes'];
-                        $listEtabConso[$line['libelle']]['p1'] = round(floatval($line['p1']), 2) . ' %';
+                        $listEtabConso[$line['libelle']]['p1'] = round(floatval($line['p1']), 2);
                         $listEtabConso[$line['libelle']]['siegesPourvoir'] = $line['sumSiegesPourvoir'];
                         $listEtabConso[$line['libelle']]['siegesPourvus'] = $line['sumSiegesPourvus'];
-                        $listEtabConso[$line['libelle']]['p2'] = round(floatval($line['p2']), 2) . ' %';
+                        $listEtabConso[$line['libelle']]['p2'] = round(floatval($line['p2']), 2);
                         $listEtabConso[$line['libelle']]['etabExprimes'] = $line['sumEtabExprimes'];
                         //Anomalie 0220201
                         $listEtabConso[$line['libelle']]['etabTotal'] = $nbEtabTotal;
@@ -228,9 +217,9 @@ class RecapitulatifParticipationController extends BaseController
                     $zoneCourante = $line['libelle']; // Mise à jour de la zone
                 } else {
                     // Même zone : campagne précédente
-                    $listEtabConso[$line['libelle']]['rappel1'] = round(floatval($line['p1']), 2) . ' %';
+                    $listEtabConso[$line['libelle']]['rappel1'] = round(floatval($line['p1']), 2);
                     $listEtabConso[$line['libelle']]['variation1'] = round(floatval($listEtabConso[$line['libelle']]['p1'] - $listEtabConso[$line['libelle']]['rappel1']), 2);
-                    $listEtabConso[$line['libelle']]['rappel2'] = round(floatval($line['p2']), 2) . ' %';
+                    $listEtabConso[$line['libelle']]['rappel2'] = round(floatval($line['p2']), 2);
                     $listEtabConso[$line['libelle']]['variation2'] = round(floatval($listEtabConso[$line['libelle']]['p2'] - $listEtabConso[$line['libelle']]['rappel2']), 2);
                 }
             }
@@ -252,10 +241,6 @@ class RecapitulatifParticipationController extends BaseController
             $listEtabConso['TOTAL']['variation2'] = '-';
         }
 
-        /*
-        if ($typeEtab != null && RefTypeEtablissement::ID_TYP_EREA_ERPD == $typeEtab->getId()) {
-        	$listEtabConso = null;
-        }*/
 
         //E18 Reforme territoriale : Gestion des fusions d'academies : merge des données
         if($niveau != 'departement') {
@@ -285,7 +270,7 @@ class RecapitulatifParticipationController extends BaseController
                         $acadHideRappelAnterieur[$acadFusion->getLibelle()] =  $isProfilDepartement ? false : $acadFusion->getDateActivation()->format('Y') == $campagneAnneeDeb;
                     } else {
                         $newListConso[$acadObj->getLibelle()] = $listEtabConso[$acadObj->getLibelle()];
-                        $acadHideRappelAnterieur[$acadObj->getLibelle()] =  $isProfilDepartement ? false : $acadObj->getDateActivation()->format('Y') == $campagneAnneeDeb;;
+                        $acadHideRappelAnterieur[$acadObj->getLibelle()] =  $isProfilDepartement ? false : $acadObj->getDateActivation()->format('Y') == $campagneAnneeDeb;
                     }
                 }
             }
@@ -319,6 +304,18 @@ class RecapitulatifParticipationController extends BaseController
             $params["acadHideRappelAnterieur"] = $acadHideRappelAnterieur;
         }
 
+        foreach ($listEtabConso as $key => $etabConso) {
+                if (is_float($etabConso['p1']))
+                    $etabConso['p1'] .= ' %';
+                if (is_float($etabConso['p2']))
+                    $etabConso['p2'] .= ' %';
+                if (is_float($etabConso['rappel1']))
+                    $etabConso['rappel1'] .= ' %';
+                if (is_float($etabConso['rappel2']))
+                    $etabConso['rappel2'] .= ' %';
+            $listEtabConso[$key] = $etabConso;
+        }
+
         $params['codeUrlTypeEtab'] = $codeUrlTypeEtab;
         $params['campagneAnneeDeb'] = $campagneAnneeDeb;
         $params['listEtabConso'] = $listEtabConso;
@@ -332,14 +329,12 @@ class RecapitulatifParticipationController extends BaseController
 
     /**
      *
-     * @param Request $request
-     * @param unknown $codeUrlTypeElect
+     * @param $codeUrlTypeElect
      */
-    public function exportXLSAction(Request $request, $codeUrlTypeElect)
+    public function exportXLSAction($codeUrlTypeElect)
     {
-        $em = $this->getDoctrine()->getManager();
         $user = $this->getUser();
-        $params = $this->getParametresStatistiques($request, $codeUrlTypeElect, $user);
+        $params = $this->getParametresStatistiques($codeUrlTypeElect, $user);
 
         // Récupération des paramètres
         $typeElection = $params['typeElect'];
@@ -349,8 +344,8 @@ class RecapitulatifParticipationController extends BaseController
         $listEtabConso = $params['listEtabConso'];
 
         // Génération du fichier Excel
-        $phpExcelObject = $this->get('phpexcel')->createPHPExcelObject();
-        $sheet = $phpExcelObject->getActiveSheet();
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
         $styleArray = array(
             'font' => array(
                 'bold' => true
@@ -365,80 +360,80 @@ class RecapitulatifParticipationController extends BaseController
         );
 
         // Création du titre
-        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A1', $typeElection->getLibelle() . ' - Statistiques de participation par ' . $niveau);
+        $spreadsheet->setActiveSheetIndex(0)->setCellValue('A1', $typeElection->getLibelle() . ' - Statistiques de participation par ' . $niveau);
 
         // Récapitulatif de la recherche
         // Campagne
-        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A3', 'Campagne');
-        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B3', $campagne->getAnneeDebut() . '-' . $campagne->getAnneeFin());
+        $spreadsheet->setActiveSheetIndex(0)->setCellValue('A3', 'Campagne');
+        $spreadsheet->setActiveSheetIndex(0)->setCellValue('B3', $campagne->getAnneeDebut() . '-' . $campagne->getAnneeFin());
 
         // Type d'établissement
-        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A4', 'Type d\'établissement');
-        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B4', null != $typeEtab ? $typeEtab->getLibelle() : 'tous');
+        $spreadsheet->setActiveSheetIndex(0)->setCellValue('A4', 'Type d\'établissement');
+        $spreadsheet->setActiveSheetIndex(0)->setCellValue('B4', null != $typeEtab ? $typeEtab->getLibelle() : 'tous');
 
         $ligneEnteteTableau = 6;
         // Degré
         if ($typeEtab != null) {
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A5', 'Degré');
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B5', $typeEtab->getDegre());
-            $phpExcelObject->setActiveSheetIndex(0)->getStyle('A5')->applyFromArray($styleArray);
-            $phpExcelObject->setActiveSheetIndex(0)->getStyle('B5')->getAlignment()->setHorizontal('left');
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('A5', 'Degré');
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('B5', $typeEtab->getDegre());
+            $spreadsheet->setActiveSheetIndex(0)->getStyle('A5')->applyFromArray($styleArray);
+            $spreadsheet->setActiveSheetIndex(0)->getStyle('B5')->getAlignment()->setHorizontal('left');
             $ligneEnteteTableau = 7;
         }
 
         // En-tête du tableau
-        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . $ligneEnteteTableau, $niveau == 'academie' ? 'Académie' : 'Département');
+        $spreadsheet->setActiveSheetIndex(0)->setCellValue('A' . $ligneEnteteTableau, $niveau == 'academie' ? 'Académie' : 'Département');
 
-        $phpExcelObject->setActiveSheetIndex(0)
+        $spreadsheet->setActiveSheetIndex(0)
             ->getStyle('A4')
             ->applyFromArray($styleArray);
-        $phpExcelObject->setActiveSheetIndex(0)
+        $spreadsheet->setActiveSheetIndex(0)
             ->getStyle('A' . $ligneEnteteTableau)
             ->applyFromArray($styleArray);
-        $phpExcelObject->setActiveSheetIndex(0)
+        $spreadsheet->setActiveSheetIndex(0)
             ->getStyle('B4')
             ->getAlignment()
             ->setHorizontal('center');
 
-        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . $ligneEnteteTableau, 'Inscrits');
-        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . $ligneEnteteTableau, 'Votants');
-        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . $ligneEnteteTableau, 'Exprimés');
-        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('E' . $ligneEnteteTableau, 'Part.');
-        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('F' . $ligneEnteteTableau, "Part.\nprec.");
-        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('G' . $ligneEnteteTableau, 'Variation');
-        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('H' . $ligneEnteteTableau, 'Sièges à pourvoir');
-        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('I' . $ligneEnteteTableau, 'Sièges pourvus');
-        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('J' . $ligneEnteteTableau, '% sièges pourvus');
-        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('K' . $ligneEnteteTableau, '% sièges pourvus prec.');
-        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('L' . $ligneEnteteTableau, 'Variation');
-        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('M' . $ligneEnteteTableau, 'Etabs. Exprimés / Total');
+        $spreadsheet->setActiveSheetIndex(0)->setCellValue('B' . $ligneEnteteTableau, 'Inscrits');
+        $spreadsheet->setActiveSheetIndex(0)->setCellValue('C' . $ligneEnteteTableau, 'Votants');
+        $spreadsheet->setActiveSheetIndex(0)->setCellValue('D' . $ligneEnteteTableau, 'Exprimés');
+        $spreadsheet->setActiveSheetIndex(0)->setCellValue('E' . $ligneEnteteTableau, 'Part.');
+        $spreadsheet->setActiveSheetIndex(0)->setCellValue('F' . $ligneEnteteTableau, "Part.\nprec.");
+        $spreadsheet->setActiveSheetIndex(0)->setCellValue('G' . $ligneEnteteTableau, 'Variation');
+        $spreadsheet->setActiveSheetIndex(0)->setCellValue('H' . $ligneEnteteTableau, 'Sièges à pourvoir');
+        $spreadsheet->setActiveSheetIndex(0)->setCellValue('I' . $ligneEnteteTableau, 'Sièges pourvus');
+        $spreadsheet->setActiveSheetIndex(0)->setCellValue('J' . $ligneEnteteTableau, '% sièges pourvus');
+        $spreadsheet->setActiveSheetIndex(0)->setCellValue('K' . $ligneEnteteTableau, '% sièges pourvus prec.');
+        $spreadsheet->setActiveSheetIndex(0)->setCellValue('L' . $ligneEnteteTableau, 'Variation');
+        $spreadsheet->setActiveSheetIndex(0)->setCellValue('M' . $ligneEnteteTableau, 'Etabs. Exprimés / Total');
 
         // On boucle sur les entités
         $ligne = $ligneEnteteTableau + 1;
         foreach ($listEtabConso as $libelle => $zone) {
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . $ligne, $libelle);
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . $ligne, $zone['inscrits']);
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . $ligne, $zone['votants']);
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . $ligne, $zone['exprimes']);
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('E' . $ligne, $zone['p1']);
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('A' . $ligne, $libelle);
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('B' . $ligne, $zone['inscrits']);
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('C' . $ligne, $zone['votants']);
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('D' . $ligne, $zone['exprimes']);
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('E' . $ligne, $zone['p1']);
             if(isset($params['acadHideRappelAnterieur']) && isset($params['acadHideRappelAnterieur'][$libelle]) && $params['acadHideRappelAnterieur'][$libelle] == true) {
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('F' . $ligne, "-");
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('G' . $ligne, "-");
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('K' . $ligne, "-");
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('L' . $ligne, "-");
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue('F' . $ligne, "-");
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue('G' . $ligne, "-");
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue('K' . $ligne, "-");
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue('L' . $ligne, "-");
             } else {
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('F' . $ligne, $zone['rappel1']);
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('G' . $ligne, $zone['variation1']);
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('K' . $ligne, $zone['rappel2']);
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('L' . $ligne, $zone['variation2']);
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue('F' . $ligne, $zone['rappel1']);
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue('G' . $ligne, $zone['variation1']);
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue('K' . $ligne, $zone['rappel2']);
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue('L' . $ligne, $zone['variation2']);
             }
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('H' . $ligne, $zone['siegesPourvoir']);
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('I' . $ligne, $zone['siegesPourvus']);
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('J' . $ligne, $zone['p2']);
-            $phpExcelObject->setActiveSheetIndex(0)->setCellValue('M' . $ligne, $zone['etabExprimes'] . '/' . $zone['etabTotal']);
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('H' . $ligne, $zone['siegesPourvoir']);
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('I' . $ligne, $zone['siegesPourvus']);
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('J' . $ligne, $zone['p2']);
+            $spreadsheet->setActiveSheetIndex(0)->setCellValue('M' . $ligne, $zone['etabExprimes'] . '/' . $zone['etabTotal']);
 
             if ($libelle == 'TOTAL') {
-                $phpExcelObject->setActiveSheetIndex(0)
+                $spreadsheet->setActiveSheetIndex(0)
                     ->getStyle('A' . $ligne . ':M' . $ligne)
                     ->applyFromArray($styleArray);
             }
@@ -447,46 +442,49 @@ class RecapitulatifParticipationController extends BaseController
         }
 
         for ($i = $ligneEnteteTableau; $i <= $ligne; $i ++) {
-            $phpExcelObject->setActiveSheetIndex(0)
+            $spreadsheet->setActiveSheetIndex(0)
                 ->getStyle('B' . $i . ':M' . $i)
                 ->getAlignment()
                 ->setHorizontal('center');
         }
 
         // Activer la 1ère feuille
-        $phpExcelObject->setActiveSheetIndex(0);
+        $spreadsheet->setActiveSheetIndex(0);
 
         // Mise en forme de la feuille
         $sheet->getColumnDimension('A')->setWidth(35);
 
-        $phpExcelObject->setActiveSheetIndex(0)
+        $spreadsheet->setActiveSheetIndex(0)
             ->getStyle('A1')
             ->applyFromArray($styleArray);
-        $phpExcelObject->setActiveSheetIndex(0)
+        $spreadsheet->setActiveSheetIndex(0)
             ->getStyle('A1')
             ->applyFromArray($styleArrayTitre);
-        $phpExcelObject->setActiveSheetIndex(0)
+        $spreadsheet->setActiveSheetIndex(0)
             ->getStyle('A3')
             ->applyFromArray($styleArray);
-        $phpExcelObject->setActiveSheetIndex(0)
+        $spreadsheet->setActiveSheetIndex(0)
             ->getStyle('A4')
             ->applyFromArray($styleArray);
-        $phpExcelObject->setActiveSheetIndex(0)
+        $spreadsheet->setActiveSheetIndex(0)
             ->getStyle('B' . $ligneEnteteTableau. ':M' . $ligneEnteteTableau)
             ->applyFromArray($styleArray);
-        $phpExcelObject->setActiveSheetIndex(0)
+        $spreadsheet->setActiveSheetIndex(0)
             ->getStyle('B' . $ligneEnteteTableau. ':M' . $ligneEnteteTableau)
             ->getAlignment()
             ->setWrapText(true);
 
         // Création du writer
-        $writer = $this->get('phpexcel')->createWriter($phpExcelObject, 'Excel5');
-
+        $writer = new Xlsx($spreadsheet, 'Excel5');
         // Création du nom du fichier
         $fileName = 'Statistiques_Participation_Elections_' . $codeUrlTypeElect . '_par_' . $niveau . '_' . $campagne->getAnneeDebut() . '-' . $campagne->getAnneeFin();
 
         // Créer la réponse
-        $response = $this->get('phpexcel')->createStreamedResponse($writer);
+        $response =  new StreamedResponse(
+            function () use ($writer) {
+                $writer->save('php://output');
+            }
+        );
         $response->headers->set('Content-Type', 'text/vnd.ms-excel; charset=utf-8');
         $response->headers->set('Content-Disposition', 'attachment;filename=' . $fileName . '.xls');
         return $response;
@@ -497,7 +495,7 @@ class RecapitulatifParticipationController extends BaseController
      * @param $data1
      * @param $data2
      */
-    public function mergeStatParticipation($data1, $data2) {
+    private function mergeStatParticipation($data1, $data2) {
         $mergeResult = array(
             'inscrits'=> 0,
             'votants'=> 0,
@@ -515,33 +513,33 @@ class RecapitulatifParticipationController extends BaseController
         );
 
         foreach ($data1 as $i => $item) {
-            $mergeResult[$i] += $item;
+            $mergeResult[$i] += intval($item);
         }
         foreach ($data2 as $j => $item2) {
-            $mergeResult[$j] += $item2;
+            $mergeResult[$j] += intval($item2);
         }
 
         //Calcul des Pourcentages et variation
         if($mergeResult['inscrits'] == 0) {
             $mergeResult['p1'] = "-";
         } else {
-            $mergeResult['p1'] = round($mergeResult['votants'] / $mergeResult['inscrits'] * 100, 2) . " %";
+            $mergeResult['p1'] = round($mergeResult['votants'] / $mergeResult['inscrits'] * 100, 2);
         }
 
         if($mergeResult['siegesPourvoir'] == 0) {
             $mergeResult['p2'] = "-";
         } else {
-            $mergeResult['p2'] = round($mergeResult['siegesPourvus'] / $mergeResult['siegesPourvoir'] * 100, 2) . " %";
+            $mergeResult['p2'] = round($mergeResult['siegesPourvus'] / $mergeResult['siegesPourvoir'] * 100, 2);
         }
 
         foreach ($mergeResult as $key => $value) {
             $mergeResult[$key] = $mergeResult[$key] == 0 ? "-" : $mergeResult[$key];
         }
 
-        $mergeResult['rappel1'] = round($mergeResult['rappel1']/2, 2) . " %";
-        $mergeResult['variation1'] = round($mergeResult['p1'] - $mergeResult['rappel1'], 2);
-        $mergeResult['rappel2'] = round($mergeResult['rappel2']/2, 2) . " %";
-        $mergeResult['variation2'] = round($mergeResult['p2'] - $mergeResult['rappel2'], 2);
+        $mergeResult['rappel1'] = round($mergeResult['rappel1']/2, 2);
+        $mergeResult['variation1'] = $mergeResult['p1'] != "-" ? round($mergeResult['p1'] - $mergeResult['rappel1'], 2) : round(0 - $mergeResult['rappel1'], 2);
+        $mergeResult['rappel2'] = round($mergeResult['rappel2']/2, 2);
+        $mergeResult['variation2'] = $mergeResult['p2'] != "-" ? round($mergeResult['p2'] - $mergeResult['rappel2'], 2) : round(0 - $mergeResult['rappel2'], 2);
 
         return $mergeResult;
     }

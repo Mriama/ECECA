@@ -1,24 +1,25 @@
-{% extends 'layout.html.twig' %}
+{% extends 'layout_admin.html.twig' %}
 
 {% block title %}{{ parent() }} - Gestion des campagnes d'élection {% endblock %}
 
 {% block arianeComplements %}{{ parent() }}<li>Gestion des campagnes d'élection</li>{% endblock %}
 
 {% block content %}
-<p>
-	Le paramétrage des campagnes permet d'indiquer les périodes de saisie et de validation pour les
-	différents types d'élection.<br />
-	Une fois la campagne terminée, elle peut être archivée ; une nouvelle campagne peut être initialisée dès
-	le premier janvier de l'année suivante.
-</p>
+	<p>
+		Le paramétrage des campagnes permet d'indiquer les périodes de saisie et de validation pour les
+		différents types d'élection.<br />
+		Une fois la campagne terminée, elle peut être archivée ; une nouvelle campagne peut être initialisée dès
+		le premier janvier de l'année suivante.
+	</p>
 
-<form method="post" accept-charset="UTF-8" {{ form_start(form) }}>
-	<p class="note">Un astérisque * marque un champ obligatoire</p>
-	
-	{{ form_widget(form) }}
-	
-	<div class="boutons"><input type="submit" value="Valider" /></div>
+	<form method="post" accept-charset="UTF-8">
+		{{ form_start(form) }}
+		<p class="note">Un astérisque * marque un champ obligatoire</p>
 
-</form>
+		{{ form_widget(form) }}
+
+		<div class="boutons"><input type="submit" value="Valider" /></div>
+		{{ form_end(form) }}
+	</form>
 
 {% endblock %}

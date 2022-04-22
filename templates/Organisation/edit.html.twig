@@ -1,37 +1,39 @@
-{% extends 'layout.html.twig' %}
+{% extends 'layout_admin.html.twig' %}
 
-{% block title %}{{ parent() }} - Éditer une organisation{% 
-	if (form.vars.value.typeElection.id is defined) 
-		and (form.vars.value.typeElection.id is constant('App\\Entity\\RefTypeElection::ID_TYP_ELECT_PARENT')) 
-		%}/association{% endif %} pour l'élection {{ form.vars.value.typeElection.code }}
+{% block title %}{{ parent() }} - Éditer une organisation{%
+	if (form.vars.value.typeElection.id is defined)
+	and (form.vars.value.typeElection.id is constant('App\\Entity\\RefTypeElection::ID_TYP_ELECT_PARENT'))
+%}/association{% endif %} pour l'élection {{ form.vars.value.typeElection.code }}
 {% endblock %}
 
 {% block arianeComplements %}{{ parent() }}
-	<li>Éditer une organisation{% 
-		if (form.vars.value.typeElection.id is defined) 
-			and (form.vars.value.typeElection.id is constant('App\\Entity\\RefTypeElection::ID_TYP_ELECT_PARENT')) 
-			%}/association{%
-		endif %} pour l'élection <abbr title="{{ form.vars.value.typeElection.libelle }}">{{ form.vars.value.typeElection.code }}</abbr>
- 	</li>
- {% endblock %}
+	<li>Éditer une organisation{%
+			if (form.vars.value.typeElection.id is defined)
+			and (form.vars.value.typeElection.id is constant('App\\Entity\\RefTypeElection::ID_TYP_ELECT_PARENT'))
+		%}/association{%
+			endif %} pour l'élection <abbr title="{{ form.vars.value.typeElection.libelle }}">{{ form.vars.value.typeElection.code }}</abbr>
+	</li>
+{% endblock %}
 
 {% block h3 %}<h3>{% autoescape false %}
-	{% if form.vars.value.id == 0 %}Ajouter{% else %}Modifier{% endif %} une organisation{% 
-	if (form.vars.value.typeElection.id is defined) 
-		and (form.vars.value.typeElection.id is constant('App\\Entity\\RefTypeElection::ID_TYP_ELECT_PARENT')) 
-		%}/association{% 
-	endif %} pour l'élection <abbr title="{{ form.vars.value.typeElection.libelle }}">{{ form.vars.value.typeElection.code }}</abbr>
+	{% if form.vars.value.id == 0 %}Ajouter{% else %}Modifier{% endif %} une organisation{%
+		if (form.vars.value.typeElection.id is defined)
+		and (form.vars.value.typeElection.id is constant('App\\Entity\\RefTypeElection::ID_TYP_ELECT_PARENT'))
+	%}/association{%
+		endif %} pour l'élection <abbr title="{{ form.vars.value.typeElection.libelle }}">{{ form.vars.value.typeElection.code }}</abbr>
 {% endautoescape %}</h3>{% endblock %}
 
 {% block content %}
-<form action="{{ path('EPLEAdminBundle_organisation_modifier', { 'organisationId':form.vars.value.id }) }}" method="post" accept-charset="UTF-8" {{ form_start(form) }}>
-	<p class="note">Un astérisque * marque un champ obligatoire</p>
-	
-	{{ form_widget(form) }}
-	
-	<div class="boutons"><input type="submit" value="Valider" /></div>
-</form>
-<div class="pageactions">
-	<a href="{{ path('EPLEAdminBundle_organisations') }}" class="retour">Retour</a>
-</div>
+	<form action="{{ path('ECECA_organisation_modifier', { 'organisationId':form.vars.value.id }) }}" method="post" accept-charset="UTF-8">
+		{{ form_start(form) }}
+		<p class="note">Un astérisque * marque un champ obligatoire</p>
+
+		{{ form_widget(form) }}
+
+		<div class="boutons"><input type="submit" value="Valider" /></div>
+		{{ form_end(form) }}
+	</form>
+	<div class="pageactions">
+		<a href="{{ path('ECECA_organisations') }}" class="retour">Retour</a>
+	</div>
 {% endblock %}

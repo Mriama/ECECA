@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use App\Utils\RefUserPerimetre;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
@@ -62,11 +63,11 @@ class RefPerimetre
      * @ORM\Column(name="commune", type="string", length=255, nullable=true)
      */
     private $commune;
-        
+
     /**
      * Get id
      *
-     * @return integer 
+     * @return integer
      */
     public function getId()
     {
@@ -82,14 +83,14 @@ class RefPerimetre
     public function setTypeElections($typeElections)
     {
         $this->typeElections = $typeElections;
-    
+
         return $this;
     }
 
     /**
      * Get typeElections
      *
-     * @return string 
+     * @return string
      */
     public function getTypeElections()
     {
@@ -105,14 +106,14 @@ class RefPerimetre
     public function setEtablissements($etablissements)
     {
         $this->etablissements = $etablissements;
-    
+
         return $this;
     }
 
     /**
      * Get etablissements
      *
-     * @return string 
+     * @return string
      */
     public function getEtablissements()
     {
@@ -128,14 +129,14 @@ class RefPerimetre
     public function setDegres($degres)
     {
         $this->degres = $degres;
-    
+
         return $this;
     }
 
     /**
      * Get degres
      *
-     * @return string 
+     * @return string
      */
     public function getDegres()
     {
@@ -151,14 +152,14 @@ class RefPerimetre
     public function setAcademie($academie)
     {
         $this->academie = $academie;
-    
+
         return $this;
     }
 
     /**
      * Get academie
      *
-     * @return string 
+     * @return string
      */
     public function getAcademie()
     {
@@ -174,14 +175,14 @@ class RefPerimetre
     public function setDepartement($departement)
     {
         $this->departement = $departement;
-    
+
         return $this;
     }
 
     /**
      * Get departement
      *
-     * @return string 
+     * @return string
      */
     public function getDepartement()
     {
@@ -197,14 +198,14 @@ class RefPerimetre
     public function setCommune($commune)
     {
         $this->commune = $commune;
-    
+
         return $this;
     }
-    
+
     /**
      * Get commune
      *
-     * @return string 
+     * @return string
      */
     public function getCommune()
     {
@@ -212,23 +213,21 @@ class RefPerimetre
     }
 
     /**
-     * 
-     * @param \App\Utils\RefUserPerimetre $refUserPerimetre
-     * @param unknown $token
+     *
+     * @param RefUserPerimetre $refUserPerimetre
      */
-    public function __construct(\App\Utils\RefUserPerimetre $refUserPerimetre){
-    	    	
-    	$this->typeElections = null;
-    	$tmp = array();
-    	    	
-    	foreach($refUserPerimetre->getTypeElections() as $typeElec){
-    		array_push($tmp, $typeElec->getId());
-    	}
-    	$this->typeElections = implode(',',$tmp);
-    	
-    	// TODO autres données du périmètre;
-    	
+    public function __construct(RefUserPerimetre $refUserPerimetre){
+
+        $this->typeElections = null;
+        $tmp = array();
+
+        foreach($refUserPerimetre->getTypeElections() as $typeElec){
+            array_push($tmp, $typeElec->getId());
+        }
+        $this->typeElections = implode(',',$tmp);
+
+        // autres données du périmètre;
     }
 
-	
+
 }

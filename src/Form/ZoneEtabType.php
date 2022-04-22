@@ -139,7 +139,7 @@ class ZoneEtabType extends AbstractType {
                 }
                 //Ne renvoie que les communes qui ont un établissement
 
-                $qb->getQuery()->useResultCache(true);
+                $qb->getQuery()->enableResultCache(true);
                 //$qb->orderBy('comm.libelle', 'ASC');
 
                 return $qb;

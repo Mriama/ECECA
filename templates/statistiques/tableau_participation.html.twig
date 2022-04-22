@@ -104,11 +104,6 @@
 			<th scope="col">Résultats bruts</th>
 			<th scope="col">Rappel {{ campagne.anneeDebut-1 }} - {{ campagne.anneeFin-1 }}</th>
 			<th scope="col">Variation</th>
-			{# 			{% if eclair %}#}
-			{# 			<th scope="col">dont Éclair</th>#}
-			{# 			<th scope="col">Rappel {{ campagne.anneeDebut-1 }} - {{ campagne.anneeFin-1 }}</th>#}
-			{# 			<th scope="col">Variation</th>#}
-			{# 			{% endif %}#}
 		</tr>
 		<tr>
 			<th scope="row">Nombre d'inscrits</th>
@@ -131,20 +126,6 @@
 				{% endif %}
 
 			</td>
-			{# 			{% if eclair %}#}
-			{# 					{% if participation is not empty %}#}
-			{# 						<td>{% if participation.nbInscrits != null %}{{ participation.nbInscrits }}{% endif %}</td>#}
-			{# 					{% else %}<td>&nbsp;</td>#}
-			{# 					{% endif %}#}
-
-			{# 				{% if participationPrec is not empty %}#}
-			{# 					<td>{% if participationPrec.nbInscrits != null %}{{ participationPrec.nbInscrits }}{% endif %}</td>#}
-			{# 					{% if participation is not empty %}#}
-			{# 						<td>{% if participation.nbInscrits != null and participationPrec.nbInscrits != null %}#}
-			{# 								{{ participation.nbInscrits - participationPrec.nbInscrits }}{% endif %}</td>#}
-			{# 					{% endif %}#}
-			{# 				{% endif %}#}
-			{# 			{% endif %}#}
 		</tr>
 		<tr>
 			<th scope="row">Nombre de votants</th>
@@ -166,19 +147,6 @@
 					{% endif  %}
 				{% endif %}
 			</td>
-			{# 			{% if eclair %}#}
-			{# 				{% if participation is not empty %}#}
-			{# 					<td>{% if participation.nbVotants != null %}{{ participation.nbVotants }}{% endif %}</td>#}
-			{# 					{% else %}<td>&nbsp;</td>#}
-			{# 				{% endif %}#}
-			{# 				{% if participationPrec is not empty %}#}
-			{# 					<td>{% if participationPrec.nbVotants != null %}{{ participationPrec.nbVotants }}{% endif %}</td>#}
-			{# 					{% if participation is not empty %}#}
-			{# 						<td>{% if participation.nbVotants != null and participationPrec.nbVotants != null %}#}
-			{# 								{{ participation.nbVotants - participationPrec.nbVotants }}{% endif %}</td>#}
-			{# 					{% endif %}#}
-			{# 				{% endif %}#}
-			{# 			{% endif %}#}
 		</tr>
 		<tr>
 			<th scope="row">Nombre de votes blancs ou nuls</th>
@@ -202,19 +170,6 @@
 					{% endif  %}
 				{% endif %}
 			</td>
-			{# 			{% if eclair %}#}
-			{# 				{% if participation is not empty %}#}
-			{# 					<td>{% if participation.nbNulsBlancs != null %}{{ participation.nbNulsBlancs }}{% endif %}</td>#}
-			{# 					{% else %}<td>&nbsp;</td>#}
-			{# 				{% endif %}#}
-			{# 				{% if participationPrec is not empty %}#}
-			{# 					<td>{% if participationPrec.nbNulsBlancs != null %}{{ participationPrec.nbNulsBlancs }}{% endif %}</td>#}
-			{# 					{% if participation is not empty %}#}
-			{# 						<td>{% if participation.nbNulsBlancs != null and participationPrec.nbNulsBlancs != null %}#}
-			{# 								{{ participation.nbNulsBlancs - participationPrec.nbNulsBlancs }}{% endif %}</td>#}
-			{# 					{% endif %}#}
-			{# 				{% endif %}#}
-			{# 			{% endif %}#}
 		</tr>
 		<tr>
 			<th scope="row">Nombre de suffrages exprimés</th>
@@ -237,19 +192,6 @@
 					{% endif  %}
 				{% endif %}
 			</td>
-			{# 			{% if eclair %}#}
-			{# 				{% if participation is not empty %}#}
-			{# 					<td>{% if participation.nbExprimes != null %}{{ participation.nbExprimes }}{% endif %}</td>#}
-			{# 					{% else %}<td>&nbsp;</td>#}
-			{# 				{% endif %}#}
-			{# 				{% if participationPrec is not empty %}#}
-			{# 					<td>{% if participationPrec.nbExprimes != null %}{{ participationPrec.nbExprimes }}{% endif %}</td>#}
-			{# 					{% if participation is not empty %}#}
-			{# 						<td>{% if participation.nbExprimes != null and participationPrec.nbExprimes != null %}#}
-			{# 								{{ participation.nbExprimes - participationPrec.nbExprimes }}{% endif %}</td>#}
-			{# 					{% endif %}#}
-			{# 				{% endif %}#}
-			{# 			{% endif %}#}
 		</tr>
 		<tr>
 			<th scope="row">Taux de participation</th>
@@ -270,19 +212,6 @@
 					{% endif  %}
 				{% endif %}
 			</td>
-			{# 			{% if eclair %}#}
-			{# 				{% if participation is not empty %}#}
-			{# 					<td>{% if participation.taux != null %}{{ participation.taux|number_format(2, '.', ',') }}%{% endif %}</td>#}
-			{# 					{% else %}<td>&nbsp;</td>#}
-			{# 				{% endif %}#}
-			{# 				{% if participationPrec is not empty %}#}
-			{# 					<td>{% if participationPrec.taux != null %}{{ participationPrec.taux|number_format(2, '.', ',') }}%{% endif %}</td>#}
-			{# 					{% if participation is not empty %}#}
-			{# 						<td>{% if participation.taux != null and participationPrec.taux != null %}#}
-			{# 								{{ participation.taux|number_format(2, '.', ',') - participationPrec.taux|number_format(2, '.', ',') }}%{% endif %}</td>#}
-			{# 					{% endif %}#}
-			{# 				{% endif %}#}
-			{# 			{% endif %}#}
 		</tr>
 	{% else%}
 		<tr><td colspan="6" class="warning">Aucun détail sur la participation possible pour {% if app.session.get('select_etablissement') is not empty %}cet établissement{% else %}cette zone{% endif %}</td></tr>

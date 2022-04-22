@@ -1,13 +1,13 @@
-<html>
+<html lang="fr">
 {% block stylesheets %}
-<link href="css/eple_pv.css" type="text/css" rel="stylesheet" />
+	<link href="css/eple_pv.css" type="text/css" rel="stylesheet" />
 {% endblock %}
 <body>
-	{% block contentPage %}
+{% block contentPage %}
 
 	<div class="text-center">
 		<h1 class="u">TIRAGE AU SORT</h1>
-        <p class="b">Article 4 de l'arrêté du 13 mai 1985 relatif au conseil d’école</p>
+		<p class="b">Article 4 de l'arrêté du 13 mai 1985 relatif au conseil d’école</p>
 		<br />
 		<p class="u b">Élection des représentants des parents d'élèves au conseil d'école</p>
 		<br />
@@ -44,7 +44,7 @@
 			<td scope="row">Commune</td>
 			<td>
 				{% if electEtablissement.etablissement.commune is not empty %}
-					{{electEtablissement.etablissement.commune.libelle }} 
+					{{electEtablissement.etablissement.commune.libelle }}
 				{% else %}
 					Non communiqué
 				{% endif %}
@@ -56,7 +56,7 @@
 			</td>
 			<td>
 				{% if electEtablissement.etablissement.typeEtablissement is not empty %}
-					{{electEtablissement.etablissement.typeEtablissement.libelle}} 
+					{{electEtablissement.etablissement.typeEtablissement.libelle}}
 				{% else %}
 					Non communiqué
 				{% endif %}
@@ -67,14 +67,14 @@
 			<td>{{electEtablissement.etablissement.uai }}</td>
 		</tr>
 	</table>
-	
+
 	<h4>&nbsp;</h4>
 	<div style="text-align:center;font-weight: bold">°°°°°°°°°°°°°</div>
 
 	<div style="text-align:center;font-weight:bold;">RESULTAT DU TIRAGE AU SORT</div>
-	
+
 	<h4>&nbsp;</h4>
-	
+
 	<table class="signatures">
 		<tr>
 			<td width="450px">Nombre total de sièges à pourvoir dans l’école :</td>
@@ -84,18 +84,18 @@
 			<td width="450px"></td>
 			<td width="30px"></td>
 		</tr>
-        <tr>
-            <td width="450px">Nombre de sièges non pourvus à l’issue de l'élection :</td>
-            <td width="30px" align="center" style="border: 1px solid #999;">
-                {%- set nbSiegesNonPourvus = electEtablissement.participation.nbSiegesPourvoir - electEtablissement.participation.nbSiegesPourvus -%}
-                {{ nbSiegesNonPourvus }}
-            </td>
-        </tr>
-        <tr>
-            <td width="450px"></td>
-            <td width="30px"></td>
-        </tr>
-        <tr>
+		<tr>
+			<td width="450px">Nombre de sièges non pourvus à l’issue de l'élection :</td>
+			<td width="30px" align="center" style="border: 1px solid #999;">
+				{%- set nbSiegesNonPourvus = electEtablissement.participation.nbSiegesPourvoir - electEtablissement.participation.nbSiegesPourvus -%}
+				{{ nbSiegesNonPourvus }}
+			</td>
+		</tr>
+		<tr>
+			<td width="450px"></td>
+			<td width="30px"></td>
+		</tr>
+		<tr>
 			<td width="450px">Nombre de sièges pourvus par tirage au sort :</td>
 			<td width="30px" align="center" style="border: 1px solid #999;">
 				{%if electEtablissement.participation.nbSiegesSort is not null %}
@@ -104,38 +104,38 @@
 			</td>
 		</tr>
 	</table>
-	
-	<h4>&nbsp;</h4>
-    <h4>&nbsp;</h4>
-    
-    <p><img src="images/pictos/checkbox.jpg" /> Le tirage au sort a été organisé le .................................................................................... </p>
-    
-    <p style="font-weight:bold;">OU</p>
-    
-    <p><img src="images/pictos/checkbox.jpg" /> Le tirage au sort n’a pas pu être organisé en l’absence de parent (éligible) volontaire.</p>
-    
+
 	<h4>&nbsp;</h4>
 	<h4>&nbsp;</h4>
+
+	<p><img src="images/pictos/checkbox.jpg" alt="case à cocher" /> Le tirage au sort a été organisé le .................................................................................... </p>
+
+	<p style="font-weight:bold;">OU</p>
+
+	<p><img src="images/pictos/checkbox.jpg" alt="case à cocher" /> Le tirage au sort n’a pas pu être organisé en l’absence de parent (éligible) volontaire.</p>
+
 	<h4>&nbsp;</h4>
-	
+	<h4>&nbsp;</h4>
+	<h4>&nbsp;</h4>
+
 	<table class="signatures">
 		<tr>
 			<td scope="col"></td>
 			<td scope="col">Fait à ......................., le .......................</td>
 		</tr>
 	</table>
-		
+
 	<h4>&nbsp;</h4>
 	<h4>&nbsp;</h4>
 	<h4>&nbsp;</h4>
-	
+
 	<div style="text-align:center;">
 		La directrice / Le directeur d'école
 	</div>
-	
-	{% endblock %}
 
-    </div>
+{% endblock %}
+
+</div>
 
 </body>
 </html>

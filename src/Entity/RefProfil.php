@@ -2,6 +2,8 @@
 
 namespace App\Entity;
 
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
@@ -12,14 +14,14 @@ use Doctrine\ORM\Mapping as ORM;
  */
 class RefProfil
 {
-	const CODE_PROFIL_DE = 'ECOLE';
-	const CODE_PROFIL_CE = 'ETAB';
-	const CODE_PROFIL_IEN = 'IEN';
-	const CODE_PROFIL_DSDEN = 'DSDEN';
-	const CODE_PROFIL_RECT = 'RECT';
-	const CODE_PROFIL_DGESCO = 'DGESCO';
-	const CODE_PROFIL_PARENTS = 'FEDE';
-	
+    const CODE_PROFIL_DE = 'ECOLE';
+    const CODE_PROFIL_CE = 'ETAB';
+    const CODE_PROFIL_IEN = 'IEN';
+    const CODE_PROFIL_DSDEN = 'DSDEN';
+    const CODE_PROFIL_RECT = 'RECT';
+    const CODE_PROFIL_DGESCO = 'DGESCO';
+    const CODE_PROFIL_PARENTS = 'FEDE';
+
     /**
      * @var integer
      *
@@ -44,22 +46,22 @@ class RefProfil
     private $code;
 
     /**
-     * @var App\Entity\RefRole
-     * 
+     * 		@var RefRole
+     *
      * @ORM\ManyToMany(targetEntity="App\Entity\RefRole", cascade={"persist"})
      * @ORM\JoinTable(name="ref_profil_role",joinColumns={@ORM\JoinColumn(name="id_profil", referencedColumnName="id")},inverseJoinColumns={@ORM\JoinColumn(name="id_role", referencedColumnName="id")})
      */
     private $roles;
 
-    
+
     public function __construct() {
-    	$this->roles = new \Doctrine\Common\Collections\ArrayCollection();
+        $this->roles = new ArrayCollection();
     }
-    
+
     /**
      * Get id
      *
-     * @return integer 
+     * @return integer
      */
     public function getId()
     {
@@ -75,14 +77,14 @@ class RefProfil
     public function setLibelle($libelle)
     {
         $this->libelle = $libelle;
-    
+
         return $this;
     }
 
     /**
      * Get libelle
      *
-     * @return string 
+     * @return string
      */
     public function getLibelle()
     {
@@ -98,44 +100,44 @@ class RefProfil
     public function setCode($code)
     {
         $this->code = $code;
-    
+
         return $this;
     }
 
     /**
      * Get code
      *
-     * @return string 
+     * @return string
      */
     public function getCode()
     {
         return $this->code;
     }
-    
+
     /**
      * Add role
      *
-     * @param App\Entity\RefRole $role
+     * @param RefRole $role
      */
-    public function addRole(\App\Entity\RefRole $role) {
-    	$this->roles[] = $role;
+    public function addRole(RefRole $role) {
+        $this->roles[] = $role;
     }
-    
+
     /**
      * Remove role
      *
-     * @param App\Entity\RefRole $role
+     * @param RefRole $role
      */
-    public function removeRole(\App\Entity\RefRole $role) {
-    	$this->roles->removeElement($role);
+    public function removeRole(RefRole $role) {
+        $this->roles->removeElement($role);
     }
-    
+
     /**
      * Get roles
      *
-     * @return Doctrine\Common\Collections\Collection
+     * @return Collection
      */
-    public function getRoles() { 
-    	return $this->roles; 
+    public function getRoles() {
+        return $this->roles;
     }
 }

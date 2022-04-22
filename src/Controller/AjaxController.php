@@ -7,19 +7,25 @@ use App\Entity\RefAcademie;
 use App\Entity\RefCommune;
 use App\Entity\RefDepartement;
 use App\Entity\RefEtablissement;
-use App\Entity\RefUser;
-use App\Utils\RefUserPerimetre;
 use DateTime;
 use App\Entity\RefTypeElection;
+use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Httpfoundation\Response;
 use App\Entity\RefProfil;
 use App\Entity\RefTypeEtablissement;
-use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
+use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\Routing\Annotation\Route;
 
 class AjaxController extends AbstractController {
+
+    private $request;
+    private $doctrine;
+
+    public function __construct(RequestStack $request, ManagerRegistry $doctrine) {
+        $this->request = $request->getCurrentRequest();
+        $this->doctrine = $doctrine;
+    }
 
     /**
      * "findAcademieDepartementCommuneByZoneAction" Recherche la liste des départements et la liste des communes en fonction de l'académie associé
@@ -28,34 +34,23 @@ class AjaxController extends AbstractController {
      *  sinon on recupere l'ensemble des departements mais aucune communes car trop nombreuse
      *  on renvoie l'identifiant de l'academie, une liste de département
      */
-
-    public function findAcademieDepartementCommuneByZoneAction(Request $request, RefUserPerimetre $refUserPerimetre) {
-        $em = $this->getDoctrine()->getManager();
-        $user = $em->getRepository(RefUser::class)->find(133);
-        $perimetre = $refUserPerimetre->setPerimetreForUser($user);
-        $user->setPerimetre($perimetre);
-        $token = new UsernamePasswordToken($user, null, 'main', $user->getRoles());
-        $this->get('security.token_storage')->setToken($token);
-        $this->get('session')->set('_security_main', serialize($token));
-
-       /* $retour = array('responseCode' => 200, 'liste_academies' => $this->getAcademies($user, $request), 'liste_departement' => $this->getDepartements($user, $request), 'liste_commune' => $this->getCommunes($user, $request), 'liste_etablissement' => $this->getEtablissements($user,$request));
-        $return = json_encode($retour); // json encode the array
-        return new Response($return, 200, array('Content-Type' => 'application/json'));*/
-        $retour = array('responseCode' => 200, 'liste_academies' => $this->getAcademies($user, $request), 'liste_departement' => $this->getDepartements($user, $request), 'liste_commune' => $this->getCommunes($user, $request), 'liste_etablissement' => $this->getEtablissements($user, $request));
+    public function findAcademieDepartementCommuneByZoneAction() {
+        $retour = array('responseCode' => 200, 'liste_academies' => $this->getAcademies(), 'liste_departement' => $this->getDepartements(), 'liste_commune' => $this->getCommunes(), 'liste_etablissement' => $this->getEtablissements());
         return new JsonResponse($retour);
     }
 
-    private function getAcademies($user, $request){
-
-        $em = $this->getDoctrine()->getManager();
-        //$user = $this->get('security.context')->getToken()->getUser();
-
+    private function getAcademies(){
+        $em = $this->doctrine->getManager();
+        $user = $this->getUser();
+        $campagne = null;
         $academies = array();
 
         //PARTIE DYNAMIQUE (EN FONCTION DES PROFILS)
         if($user->getProfil()->getCode() == RefProfil::CODE_PROFIL_DGESCO) {
-            $campagneCode = 49;//$request->get('formCampagne');
-            $campagne = $em->getRepository(EleCampagne::class)->find($campagneCode);
+            $campagneCode = $this->request->request->get('formCampagne');
+            if(!empty($campagneCode)) {
+                $campagne = $em->getRepository(EleCampagne::class)->find($campagneCode);
+            }
             if($campagne != null) {
                 $campagneDebut = new DateTime($campagne->getAnneeDebut(). "-01-01");
                 $campagneFin = new DateTime($campagne->getAnneeDebut(). "-12-31");
@@ -74,14 +69,13 @@ class AjaxController extends AbstractController {
         return $academies;
     }
 
-    private function getDepartements($user, $request){
-
-        //$user = $this->get('security.context')->getToken()->getUser();
-        $em = $this->getDoctrine()->getManager();
+    private function getDepartements(){
+        $user = $this->getUser();
+        $em = $this->doctrine->getManager();
 
         $departements = array();
         $depts = array();
-        $academieCode = $request->get('formAcademie');
+        $academieCode = $this->request->request->get('formAcademie');
         $campagne = $em->getRepository(EleCampagne::class)->getLastCampagne(RefTypeElection::ID_TYP_ELECT_PARENT);
 
         //PARTIE DYNAMIQUE (EN FONCTION DES PROFILS)
@@ -204,7 +198,7 @@ class AjaxController extends AbstractController {
                 }else if('' != $academieCode){
                     $depts = $em->getRepository(RefDepartement::class)->findBy(array('academie' => $academieCode), array('libelle' => 'ASC'));
                 }
-                 break;
+                break;
 
             case RefProfil::CODE_PROFIL_CE:
                 if(null != $user->getPerimetre()->getDepartements()){
@@ -230,7 +224,7 @@ class AjaxController extends AbstractController {
                 } else if('' != $academieCode){
                     $depts = $em->getRepository(RefDepartement::class)->findBy(array('academie' => $academieCode), array('libelle' => 'ASC'));
                 }
-                 break;
+                break;
 
             case RefProfil::CODE_PROFIL_DE:
                 if(null != $user->getPerimetre()->getDepartements()){
@@ -256,7 +250,7 @@ class AjaxController extends AbstractController {
                 }else if('' != $academieCode){
                     $depts = $em->getRepository(RefDepartement::class)->findBy(array('academie' => $academieCode), array('libelle' => 'ASC'));
                 }
-                 break;
+                break;
 
             case RefProfil::CODE_PROFIL_PARENTS:
                 if(null != $user->getPerimetre()->getDepartements()){
@@ -282,7 +276,7 @@ class AjaxController extends AbstractController {
                 }else if('' != $academieCode){
                     $depts = $em->getRepository(RefDepartement::class)->findBy(array('academie' => $academieCode), array('libelle' => 'ASC'));
                 }
-                 break;
+                break;
 
             default:
                 break;
@@ -304,15 +298,14 @@ class AjaxController extends AbstractController {
 
     }
 
-    private function getCommunes($user, $request){
-
-        //$user = $this->get('security.context')->getToken()->getUser();
-        $em = $this->getDoctrine()->getManager();
+    private function getCommunes(){
+        $user = $this->getUser();
+        $em = $this->doctrine->getManager();
 
         $communes = array();
         $comms = array();
-        $academieCode = $request->get('formAcademie');
-        $departementNumero = $request->get('formDepartement');
+        $academieCode = $this->request->request->get('formAcademie');
+        $departementNumero = $this->request->request->get('formDepartement');
 
         // PARTIE DYNAMIQUE (EN FONCTION DES PROFILS)
         // Restriction au niveau du périmètre géographique
@@ -364,17 +357,16 @@ class AjaxController extends AbstractController {
         return $communes;
     }
 
-    private function getEtablissements($user, $request){
-
-        //$user = $this->get('security.context')->getToken()->getUser();
-        $em = $this->getDoctrine()->getManager();
+    private function getEtablissements(){
+        $user = $this->getUser();
+        $em = $this->doctrine->getManager();
 
         $etablissements = array();
         $etabs = array(); // Contient les établissements filtrés selon le périmètre géographique
-        $academieCode = $request->get('formAcademie');
-        $departementNumero = $request->get('formDepartement');
-        $communeId = $request->get('formCommune');
-        $typeEtab = $request->get('formTypeEtab');
+        $academieCode = $this->request->request->get('formAcademie');
+        $departementNumero = $this->request->request->get('formDepartement');
+        $communeId = $this->request->request->get('formCommune');
+        $typeEtab = $this->request->request->get('formTypeEtab');
 
         // Restriction au niveau du périmètre géographique
         if(null != $user->getPerimetre()->getEtablissements()){
@@ -388,7 +380,6 @@ class AjaxController extends AbstractController {
                     }
                 }
             } else if('' != $departementNumero){
-
                 // Recherche des établissements liés au département
                 if(null != $user->getPerimetre()->getCommunes()){
                     $comms = $user->getPerimetre()->getCommunes();
@@ -406,8 +397,6 @@ class AjaxController extends AbstractController {
                         }
                     }
                 }
-
-
             } else if('' != $academieCode){
 
                 // Recherche des établissements de l'utilisateur liés à l'académie
@@ -440,7 +429,6 @@ class AjaxController extends AbstractController {
                     }
                 }
             }
-
         } else if('' != $communeId){
             $etabs = $em->getRepository(RefEtablissement::class)->findBy(array('commune' => $communeId, 'actif' => true), array('libelle' => 'ASC')); // YME - HPQC DEFECT #220
         }

@@ -3,63 +3,59 @@ namespace App\Controller;
 
 use App\Entity\EleCampagne;
 use App\Entity\RefEtablissement;
-use App\Controller\BaseController;
+use Doctrine\Persistence\ManagerRegistry;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\RedirectResponse;
-use Symfony\Component\Form\FormBuilderInterface;
-use Symfony\Component\BrowserKit\Response;
-use Doctrine\Tests\DBAL\Types\VarDateTimeTest;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Security\Core\SecurityContext;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
-use \App\Entity\RefUser;
 use \App\Entity\RefTypeElection;
 use \App\Entity\RefProfil;
 
 
-class RechercheEtablissementController extends BaseController{
+class RechercheEtablissementController extends AbstractController{
 
-    //Creation du formulaire de recherche
-    /**
-     *
-     *@Route("/rechercheEtablissements", name="rechercheEtablissements")
-     */
+    private $request;
+    private $doctrine;
+
+    public function __construct(RequestStack $request, ManagerRegistry $doctrine) {
+        $this->request = $request->getCurrentRequest();
+        $this->doctrine = $doctrine;
+    }
+
     public function indexAction(){
         //Verification de droit d'acces (Si ce Role est attribue)
-        // if (false === $this->get('security.authorization_checker')->isGranted('ROLE_RECH_UAI')) {
-        //     throw new AccessDeniedException();
-        // }
-        $user = $this->getUser();
+        if (false === $this->isGranted('ROLE_RECH_UAI')) {
+            throw new AccessDeniedException();
+        }
         $form = $this->creationFormulaire();
 
-        return $this->render('RechercheEtablissement/indexRechercheEtablissement.html.twig',
+        return $this->render('rechercheEtablissement/indexRechercheEtablissement.html.twig',
             array('form' => $form->createView()
             ));
-
     }
 
 
-    public function affichageEtablissementsAction(Request $request){
+    public function affichageEtablissementsAction(){
 
         //Verification de droit d'acces (Si ce Role est attribue a profil du user connecte)
-        if (false === $this->get('security.context')->isGranted('ROLE_RECH_UAI')) {
+        if (false === $this->isGranted('ROLE_RECH_UAI')) {
             throw new AccessDeniedException();
         }
 
-        $isDegesco = $this->get('security.context')->getToken()->getUser()->getProfil()->getCode() === RefProfil::CODE_PROFIL_DGESCO;
+        $isDegesco = $this->getUser()->getProfil()->getCode() === RefProfil::CODE_PROFIL_DGESCO;
 
         /*Création du formulaire de recherche*/
         $form = $this->creationFormulaire();
 
-        if($request->getMethod() == 'POST'){
-            $form->handleRequest($request);
+        if($this->request->getMethod() == 'POST'){
+            $form->handleRequest($this->request);
             if($form->isSubmitted() && $form->isValid()){
                 $donneesTransmies = $form->getData();
 
                 // old IE n'interprete pas la propriété required
                 if (empty($donneesTransmies["uai"])) {
-                    return $this->render('EPLEAdminBundle:RechercheEtablissement:resultatRecherche.html.twig', array(
+                    return $this->render('rechercheEtablissement/resultatRecherche.html.twig', array(
                         'form' 			=> $form->createView(),
                         'messageUaiVide' => true
                     ));
@@ -68,8 +64,8 @@ class RechercheEtablissementController extends BaseController{
         }
 
         //Recherche etablissement
-        $user = $this->get('security.context')->getToken()->getUser();
-        $em = $this->getDoctrine()->getManager();
+        $user = $this->getUser();
+        $em = $this->doctrine->getManager();
         $repository = $em->getRepository(RefEtablissement::class);
         $etablissementTrouve = $repository->findOneBy(array('uai' => $donneesTransmies));
 
@@ -106,27 +102,28 @@ class RechercheEtablissementController extends BaseController{
                 'label' => '*Numéro UAI/RNE',
                 'required' => true,
                 'trim' => true,
+                'attr' => ['maxlength' => 8],
             ))->getForm();
         return $form;
 
     }
 
-    public function ouvrirFermerEtablissementAction(Request $request)
+    public function ouvrirFermerEtablissementAction()
     {
         //Verification de droit d'acces (Si ce Role est attribue a profil du user connecte)
-        if (false === $this->get('security.context')->isGranted('ROLE_RECH_UAI')) {
+        if (false === $this->isGranted('ROLE_RECH_UAI')) {
             throw new AccessDeniedException();
         }
 
-        $user = $this->get('security.context')->getToken()->getUser();
+        $user = $this->getUser();
         if ($user->getProfil()->getCode() !== RefProfil::CODE_PROFIL_DGESCO) {
             throw new AccessDeniedException();
         }
-        $em = $this->getDoctrine()->getManager();
+        $em = $this->doctrine->getManager();
         $uai = null;
 
-        if ($request->getMethod() == 'POST') {
-            $uai = $request->get('uai');
+        if ($this->request->getMethod() == 'POST') {
+            $uai = $this->request->get('uai');
         }
 
         $form = $this->creationFormulaire();

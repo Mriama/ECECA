@@ -2,8 +2,10 @@
 
 namespace App\Entity;
 
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Component\Validator\ExecutionContextInterface;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 /**
  * RefCommune
@@ -35,7 +37,7 @@ class RefCommune
      * @ORM\Column(name="code_postal", type="string", length=255)
      */
     protected $codePostal;
-    
+
     /**
      * @ORM\Column(name="code_insee", type="string", length=5, nullable=true)
      * @var int
@@ -43,13 +45,13 @@ class RefCommune
     protected $codeInsee;
 
     /**
-	 * @var App\Entity\RefDepartement
-	 * 
+     * 		@var RefDepartement
+     *
      * @ORM\ManyToOne(targetEntity="App\Entity\RefDepartement")
      * @ORM\JoinColumn(name="departement", referencedColumnName="numero")
      */
     protected $departement;
-    
+
     /**
      * @var ArrayCollection $etablissements
      */
@@ -59,19 +61,19 @@ class RefCommune
      * Constructeur de base
      */
     public function __construct() {
-    	$this->id = 0;
-    	$this->etablissements = new \Doctrine\Common\Collections\ArrayCollection();
+        $this->id = 0;
+        $this->etablissements = new ArrayCollection();
     }
-    
+
     public function setId($id){
-    	$this->id = $id;
-    	return $this;
+        $this->id = $id;
+        return $this;
     }
-    
+
     /**
      * Get id
      *
-     * @return integer 
+     * @return integer
      */
     public function getId()
     {
@@ -87,14 +89,14 @@ class RefCommune
     public function setLibelle($libelle)
     {
         $this->libelle = $libelle;
-    
+
         return $this;
     }
 
     /**
      * Get libelle
      *
-     * @return string 
+     * @return string
      */
     public function getLibelle()
     {
@@ -110,92 +112,92 @@ class RefCommune
     public function setCodePostal($codePostal)
     {
         $this->codePostal = $codePostal;
-    
+
         return $this;
     }
 
     /**
      * Get codePostal
      *
-     * @return string 
+     * @return string
      */
     public function getCodePostal()
     {
         return $this->codePostal;
     }
-    
+
     /**
-     * 
+     *
      * @return number
      */
     public function getCodeInsee()
     {
         return $this->codeInsee;
     }
-    
+
     /**
-     * 
-     * @param unknown $codeInsee
-     * @return \App\Entity\RefCommune
+     *
+     * @param $codeInsee
+     * @return RefCommune
      */
     public function setCodeInsee($codeInsee)
     {
         $this->codeInsee = $codeInsee;
         return $this;
     }
-    
+
     /**
      * Set departement
      *
-     * @param App\Entity\RefDepartement $departement
+     * @param RefDepartement $departement
      */
     public function setDepartement(
-    		\App\Entity\RefDepartement $departement) {
-    	$this->departement = $departement;
+        RefDepartement $departement) {
+        $this->departement = $departement;
     }
-    
+
     /**
      * Get departement
      *
-     * @return App\Entity\RefDepartement
+     * @return RefDepartement
      */
     public function getDepartement() {
-    	return $this->departement;
+        return $this->departement;
     }
-    
+
     /**
      * Get etablissements
      *
-     * @return Doctrine\Common\Collections\Collection
+     * @return Collection
      */
     public function getEtablissements() {
-    	return $this->etablissements;
+        return $this->etablissements;
     }
-    
+
     /**
      * Set etablissements
      *
      * @param array of \App\Entity\RefEtablissement $etablissements
      */
     public function setEtablissements($etablissements) {
-    	$this->etablissements = $etablissements;
+        $this->etablissements = $etablissements;
     }
-    
+
     /********************************************* LOGIQUE METIER **********************************************/
-    
+
     public function isCodePostalValid(ExecutionContextInterface $context) {
-    
-    	if ( !is_numeric($this->codePostal) ) {
-    		$context->addViolation('Le code postal doit être uniquement composé de chiffres.', array($this->codePostal), null);
-    	} else{
-    		$cp = (int) $this->codePostal;
-    		if( $cp <= 1000){
-    			$context->addViolation('Le code postal doit être superieur ou égal à 0', array('01000'), null);
-    		}
-    	}
+
+        if ( !is_numeric($this->codePostal) ) {
+            $context->addViolation('Le code postal doit être uniquement composé de chiffres.', array($this->codePostal));
+        } else{
+            $cp = (int) $this->codePostal;
+            if( $cp <= 1000){
+                $context->addViolation('Le code postal doit être superieur ou égal à 0', array('01000'));
+            }
+        }
     }
 
 
-	
-   
+
+
 }

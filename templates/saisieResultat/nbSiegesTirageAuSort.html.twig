@@ -25,32 +25,32 @@
 	{% endif %}
 
 	<div class="pageactions">
-		<a href="{{ path('EPLEElectionBundle_homepage') }}" class="retour">Retour</a>
+		<a href="{{ path('ECECA_homepage') }}" class="retour">Retour</a>
 		{% if electEtablissement is defined %}
 			{# consultation PV initial #}
-			{% if electEtablissement.indCarence == 1 and (electEtablissement.validation == constant('\\EPLE\\ElectionBundle\\Entity\\EleEtablissement::ETAT_TRANSMISSION') or electEtablissement.validation == constant('\\EPLE\\ElectionBundle\\Entity\\EleEtablissement::ETAT_VALIDATION')) %}
+			{% if electEtablissement.indCarence == 1 and (electEtablissement.validation == constant('App\\Entity\\EleEtablissement::ETAT_TRANSMISSION') or electEtablissement.validation == constant('App\\Entity\\EleEtablissement::ETAT_VALIDATION')) %}
 				{% if sousTypeElect is defined %}
-					<a class="pv" href="{{ path('EPLEElectionBundle_creation_PV', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': sousTypeElect.codeUrlById , 'statut' : 'carence' }) }}">Télécharger le PV initial</a>
+					<a class="pv" href="{{ path('ECECA_creation_PV', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': sousTypeElect.codeUrlById , 'statut' : 'carence' }) }}">Télécharger le PV initial</a>
 				{% else %}
-					<a class="pv" href="{{ path('EPLEElectionBundle_creation_PV', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': typeElect.codeUrlById , 'statut' : 'carence' }) }}">Télécharger le PV initial</a>
+					<a class="pv" href="{{ path('ECECA_creation_PV', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': typeElect.codeUrlById , 'statut' : 'carence' }) }}">Télécharger le PV initial</a>
 				{% endif %}
-			{% elseif electEtablissement.indDeficit == 1 and (electEtablissement.validation == constant('\\EPLE\\ElectionBundle\\Entity\\EleEtablissement::ETAT_TRANSMISSION') or electEtablissement.validation == constant('\\EPLE\\ElectionBundle\\Entity\\EleEtablissement::ETAT_VALIDATION')) %}
+			{% elseif electEtablissement.indDeficit == 1 and (electEtablissement.validation == constant('App\\Entity\\EleEtablissement::ETAT_TRANSMISSION') or electEtablissement.validation == constant('App\\Entity\\EleEtablissement::ETAT_VALIDATION')) %}
 				{% if sousTypeElect is defined %}
-					<a class="pv" href="{{ path('EPLEElectionBundle_creation_PV', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': sousTypeElect.codeUrlById , 'statut' : 'rempli' }) }}">Télécharger le PV initial</a>
+					<a class="pv" href="{{ path('ECECA_creation_PV', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': sousTypeElect.codeUrlById , 'statut' : 'rempli' }) }}">Télécharger le PV initial</a>
 				{% else %}
-					<a class="pv" href="{{ path('EPLEElectionBundle_creation_PV', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': typeElect.codeUrlById , 'statut' : 'rempli' }) }}">Télécharger le PV initial</a>
+					<a class="pv" href="{{ path('ECECA_creation_PV', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': typeElect.codeUrlById , 'statut' : 'rempli' }) }}">Télécharger le PV initial</a>
 				{% endif %}
 			{% else %}
 				{% if sousTypeElect is defined %}
-					<a class="pv" href="{{ path('EPLEElectionBundle_creation_PV', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': sousTypeElect.codeUrlById , 'statut' : 'rempli' }) }}">Télécharger le PV rempli</a>
+					<a class="pv" href="{{ path('ECECA_creation_PV', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': sousTypeElect.codeUrlById , 'statut' : 'rempli' }) }}">Télécharger le PV rempli</a>
 				{% else %}
-					<a class="pv" href="{{ path('EPLEElectionBundle_creation_PV', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': typeElect.codeUrlById , 'statut' : 'rempli' }) }}">Télécharger le PV rempli</a>
+					<a class="pv" href="{{ path('ECECA_creation_PV', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': typeElect.codeUrlById , 'statut' : 'rempli' }) }}">Télécharger le PV rempli</a>
 				{% endif %}
 			{% endif %}
 
 			{# consultation PV tirage au sort #}
 			{% if electEtablissement.etablissement.actif == true %}
-				<a class="pv" href="{{ path('EPLEElectionBundle_creation_PV', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': typeElect.codeUrlById , 'statut' : 'tirageAuSort' }) }}">Télécharger le PV de tirage au sort</a>
+				<a class="pv" href="{{ path('ECECA_creation_PV', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': typeElect.codeUrlById , 'statut' : 'tirageAuSort' }) }}">Télécharger le PV de tirage au sort</a>
 			{% endif %}
 		{% endif %}
 	</div>

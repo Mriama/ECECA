@@ -16,7 +16,7 @@ class RefZoneNature
      *
      * @var integer @ORM\Column(name="uai_nature", type="integer")
      *      @ORM\Id
-     *     
+     *
      */
     protected $uai_nature;
 
@@ -43,10 +43,10 @@ class RefZoneNature
      *
      * @var string @ORM\Column(name="type_nature", type="string", length=255)
      */
-    protected $type_nature;    
-    
-    
-    
+    protected $type_nature;
+
+
+
     /**
      * Constructeur de base
      */
@@ -109,14 +109,14 @@ class RefZoneNature
     public function setTypeNature($typeNature)
     {
         $this->type_nature = $typeNature;
-    
+
         return $this;
     }
 
     /**
      * Get type_nature
      *
-     * @return string 
+     * @return string
      */
     public function getTypeNature()
     {

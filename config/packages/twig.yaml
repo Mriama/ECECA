@@ -1,5 +1,13 @@
 twig:
     default_path: '%kernel.project_dir%/templates'
+    globals:
+        version: '%version%'
+        url_documentation_de: '%url_documentation_de%'
+        url_documentation_ce: '%url_documentation_ce%'
+        url_documentation: '%url_documentation%'
+        url_eduscol: '%url_eduscol%'
+        rgaa_status: '%rgaa_status%'
+        rgaa_declaration_link: '%rgaa_declaration_link%'
 
 when@test:
     twig:

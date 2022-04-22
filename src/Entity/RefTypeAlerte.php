@@ -12,15 +12,15 @@ use Doctrine\ORM\Mapping as ORM;
  */
 class RefTypeAlerte
 {
-    
-	const CODE_CARENCE = 'CARENCE';
-	const CODE_DEFICIT = 'DEFICIT';
-	
-   /**
+
+    const CODE_CARENCE = 'CARENCE';
+    const CODE_DEFICIT = 'DEFICIT';
+
+    /**
      * @var string
      *
      * @ORM\Column(name="code", type="string", length=10)
-	 * @ORM\Id
+     * @ORM\Id
      */
     protected $code;
 
@@ -41,14 +41,14 @@ class RefTypeAlerte
     public function setCode($code)
     {
         $this->code = $code;
-    
+
         return $this;
     }
 
     /**
      * Get code
      *
-     * @return string 
+     * @return string
      */
     public function getCode()
     {
@@ -64,14 +64,14 @@ class RefTypeAlerte
     public function setLibelle($libelle)
     {
         $this->libelle = $libelle;
-    
+
         return $this;
     }
 
     /**
      * Get libelle
      *
-     * @return string 
+     * @return string
      */
     public function getLibelle()
     {

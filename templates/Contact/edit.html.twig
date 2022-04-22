@@ -1,82 +1,82 @@
-{% extends 'EPLEAdminBundle::layout.html.twig' %}
+{% extends 'layout_admin.html.twig' %}
 
-{% block title %}{{ parent() }} - Éditer un contact pour l'élection {{ form.vars.value.contact.typeElection.code }}{% 
-endblock %}
+{% block title %}{{ parent() }} - Éditer un contact pour l'élection {{ form.vars.value.contact.typeElection.code }}{%
+	endblock %}
 
 {% block arianeComplements %}<li>Éditer un contact pour l'élection {{ form.vars.value.contact.typeElection.code }}
- </li>{% endblock %}
+	</li>{% endblock %}
 
 {% block h3 %}<h3>{% autoescape false %}
 	{% if form.vars.value.contact.id == 0 %}Ajouter{% else %}Modifier{% endif %} un contact pour l'élection <abbr title="{{ form.vars.value.contact.typeElection.libelle }}">{{ form.vars.value.contact.typeElection.code }}</abbr>
 {% endautoescape %}</h3>{% endblock %}
 
 {% block content %}
-<form id="edit_contact" action="{{ path('EPLEAdminBundle_contact_modifier', { 'contactId':form.vars.value.contact.id }) }}" method="post" accept-charset="UTF-8" {{ form_enctype(form) }}>
-	<p class="note">Un astérisque * marque un champ obligatoire</p>
+	<form id="edit_contact" action="{{ path('ECECA_contact_modifier', { 'contactId':form.vars.value.contact.id }) }}" method="post" accept-charset="UTF-8">
+		<p class="note">Un astérisque * marque un champ obligatoire</p>
 
-    {{ form_start(form) }}
+		{{ form_start(form) }}
 
-    {% if form.academie is defined %}
-	<div>
-        {{ form_label(form.academie) }}
-        {{ form_errors(form.academie) }}
-        {{ form_widget(form.academie) }}
-	</div>
-	{% else %}
-		{{ form_label(form.departement) }}
-        {{ form_errors(form.departement) }}
-        {{ form_widget(form.departement) }}
-    {% endif %}
-	<div>
-        {{ form_label(form.nom) }}
-        {{ form_errors(form.nom) }}
-        {{ form_widget(form.nom) }}
-	</div>
-	<div>
-        {{ form_label(form.prenom) }}
-        {{ form_errors(form.prenom) }}
-        {{ form_widget(form.prenom) }}
-	</div>
-
-    {% if form.academie is defined %}
+		{% if form.academie is defined %}
+			<div>
+				{{ form_label(form.academie) }}
+				{{ form_errors(form.academie) }}
+				{{ form_widget(form.academie) }}
+			</div>
+		{% else %}
+			{{ form_label(form.departement) }}
+			{{ form_errors(form.departement) }}
+			{{ form_widget(form.departement) }}
+		{% endif %}
 		<div>
-			<label for="eple_edit_contact_email1">* Adresse électronique </label>
-            {{ form_errors(form.email1) }}
-            {{ form_widget(form.email1) }}
+			{{ form_label(form.nom) }}
+			{{ form_errors(form.nom) }}
+			{{ form_widget(form.nom) }}
 		</div>
-    {% else %}
-        {% if form.vars.value.contact.typeElection.id == 3 %}
+		<div>
+			{{ form_label(form.prenom) }}
+			{{ form_errors(form.prenom) }}
+			{{ form_widget(form.prenom) }}
+		</div>
+
+		{% if form.academie is defined %}
 			<div>
-				<label for="eple_edit_contact_email1">* Adresse électronique 1<sup>er</sup> degré</label>
-                {{ form_errors(form.email1) }}
-                {{ form_widget(form.email1) }}
+				<label for="eple_edit_contact_email1">* Adresse électronique </label>
+				{{ form_errors(form.email1) }}
+				{{ form_widget(form.email1) }}
 			</div>
-			<div>
-				<label for="eple_edit_contact_email2">* Adresse électronique 2<sup>nd</sup> degré</label>
-                {{ form_errors(form.email2) }}
-                {{ form_widget(form.email2) }}
-			</div>
+		{% else %}
+			{% if form.vars.value.contact.typeElection.id == 3 %}
+				<div>
+					<label for="eple_edit_contact_email1">* Adresse électronique 1<sup>er</sup> degré</label>
+					{{ form_errors(form.email1) }}
+					{{ form_widget(form.email1) }}
+				</div>
+				<div>
+					<label for="eple_edit_contact_email2">* Adresse électronique 2<sup>nd</sup> degré</label>
+					{{ form_errors(form.email2) }}
+					{{ form_widget(form.email2) }}
+				</div>
 			{% else %}
 				<div>
 					<label for="eple_edit_contact_email1">* Adresse électronique 2<sup>nd</sup> degré</label>
-                    {{ form_errors(form.email1) }}
-                    {{ form_widget(form.email1) }}
+					{{ form_errors(form.email1) }}
+					{{ form_widget(form.email1) }}
 				</div>
-        {% endif %}
-	{% endif %}
+			{% endif %}
+		{% endif %}
 
-	<div>
-        {{ form_label(form.telephone) }}
-        {{ form_errors(form.telephone) }}
-        {{ form_widget(form.telephone) }}
+		<div>
+			{{ form_label(form.telephone) }}
+			{{ form_errors(form.telephone) }}
+			{{ form_widget(form.telephone) }}
+		</div>
+
+		{{ form_widget(form) }}
+
+		<div class="boutons"><input type="submit" value="Valider" /></div>
+		{{ form_end(form) }}
+	</form>
+	<div class="pageactions">
+		<a href="{{ path('ECECA_contacts') }}" class="retour">Retour</a>
 	</div>
-
-    {{ form_widget(form) }}
-
-	<div class="boutons"><input type="submit" value="Valider" /></div>
-    {{ form_end(form) }}
-</form>
-<div class="pageactions">
-	<a href="{{ path('EPLEAdminBundle_contacts') }}" class="retour">Retour</a>
-</div>
 {% endblock %}

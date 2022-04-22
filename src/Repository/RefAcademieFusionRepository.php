@@ -4,6 +4,6 @@
 namespace App\Repository;
 
 use Doctrine\ORM\EntityRepository;
-class RefAcademieFusionRepository extends  EntityRepository
-{
+
+class RefAcademieFusionRepository extends  EntityRepository {
 }

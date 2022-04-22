@@ -27,37 +27,22 @@ use App\Entity\RefSousTypeElection;
 use App\Entity\RefTypeElection;
 use App\Entity\RefAcademieFusion;
 use DateTime;
+use Doctrine\ORM\NoResultException;
 use Symfony\Component\Validator\Constraints\Date;
 
 /**
  * EleEtablissementRepository
  */
-class EleEtablissementRepository extends EntityRepository
-{
-
-    // TODO TEST YME A SUPPRIMER
-    public function findByCampagneAndZone(EleCampagne $campagne, RefDepartement $zone){
-        $qb = $this->createQueryBuilder('eleEtab');
-        $qb->join('eleEtab.etablissement', 'etab');
-        $qb->join('etab.commune', 'comm');
-        $qb->join('comm.departement', 'dep', 'WITH', 'dep =:zone')
-            ->setParameter('zone', $zone);
-        $qb->join('eleEtab.campagne', 'c', 'WITH', 'c =:campagne')
-            ->setParameter('campagne', $campagne);
-
-        return $qb->getQuery()->getResult();
-    }
+class EleEtablissementRepository extends EntityRepository {
 
     /**
      *
      * @param EleCampagne $campagne
      * @param RefTypeEtablissement $typeEtab
      * @param string $zone
-     * @param unknown $etatSaisie
-     * @return unknown
+     * @param $etatSaisie
      */
-    public function queryBuilderFindByCampagneTypeEtabZone(EleCampagne $campagne, RefTypeEtablissement $typeEtab = null, $zone = null, $etatSaisie, $user = null, $idSousTypeElection = null, $isEreaErpdExclus = false)
-    {
+    public function queryBuilderFindByCampagneTypeEtabZone(EleCampagne $campagne, RefTypeEtablissement $typeEtab = null, $zone = null, $etatSaisie, $user = null, $idSousTypeElection = null, $isEreaErpdExclus = false) {
         $qb = $this->createQueryBuilder('eleEtab');
 
         $req = 'eleEtab.id as idEleEtab, etab.uai as uai, etab.libelle as nomEtab, typePrio.code as typePrioritaire,te.libelle as nomTypeEtab, eleEtab.validation as validation';
@@ -67,20 +52,15 @@ class EleEtablissementRepository extends EntityRepository
 
         $this->addCampagneTypeEtabEtatSaisieToQuery($qb, $campagne, $typeEtab, $zone, $etatSaisie, $user, $isEreaErpdExclus, $idSousTypeElection);
 
-        // IEN
-        // if($profil != RefProfil::CODE_PROFIL_IEN){
         $qb->orderBy('comm.codePostal', 'ASC');
         $qb->orderBy('ste.code', 'ASC');
 
         return $qb;
     }
 
-    public function queryBuilderFindByCampagneTypeEtabZoneExport(EleCampagne $campagne, RefTypeEtablissement $typeEtab = null, $zone = null, $etatSaisie, $isEreaErpdExclus = false, $idSousTypeElection = null)
-    {
+    public function queryBuilderFindByCampagneTypeEtabZoneExport(EleCampagne $campagne, RefTypeEtablissement $typeEtab = null, $zone = null, $etatSaisie, $isEreaErpdExclus = false, $idSousTypeElection = null) {
         $qb = $this->createQueryBuilder('eleEtab');
-
         $this->addCampagneTypeEtabEtatSaisieExportToQuery($qb, $campagne, $typeEtab, $zone, $etatSaisie, $isEreaErpdExclus, $idSousTypeElection);
-
         $qb->orderBy('comm.codePostal', 'ASC');
 
         return $qb;
@@ -91,10 +71,9 @@ class EleEtablissementRepository extends EntityRepository
      * @param EleCampagne $campagne
      * @param RefTypeEtablissement $typeEtab
      * @param string $zone
-     * @param unknown $etatSaisie
+     * @param $etatSaisie
      */
-    public function queryBuilderConsolidationByCampagneTypeEtabZoneEtatSaisie(EleCampagne $campagne, RefTypeEtablissement $typeEtab = null, $zone = null, $etatSaisie, RefUser $refUser = null, $isEreaErpdExclus = false, $idSousTypeElection = null)
-    {
+    public function queryBuilderConsolidationByCampagneTypeEtabZoneEtatSaisie(EleCampagne $campagne, RefTypeEtablissement $typeEtab = null, $zone = null, $etatSaisie, RefUser $refUser = null, $isEreaErpdExclus = false, $idSousTypeElection = null) {
         $qb = $this->createQueryBuilder('eleEtab');
         $qb->join('eleEtab.participation', 'elePart');
         $qb->select('c.id, sum(elePart.nbInscrits) as nbIns, sum(elePart.nbVotants) as nbVotants, sum(elePart.nbVotants - elePart.nbNulsBlancs) as nbExpr, sum(elePart.nbNulsBlancs) as nbNulsBlancs,
@@ -102,16 +81,13 @@ class EleEtablissementRepository extends EntityRepository
 						   	count(eleEtab.id) as nbEtabExpr');
 
         $this->addCampagneTypeEtabEtatSaisieToQuery($qb, $campagne, $typeEtab, $zone, $etatSaisie, $refUser, $isEreaErpdExclus, $idSousTypeElection);
-
         return $qb;
     }
 
     /**
      * Ajout des joins et where aux requêtes
      */
-    protected function addCampagneTypeEtabEtatSaisieToQuery($qb, $campagne, $typeEtab, $zone, $etatSaisie, $refUser = null, $isEreaErpdExclus = false, $idSousTypeElection = null)
-    {
-
+    protected function addCampagneTypeEtabEtatSaisieToQuery($qb, $campagne, $typeEtab, $zone, $etatSaisie, $refUser = null, $isEreaErpdExclus = false, $idSousTypeElection = null) {
         // La zone est une liste d'établissements
         if (is_array($zone) ){
             $uais = array();
@@ -183,13 +159,7 @@ class EleEtablissementRepository extends EntityRepository
             if (null != $refUser && $refUser->getProfil()->getCode() == RefProfil::CODE_PROFIL_DSDEN) {
                 $qb->join('comm.departement', 'dept', 'WITH', 'dept.numero in ('.EpleUtils::getNumerosDepts($refUser->getPerimetre()->getDepartements()).')');
             } else {
-                /*if(!is_null($zone->getAcademieFusion())){
-                    $qb->join('comm.departement', 'dept')
-                        ->Join('dept.academie', 'acad')
-                        ->leftJoin('acad.AcademieFusion', 'acadf')
-                        ->andWhere('acadf.code = :code')
-                        ->setParameter('code', $zone->getAcademieFusion()->getCode());
-                }else*/if(!empty($checkChild)){
+                if(!empty($checkChild)){
                     $qb->join('comm.departement', 'dept')
                         ->Join('dept.academie', 'acad')
                         ->leftJoin('acad.AcademieFusion', 'acadf')
@@ -206,9 +176,8 @@ class EleEtablissementRepository extends EntityRepository
             $qb->join('comm.departement', 'dept', 'WITH', 'dept =:departement')->setParameter('departement', $zone);
         }
     }
-    protected function addCampagneTypeEtabEtatSaisieExportToQuery($qb, $campagne, $typeEtab, $zone, $etatSaisie, $isEreaErpdExclus = false, $idSousTypeElection = null)
-    {
 
+    protected function addCampagneTypeEtabEtatSaisieExportToQuery($qb, $campagne, $typeEtab, $zone, $etatSaisie, $isEreaErpdExclus = false, $idSousTypeElection = null) {
         // paramètre Campagne
         $qb->join('eleEtab.campagne', 'c', 'WITH', 'c =:campagne')
             ->setParameter('campagne', $campagne)
@@ -258,54 +227,41 @@ class EleEtablissementRepository extends EntityRepository
 
     /**
      *
-     * @param : $campagne
-     *            : obligatoire : EleCampagne
-     * @param : $typeEtab
-     *            : facultatif : RefTypeEtablissement : nul par défaut
-     * @param : $zone
-     *            : facultatif : RefAcademie ou RefDepartement ou RefCommune: nul par défaut
-     * @param : $etatSaisie
-     *            : array d'états d'avancement des saisies
-     * @return ArrayCollection of EleEtablissement
+     * @param : $campagne : obligatoire : EleCampagne
+     * @param : $typeEtab : facultatif : RefTypeEtablissement : nul par défaut
+     * @param : $zone : facultatif : RefAcademie ou RefDepartement ou RefCommune: nul par défaut
+     * @param : $etatSaisie : array d'états d'avancement des saisies
+     * @return array of EleEtablissement
      *         "findByTypeEtabZone" permet de récupérer les EleEtablissements avec participations
      *         pour pour les $typeEtab, $zone donnés
      */
-    public function findByCampagneTypeEtabZone(EleCampagne $campagne, RefTypeEtablissement $typeEtab = null, $zone = null, $etatSaisie = array(EleEtablissement::ETAT_VALIDATION), $user = null, $idSousTypeElection = null, $isEreaErpdExclus = false)
-    {
+    public function findByCampagneTypeEtabZone(EleCampagne $campagne, RefTypeEtablissement $typeEtab = null, $zone = null, $etatSaisie = array(EleEtablissement::ETAT_VALIDATION), $user = null, $idSousTypeElection = null, $isEreaErpdExclus = false) {
         return $this->queryBuilderFindByCampagneTypeEtabZone($campagne, $typeEtab, $zone, $etatSaisie, $user, $idSousTypeElection, $isEreaErpdExclus)
             ->getQuery()
             ->getResult();
     }
-    public function findByCampagneTypeEtabZoneExport(EleCampagne $campagne, RefTypeEtablissement $typeEtab = null, $zone = null, $etatSaisie = array(EleEtablissement::ETAT_VALIDATION), $isEreaErpdExclus = false, $idSousTypeElection = null)
-    {
+    public function findByCampagneTypeEtabZoneExport(EleCampagne $campagne, RefTypeEtablissement $typeEtab = null, $zone = null, $etatSaisie = array(EleEtablissement::ETAT_VALIDATION), $isEreaErpdExclus = false, $idSousTypeElection = null) {
         return $this->queryBuilderFindByCampagneTypeEtabZoneExport($campagne, $typeEtab, $zone, $etatSaisie, $isEreaErpdExclus, $idSousTypeElection)
             ->getQuery()
             ->getResult();
     }
+
     /**
      * Calcule les sommes utiles pour une campagne donnée
      * Paramètres optionnels : type étab, zone, état des saisies
      * Utilisé par ResultatController
      *
-     * @param $em :
-     *            entity manager
-     * @param : $campagne
-     *            : obligatoire : EleCampagne
-     * @param : $typeEtab
-     *            : facultatif : RefTypeEtablissement : nul par défaut
-     * @param : $zone
-     *            : facultatif : RefAcademie ou RefDepartement ou RefCommune: nul par défaut
-     * @param : $etatSaisie
-     *            : array d'états d'avancement des saisies
+     * @param $em : entity manager
+     * @param : $campagne : obligatoire : EleCampagne
+     * @param : $typeEtab : facultatif : RefTypeEtablissement : nul par défaut
+     * @param : $zone : facultatif : RefAcademie ou RefDepartement ou RefCommune: nul par défaut
+     * @param : $etatSaisie : array d'états d'avancement des saisies
      * @return EleConsolidation
      */
-    public function getConsolidationByCampagneTypeEtabZoneEtatSaisie($em, EleCampagne $campagne, RefTypeEtablissement $typeEtab = null, $zone = null, $etatSaisie, RefUser $refUser = null, $isEreaErpdExclus = false, $idSousTypeElection = null)
-    {
-
+    public function getConsolidationByCampagneTypeEtabZoneEtatSaisie($em, EleCampagne $campagne, RefTypeEtablissement $typeEtab = null, $zone = null, $etatSaisie, RefUser $refUser = null, $isEreaErpdExclus = false, $idSousTypeElection = null) {
         $query = $this->queryBuilderConsolidationByCampagneTypeEtabZoneEtatSaisie($campagne, $typeEtab, $zone, $etatSaisie, $refUser, $isEreaErpdExclus, $idSousTypeElection)
             ->getQuery();
         $result = $query->getResult();
-
 
         $consolidation = new EleConsolidation();
         $consolidation->setCampagne($campagne);
@@ -399,33 +355,6 @@ class EleEtablissementRepository extends EntityRepository
                     $rd->setNbCandidats($datas['nbCandidats']);
                     return $rd;
                 };
-                $resultatsDetails = array_map($fct_datasToEleResultDetail, $resultatsDetailGlobaux);
-                //////////
-                /// ANOMALIE 225211 [Mechri Atef]
-                ///// Inutile de faire le traitement ci-dessous car les résultats ($resultats) calcule bien le nombre de sièges réels
-                ///// à voir requête dans queryFindDatasResultatsEnCoursByCampagneZoneTypeEtab (Ripo EleEtablissement)
-                ///// ce traitement aurait pu être correct si on calculait le nombre de sièges théoriques dans les résultats
-                //////////
-
-                // comparer les sieges rellement attribués dans les listes detaillées et le nombre se sieges theorique
-                /*foreach ($resultats as $resultat) {
-                    $nbCandidats = 0;
-                    $nbSiegeTh = 0;
-                    foreach ($resultatsDetails as $resultDetail) {
-                        if ($resultDetail->getOrganisation()->getId() == $resultat->getOrganisation()->getId()) {
-                            // le nombre de sieges reelement attribués à la liste
-                            $nbCandidats = $nbCandidats + $resultDetail->getNbCandidats();
-                            // le nombre de sieges theorique attribués à la liste
-                            $nbSiegeTh = $nbSiegeTh + $resultDetail->getNbSieges();
-                        }
-                    }
-                    if ($nbCandidats > 0 && $nbSiegeTh > 0) {
-                        // la somme des nombres de siege reelement attribués à la zone de recherche
-                        $nbSieges = $resultat->getNbSieges() - $nbSiegeTh + $nbCandidats;
-                        $resultat->setNbSieges($nbSieges);
-                    }
-                }*/
-                //Fin Anomalie 225211
             }
 
             $consolidation->setResultats($resultats);
@@ -436,7 +365,6 @@ class EleEtablissementRepository extends EntityRepository
 
 
     public function findParticipationByNiveauCampagne($campagneId, $campagnePrecId, $typeZone, $typeEtablissement = null, $perimetre = null, $user = null, $campagneAnneeDeb = null) {
-
         $id = 'refDept.numero as id';
         $libelle = 'refDept.libelle';
         if($typeZone == 'academie'){
@@ -444,24 +372,22 @@ class EleEtablissementRepository extends EntityRepository
             $libelle = 'refAca.libelle';
         }
 
-
         $stringQuery = '
         		SELECT '.$id.', '.$libelle.', eleCamp.id as idCampagne,
         		    sum(elePart.nbInscrits) as sumInscrits, sum(elePart.nbVotants) as sumVotants, sum(elePart.nbVotants - elePart.nbNulsBlancs) as sumExprimes, (sum(elePart.nbVotants)/sum(elePart.nbInscrits))*100 as p1,
         		    sum(elePart.nbSiegesPourvoir) as sumSiegesPourvoir, sum(elePart.nbSiegesPourvus)+ sum(COALESCE(elePart.nbSiegesSort,0)) as sumSiegesPourvus, ((sum(elePart.nbSiegesPourvus)+ sum(COALESCE(elePart.nbSiegesSort,0)))/sum(elePart.nbSiegesPourvoir))*100 as p2, 
         		    count(eleEtab.id) as sumEtabExprimes, count(eleEtab.id) as sumEtabTotal
-				FROM EleEtablissement eleEtab
-        		JOIN EleCampagne eleCamp WITH eleCamp.id = eleEtab.campagne
-        		JOIN EleParticipation elePart WITH elePart.id = eleEtab.participation
-        		JOIN RefEtablissement refEtab WITH refEtab.uai = eleEtab.etablissement 
-        		JOIN RefTypeEtablissement refTypeEtab WITH refTypeEtab.id = refEtab.typeEtablissement
-        		JOIN RefCommune refCommune WITH refEtab.commune = refCommune.id
-                JOIN RefDepartement refDept WITH refCommune.departement = refDept.numero
-        		JOIN RefAcademie refAca WITH refAca.code = refDept.academie ';
+				FROM  App\Entity\EleEtablissement eleEtab
+        		JOIN  App\Entity\EleCampagne eleCamp WITH eleCamp.id = eleEtab.campagne
+        		JOIN  App\Entity\EleParticipation elePart WITH elePart.id = eleEtab.participation
+        		JOIN  App\Entity\RefEtablissement refEtab WITH refEtab.uai = eleEtab.etablissement 
+        		JOIN  App\Entity\RefTypeEtablissement refTypeEtab WITH refTypeEtab.id = refEtab.typeEtablissement
+        		JOIN  App\Entity\RefCommune refCommune WITH refEtab.commune = refCommune.id
+                JOIN  App\Entity\RefDepartement refDept WITH refCommune.departement = refDept.numero
+        		JOIN  App\Entity\RefAcademie refAca WITH refAca.code = refDept.academie ';
         //ce teste est ajoute sur un profile RECT fusion acad
         switch ($user->getProfil()->getCode()){
             case  RefProfil::CODE_PROFIL_DGESCO:
-                //  $stringQuery .= ' JOIN RefAcademieFusion refAcafu WITH refAcafu.id = refAca.AcademieFusion ';
                 break;
             case  RefProfil::CODE_PROFIL_RECT:
                 $acadUser = $this->_em->getRepository(RefAcademie::class)->find($user->getIdZone());
@@ -469,11 +395,11 @@ class EleEtablissementRepository extends EntityRepository
                 $datelasteCampage = date($lasteCampage->getAnneeDebut().'-01-01');
 
                 $hasParent = $acadUser->getAcademieFusion();
-                $hasChild = $this->_em->getRepository(RefAcademie::class)->findAcademieFisuByParParent($acadUser->getCode());;
+                $hasChild = $this->_em->getRepository(RefAcademie::class)->findAcademieFisuByParParent($acadUser->getCode());
 
 
                 if($acadUser->getDateDesactivation() <= $datelasteCampage  && !is_null($hasParent) || !empty($hasChild)){
-                    $stringQuery .= ' JOIN RefAcademieFusion refAcafu WITH refAcafu.id = refAca.AcademieFusion ';
+                    $stringQuery .= ' JOIN  App\Entity\RefAcademieFusion refAcafu WITH refAcafu.id = refAca.AcademieFusion ';
                 }
                 break;
             case  RefProfil::CODE_PROFIL_IEN:
@@ -528,7 +454,7 @@ class EleEtablissementRepository extends EntityRepository
 
                 case RefProfil::CODE_PROFIL_DGESCO:
                     //Ne pas faire le where sur l'academie pour le DEGESCO (vision globale)
-                break;
+                    break;
 
                 default:
                     foreach ($perimetre->getAcademies() as $uneAca) {
@@ -560,8 +486,6 @@ class EleEtablissementRepository extends EntityRepository
         		ORDER BY '.$libelle.', eleCamp.id desc';
 
         $query = $this->_em->createQuery($stringQuery);
-        //echo $query->getSQL();die();
-
         return $query->getResult();
     }
 
@@ -633,17 +557,14 @@ class EleEtablissementRepository extends EntityRepository
 
     /**
      *
-     * @param : $campagne
-     *            : obligatoire : EleCampagne
-     * @param : $etablissement
-     *            : facultatif : RefEtablissement : nul par défaut
-     * @return ArrayCollection of EleEtablissement
+     * @param : $campagne : obligatoire : EleCampagne
+     * @param : $etablissement : facultatif : RefEtablissement : nul par défaut
+     * @return array of EleEtablissement
      *         "findByCampagneEtablissement" permet de récupérer les EleEtablissements avec participations
      *         pour une $campagne et un $etablissement donnés
      *
      */
-    public function findByCampagneEtablissement(EleCampagne $campagne, RefEtablissement $etablissement = null, RefSousTypeElection $sousTypeElection = null, $etatAvancement = null)
-    {
+    public function findByCampagneEtablissement(EleCampagne $campagne, RefEtablissement $etablissement = null, RefSousTypeElection $sousTypeElection = null, $etatAvancement = null) {
         return $this->queryBuilderFindByCampagneEtablissement($campagne, $etablissement, $sousTypeElection, $etatAvancement)
             ->getQuery()
             ->getResult();
@@ -652,34 +573,28 @@ class EleEtablissementRepository extends EntityRepository
     /**
      * Récupère les données de participation pour une campagne et un établissement donnés
      *
-     * @param : $campagne
-     *            : obligatoire : EleCampagne
-     * @param : $etablissement
-     *            : obligatoire : RefEtablissement : nul par défaut
-     * @param : $sousTypeElection
-     *            : obligatoire : RefSousTypeElection : nul par défaut
+     * @param : $campagne : obligatoire : EleCampagne
+     * @param : $etablissement : obligatoire : RefEtablissement : nul par défaut
+     * @param : $sousTypeElection  : obligatoire : RefSousTypeElection : nul par défaut
      * @return EleEtablissement or null
      *
      */
-    public function findOneByCampagneEtablissement(EleCampagne $campagne, RefEtablissement $etablissement = null, $sousTypeElection = null, $etatsAvancement = null, $indCarence = null, $indDeficit = null)
-    {
+    public function findOneByCampagneEtablissement(EleCampagne $campagne, RefEtablissement $etablissement = null, $sousTypeElection = null, $etatsAvancement = null, $indCarence = null, $indDeficit = null) {
         try {
             return $this->queryBuilderFindByCampagneEtablissement($campagne, $etablissement, $sousTypeElection, $etatsAvancement, $indCarence, $indDeficit)
                 ->getQuery()
                 ->getSingleResult();
-        } catch (\Doctrine\ORM\NoResultException $exception) {
+        } catch (NoResultException $exception) {
             return null;
         }
     }
 
     /**
      *
-     * @param : $campagne
-     *            : obligatoire : EleCampagne
-     *            Permet de purger les résultats des élections par établissement d'une campagne donnée
+     * @param : $campagne  : obligatoire : EleCampagne
+     *   Permet de purger les résultats des élections par établissement d'une campagne donnée
      */
-    public function purgeEleEtabsCampagne(EleCampagne $campagne)
-    {
+    public function purgeEleEtabsCampagne(EleCampagne $campagne) {
         $id_campagne = $campagne->getId();
         $qb = $this->createQueryBuilder('eleEtab');
         $qb->delete()
@@ -691,12 +606,10 @@ class EleEtablissementRepository extends EntityRepository
 
     /**
      *
-     * @param : $campagne
-     *            : obligatoire : EleCampagne
+     * @param : $campagne : obligatoire : EleCampagne
      *            Permet de valider les résultats des élections par établissement d'une campagne donnée
      */
-    public function valideEleEtabsCampagne(EleCampagne $campagne)
-    {
+    public function valideEleEtabsCampagne(EleCampagne $campagne) {
         $id_campagne = $campagne->getId();
         $qb = $this->createQueryBuilder('eleEtab');
         $qb->update()
@@ -712,7 +625,7 @@ class EleEtablissementRepository extends EntityRepository
      *
      * Mise à jour de l'indicateur de tirage au sort
      *
-     * @param unknown $indTirageSort
+     * @param $indTirageSort
      */
     public function updateIndTirageSort($idEleEtab, $indTirageSort){
         $qb = $this->createQueryBuilder('eleEtab');
@@ -729,10 +642,9 @@ class EleEtablissementRepository extends EntityRepository
      *
      * Validation en masse des EleEtablissements
      *
-     * @param unknown $listEleEtabIds
-     * 					: obligatoire : Liste des ids des EleEtabs à valider
+     * @param $listEleEtabIds : obligatoire : Liste des ids des EleEtabs à valider
      */
-    public function massValideEtabs($listEleEtabIds){
+    public function massValideEtabs($listEleEtabIds) {
         $qb = $this->createQueryBuilder('eleEtab');
         $qb->update()
             ->set('eleEtab.validation', '?1')
@@ -752,10 +664,8 @@ class EleEtablissementRepository extends EntityRepository
      *         pour une $campagne et une $etablissement donnés
      *         Les résultats associés à cet eleEtablissement seront triés par ordre croissant
      */
-    public function getEleEtablissementGlobale($campagne, $etablissement, $sousTypeElection = null, $etatAvancement = null)
-    {
+    public function getEleEtablissementGlobale($campagne, $etablissement, $sousTypeElection = null, $etatAvancement = null) {
         $eleEtablissement = new EleEtablissement();
-
         $eleEtablissementGlobaux = $this->findByCampagneEtablissement($campagne, $etablissement, $sousTypeElection, $etatAvancement);
 
         if (! empty($eleEtablissementGlobaux)) {
@@ -774,11 +684,10 @@ class EleEtablissementRepository extends EntityRepository
 
     /**
      * Permet de récupérer toutes les infos de l'EleEtablissement à partir de l'Id
-     * @param unknown $idEleEtab
-     * @return NULL|\App\Entity\EleEtablissement
+     * @param  $idEleEtab
+     * @return NULL| EleEtablissement
      */
     public function getEleEtablissementGlobaleById($idEleEtab){
-
         $qb = $this->createQueryBuilder('eleEtab');
         $qb->select('eleEtab')
             ->join('eleEtab.campagne', 'c')
@@ -791,28 +700,23 @@ class EleEtablissementRepository extends EntityRepository
 
         try{
             $eleEtab = $qb->getQuery()->getSingleResult();
-        } catch (\Doctrine\ORM\NoResultException $exception) {
+        } catch ( NoResultException $exception) {
             return null;
         }
 
         $eleEtab = $this->getEleEtablissementGlobale($eleEtab->getCampagne(), $eleEtab->getEtablissement(), $eleEtab->getSousTypeElection());
 
         return $eleEtab;
-
     }
 
     /**
      *
      * @param EleCampagne $campagne
-     * @param
-     *            RefAcademie ou RefDepartement $zone
-     * @param $validation :
-     *            état de la saisie
-     * @return count(EleEtablissement) "getNbEleEtabParCampagne" permet de compter le nombre de eleEtablissement
+     * @param $validation : état de la saisie
+     * @return int count(EleEtablissement) "getNbEleEtabParCampagne" permet de compter le nombre de eleEtablissement
      *         pour une $campagne et une $zone données
      */
-    public function getNbEleEtabParCampagne($campagne, $zone = null, $validation = 'S', $typeEtab = null, $user = null, $isEreaErpdExclus = false, $codeNatEtab = null, $idSousTypeElect = null, $indCarence = false, $indNvElection = false, $actif = false, $typeElection = null)
-    {
+    public function getNbEleEtabParCampagne($campagne, $zone = null, $validation = 'S', $typeEtab = null, $user = null, $isEreaErpdExclus = false, $codeNatEtab = null, $idSousTypeElect = null, $indCarence = false, $indNvElection = false, $actif = false, $typeElection = null) {
         $query = $this->createQueryBuilder('e')
             ->select('count(e.id)')
             ->join('e.etablissement', 'etab')
@@ -941,140 +845,13 @@ class EleEtablissementRepository extends EntityRepository
     /**
      *
      * @param EleCampagne $campagne
-     * @param
-     *            RefAcademie ou RefDepartement $niveau
-     * @param $typeEtablissement :
-     *            état de la saisie
-     * @return List<Departement ou Academie>
-     *         "findListEtablissementsByCampagneNiveau" permet de récuperer la liste des eleEtablissements
-     *         pour une $campagne, un $niveau et un $typeEtablissement donnés
-     */
-    public function findListEtablissementsByCampagneNiveau($campagne, $niveau, $typeEtablissement = null)
-    {
-        $qb = $this->createQueryBuilder('eleEtab');
-        $qb->join('eleEtab.campagne', 'eleCamp');
-        $qb->join('eleEtab.participation', 'elePart');
-        $qb->join('eleEtab.etablissement', 'etab');
-        $qb->join('etab.typeEtablissement', 'eleTypeEtab');
-
-        if ($niveau == 'departement') {
-            $qb->join('etab.commune', 'eleCom');
-            $qb->join('eleCom.departement', 'eleDepart');
-            $qb->select('eleDepart.numero as idZone, eleDepart.libelle as libelle, elePart.id as Id, sum(elePart.nbInscrits) as nbIns, sum(elePart.nbVotants) as nbVotants, sum(elePart.nbExprimes) as nbExpr,
-							   	sum(elePart.nbSiegesPourvoir) as nbSiegPourvoir, sum(elePart.nbSiegesPourvus) as nbSiegPourvus,
-							   	count(eleEtab.id) as nbEtabExpr');
-            $qb->where('eleEtab.campagne = :campagne');
-            $qb->setParameter('campagne', $campagne);
-            $qb->groupBy('eleDepart.numero');
-        }
-
-        if ($niveau == 'academie') {
-            $qb->join('etab.commune', 'eleCom');
-            $qb->join('eleCom.departement', 'eleDepart');
-            $qb->join('eleDepart.academie', 'eleAcad');
-            $qb->select('eleAcad.code as idZone, eleAcad.libelle as libelle,eleDepart.libelle as libelleDep, elePart.id as Id, sum(elePart.nbInscrits) as nbIns, sum(elePart.nbVotants) as nbVotants, sum(elePart.nbExprimes) as nbExpr,
-						   	sum(elePart.nbSiegesPourvoir) as nbSiegPourvoir, sum(elePart.nbSiegesPourvus) as nbSiegPourvus,
-						   	count(eleEtab.id) as nbEtabExpr');
-            $qb->where('eleEtab.campagne = :campagne');
-            $qb->setParameter('campagne', $campagne);
-            $qb->groupBy('eleAcad.code');
-        }
-
-        if ($typeEtablissement instanceof RefTypeEtablissement) {
-            $qb->Andwhere('etab.typeEtablissement = :type');
-            $qb->setParameter('type', $typeEtablissement);
-        }
-
-        return $qb->getQuery()->getResult();
-    }
-
-    /**
-     *
-     * @param EleCampagne $campagne
-     * @param EleCampagne $campagnePrec
-     * @param
-     *            RefAcademie ou RefDepartement $niveau
      * @param RefTypeEtablissement $typeEtablissement
-     * @return List<Departement ou Academie> consolidées
-     *         "findParticipationConsolidationByNiveauCampagne" permet de récuperer la liste des eleEtablissements et des consolidations
-     *         pour les campagnes $campagne et $campagnePrec en fonction d'un $niveau et d'un $typeEtablissement donnés
-     */
-    public function findParticipationConsolidationByNiveauCampagne($campagneId, $campagnePrecId, $typeZone, $typeEtablissement = null, $perimetre = null)
-    {
-        $id = 'refDept.numero as id';
-        $libelle = 'refDept.libelle';
-        if($typeZone == 'academie'){
-            $id = 'refAca.code as id';
-            $libelle = 'refAca.libelle';
-        }
-
-        $stringQuery = '
-        		SELECT '.$id.', '.$libelle.', eleCamp.id as idCampagne, 
-        		    sum(elePart.nbInscrits) as sumInscrits, sum(elePart.nbVotants) as sumVotants, sum(elePart.nbVotants - elePart.nbNulsBlancs) as sumExprimes, (sum(elePart.nbVotants)/sum(elePart.nbInscrits))*100 as p1,
-        		    sum(elePart.nbSiegesPourvoir) as sumSiegesPourvoir, sum(elePart.nbSiegesPourvus) as sumSiegesPourvus, (sum(elePart.nbSiegesPourvus)/sum(elePart.nbSiegesPourvoir))*100 as p2,
-        		    count(eleEtab.etablissement) as sumEtabExprimes
-				FROM EleEtablissement eleEtab
-                JOIN EleCampagne eleCamp WITH eleCamp.id = eleEtab.campagne
-                JOIN EleParticipation elePart WITH elePart.id = eleEtab.participation
-                JOIN RefEtablissement refEtab WITH refEtab.uai = eleEtab.etablissement
-                JOIN RefTypeEtablissement refTypeEtab WITH refTypeEtab.id = refEtab.typeEtablissement
-                JOIN RefCommune refComm WITH refComm.id = refEtab.commune
-                JOIN RefDepartement refDept WITH refDept.numero = refComm.departement
-                JOIN RefAcademie refAca WITH refAca.code = refDept.academie
-        		WHERE eleCamp.id IN ( '.$campagneId.', '.$campagnePrecId.')
-        		AND eleEtab.validation = \'V\' ';
-        if (null != $typeEtablissement){
-            $stringQuery .= '
-        		AND refTypeEtab.id = '.$typeEtablissement->getId();
-        } else {
-            if ($perimetre != null && $perimetre->getDegres() != null) {
-                $stringDegres = implode("','", $perimetre->getDegres());
-                $stringQuery .= ' AND refTypeEtab.degre in (\'' . $stringDegres . '\')';
-            }
-        }
-
-        // restriction par perimetre
-        if ($perimetre != null && $perimetre->getAcademies() != null) {
-            $stringAcademies = "";
-            foreach ($perimetre->getAcademies() as $uneAca) {
-                $stringAcademies .= "'" . $uneAca->getCode() . "',";
-            }
-            $stringAcademies = substr($stringAcademies, 0,  strlen($stringAcademies) - 1);
-            $stringQuery .= ' AND refAca.code in (' . $stringAcademies . ')';
-        }
-
-        if ($perimetre != null && $perimetre->getDepartements() != null) {
-            $stringDepartements = "";
-            foreach ($perimetre->getDepartements() as $unDept) {
-                $stringDepartements .= "'" . $unDept->getNumero() . "',";
-            }
-            $stringDepartements = substr($stringDepartements, 0,  strlen($stringDepartements) - 1);
-            $stringQuery .= ' AND refDept.numero in (' . $stringDepartements . ')';
-        }
-
-        $stringQuery .= '
-				GROUP BY '.$libelle.', eleCamp.id
-        		ORDER BY '.$libelle.', eleCamp.id desc';
-
-        $query = $this->_em->createQuery($stringQuery);
-
-        return $query->getResult();
-
-    }
-
-    /**
-     *
-     * @param EleCampagne $campagne
-     * @param
-     *            RefAcademie ou RefDepartement $niveau
-     * @param RefTypeEtablissement $typeEtablissement
-     * @return List<Departement ou Académie> avec les informations sur les participations
+     * @return array List<Departement ou Académie> avec les informations sur les participations
      *         "findParticipationDetailleeParTypeZoneEtTypePrioritaire" permet de récuperer la liste des départements ou des académies
      *         ainsi que les identifiants des participations
      *         pour une $campagne, un $niveau et un $typeEtablissement donnés
      */
-    public function findParticipationDetailleeParTypeZoneEtTypePrioritaire($campagneId, $campagnePrecId, $typeZone, $idTypeEtablissement = null, $perimetre = null, $user = null)
-    {
+    public function findParticipationDetailleeParTypeZoneEtTypePrioritaire($campagneId, $campagnePrecId, $typeZone, $idTypeEtablissement = null, $perimetre = null, $user = null) {
         $libelle = 'refDept.libelle';
         if($typeZone == 'academie'){
             $libelle = 'refAca.libelle';
@@ -1082,15 +859,15 @@ class EleEtablissementRepository extends EntityRepository
 
         $stringQuery = 'SELECT eleCamp.id as idCampagne, '.$libelle.', refTypePrio.code, sum(elePart.nbInscrits) as sumInscrits, sum(elePart.nbVotants) as sumVotants, 
         		sum(elePart.nbVotants - elePart.nbNulsBlancs) as sumExprimes, (sum(elePart.nbVotants)/sum(elePart.nbInscrits))*100 as p
-                FROM EleEtablissement eleEtab
-                JOIN EleCampagne eleCamp WITH eleCamp.id = eleEtab.campagne
-                JOIN EleParticipation elePart WITH elePart.id = eleEtab.participation
-                JOIN RefEtablissement refEtab WITH refEtab.uai = eleEtab.etablissement
-                JOIN RefTypePrioritaire refTypePrio WITH refTypePrio.id = refEtab.typePrioritaire
-                JOIN RefTypeEtablissement refTypeEtab WITH refTypeEtab.id = refEtab.typeEtablissement
-                JOIN RefCommune refComm WITH refComm.id = refEtab.commune
-                JOIN RefDepartement refDept WITH refDept.numero = refComm.departement
-                JOIN RefAcademie refAca WITH refAca.code = refDept.academie
+                FROM App\Entity\EleEtablissement eleEtab
+                JOIN App\Entity\EleCampagne eleCamp WITH eleCamp.id = eleEtab.campagne
+                JOIN App\Entity\EleParticipation elePart WITH elePart.id = eleEtab.participation
+                JOIN App\Entity\RefEtablissement refEtab WITH refEtab.uai = eleEtab.etablissement
+                JOIN App\Entity\RefTypePrioritaire refTypePrio WITH refTypePrio.id = refEtab.typePrioritaire
+                JOIN App\Entity\RefTypeEtablissement refTypeEtab WITH refTypeEtab.id = refEtab.typeEtablissement
+                JOIN App\Entity\RefCommune refComm WITH refComm.id = refEtab.commune
+                JOIN App\Entity\RefDepartement refDept WITH refDept.numero = refComm.departement
+                JOIN App\Entity\RefAcademie refAca WITH refAca.code = refDept.academie
                 WHERE eleCamp.id IN ( '.$campagneId.', '.$campagnePrecId.')
         		AND eleEtab.validation = \'V\' ';
         if (null != $idTypeEtablissement){
@@ -1151,131 +928,16 @@ class EleEtablissementRepository extends EntityRepository
         return $query->getResult();
     }
 
-    /**
-     *
-     * @param EleCampagne $campagne
-     * @param
-     *            RefAcademie ou RefDepartement $niveau
-     * @param RefTypeEtablissement $typeEtablissement
-     * @return List<Departement ou Académie> avec les informations concernants les priorités
-     *         "findListParticipationsByDepartementAcademy" permet de récuperer la liste des participations
-     *         par académie ou département
-     *
-     */
-    public function findListParticipationsByDepartementAcademy($campagne, $niveau, $typeEtablissement)
-    {
-
-
-        $listParticipations = array();
-
-        if ($niveau == 'departement') {
-            $listDept = $this->_em->getRepository(RefDepartement::class)->findListDepartements();
-
-            $i = 0;
-
-            foreach ($listDept as $eleDept) {
-
-                $listPart = $this->findListParticipationDepartementsAcademiesByCampagneNiveau($campagne, $niveau, $eleDept->getNumero(), $typeEtablissement);
-
-                if ($listPart != null) {
-                    $listParticipations[$i]['libelle'] = $eleDept->getLibelle();
-                    $listParticipations[$i]['list'] = $listPart;
-                } else {
-                    $listParticipations[$i] = null;
-                }
-                $i ++;
-            }
-        } else {
-            $listAcad = $this->_em->getRepository(RefAcademie::class)->findListAcademies();
-
-            $i = 0;
-
-            foreach ($listAcad as $eleAcad) {
-
-                $listPart = $this->findListParticipationDepartementsAcademiesByCampagneNiveau($campagne, $niveau, $eleAcad->getCode(), $typeEtablissement);
-
-                if ($listPart != null) {
-                    $listParticipations[$i]['libelle'] = $eleAcad->getLibelle();
-                    $listParticipations[$i]['list'] = $listPart;
-                } else {
-                    $listParticipations[$i] = null;
-                }
-
-                $i ++;
-            }
-        }
-
-        return $listParticipations;
-    }
 
     /**
      *
-     * @param
-     *            List<EleParticipation> liste des participations par Académie ou Département
-     * @return La liste des sommes par priorité, pour chaque Académie ou Départment à partir de la liste des participations
-     *         "findSumElePrioritaireByDepartementAcademy" permet de récuperer la liste des sommes par priorité, par académie ou département
-     *         à partir de la liste des participations
-     */
-    public function findSumElePrioritaireByDepartementAcademy($listParticipations)
-    {
-        $somme = array();
-
-        $i = 0;
-
-        if ($listParticipations != null) {
-            foreach ($listParticipations as $partcipation) {
-                // echo "**".$partcipation['Id'];
-                $listElePrio = $this->_em->getRepository(ElePrioritaire::class)->findListElePrioritaireParParticipation($partcipation['Id']);
-
-                if ($listElePrio != null) {
-                    $i ++;
-                    $compteur = 0;
-
-                    foreach ($listElePrio as $elePrio) {
-
-                        if ($i == 1) {
-                            $somme[$compteur]['categorie'] = $elePrio['categorie'];
-                            $somme[$compteur]['nbIns'] = $elePrio['nbIns'];
-                            $somme[$compteur]['nbVotants'] = $elePrio['nbVotants'];
-                            $somme[$compteur]['nbExpr'] = $elePrio['nbExpr'];
-                            $somme[$compteur]['nbIns'] = $elePrio['nbIns'];
-
-                            if ($elePrio['nbIns'] != 0) {
-                                $somme[$compteur]['pourcent'] = $elePrio['nbVotants'] / $elePrio['nbIns'];
-                            } else {
-                                $somme[$compteur]['pourcent'] = 0;
-                            }
-                        } elseif ($i > 1) {
-                            $somme[$compteur]['categorie'] = $elePrio['categorie'];
-                            $somme[$compteur]['nbIns'] += $elePrio['nbIns'];
-                            $somme[$compteur]['nbVotants'] += $elePrio['nbVotants'];
-                            $somme[$compteur]['nbExpr'] += $elePrio['nbExpr'];
-                            $somme[$compteur]['nbIns'] += $elePrio['nbIns'];
-
-                            if ($elePrio['nbIns'] != 0) {
-                                $somme[$compteur]['pourcent'] += $elePrio['nbVotants'] / $elePrio['nbIns'];
-                            }
-                        }
-
-                        $compteur ++;
-                    }
-                }
-            }
-        }
-
-        return $somme;
-    }
-
-    /**
-     *
-     * @param unknown $yearOld
+     * @param $yearOld
      */
     public function findObsoletePVs($yearOld){
-
         $qb = $this->createQueryBuilder('eleEtab');
         $qb->join('eleEtab.fichier', 'eleFichier');
         $qb->where('eleFichier.date < :date');
-        $qb->setParameter('date', new \DateTime('-'.$yearOld.' year'));
+        $qb->setParameter('date', new DateTime('-'.$yearOld.' year'));
         return $qb->getQuery()->getResult();
 
     }
@@ -1287,301 +949,13 @@ class EleEtablissementRepository extends EntityRepository
     public function getArrayEleEtablissementUai() {
         $sql = "SELECT distinct(ele_etablissement.uai) as d_uai FROM ele_etablissement";
         $stmt = $this->getEntityManager()->getConnection()->prepare($sql);
-        $stmt->execute();
+        $stmt->executeQuery();
         $array = array();
-        while ($row = $stmt->fetch()) {
+        while ($row = $stmt->fetchAssociative()) {
             $array[$row['d_uai']] = $row['d_uai'];
         }
 
         return $array;
-    }
-
-    public function findEtbsByCampagneZone($campagneIds, $departement_numero, $uais, $idTypeEtab, $natEtab, $idTypesElect, $idSousTypeElect,  $etatsAvancement, $ind_carence, $ind_deficit){
-
-        $i = 0;
-        $sql = '';
-        foreach ($campagneIds as $campagneId){
-            $sql .= '
-				SELECT
-				etab.uai,
-				etab.libelle,
-				etab.actif,
-				rteb.degre,
-				campagne.id as id_campagne,
-				campagne.annee_debut,
-				campagne.annee_fin,
-				campagne.id_type_election,
-				campagne.date_debut_saisie,
-				campagne.date_fin_saisie,
-				campagne.date_debut_validation,
-				campagne.date_fin_validation,
-				campagne.archivee,
-				campagne.post_editable,
-				eleEtab.id,
-				eleEtab.validation,
-				eleEtab.id_sous_type_election,
-				eleEtab.ind_tirage_sort,
-				eleEtab.ind_carence,
-				eleEtab.ind_deficit,
-				rte.code as code_type_election,
-				rste.code as code_sous_type_election,
-				alerte.code_type_alerte,
-				etab.id_type_etablissement
-				FROM ele_campagne campagne,
-					ref_type_etablissement rteb,
-					ref_type_election rte,
-					ref_zone_nature rzn,
-					ref_etablissement etab
-				LEFT OUTER JOIN ele_etablissement eleEtab ON (etab.uai = eleEtab.uai) AND eleEtab.id_campagne = '.$campagneId.'
-				LEFT OUTER JOIN ele_alerte alerte ON (eleEtab.id = alerte.id_ele_etablissement)
-				LEFT OUTER JOIN ref_sous_type_election rste ON (rste.id = eleEtab.id_sous_type_election)
-				WHERE campagne.id = '.$campagneId.'
-				AND etab.actif = 1
-				AND etab.id_commune IN (select id FROM ref_commune where departement = '.$departement_numero.')
-				AND campagne.id_type_election = rte.id
-				AND rteb.id = etab.id_type_etablissement
-				AND rzn.uai_nature = etab.uai_nature';
-
-            // Critère de sélection type établissement
-            if(null != $idTypeEtab){
-                if($idTypeEtab == RefTypeEtablissement::ID_TYP_2ND_DEGRE){
-                    $sql .= '
-				AND rteb.degre = 2';
-                }else{
-                    $sql .= '
-				AND etab.id_type_etablissement = '.$idTypeEtab;
-                }
-            }
-
-            // Critère de sélection zone nature
-            if(null != $natEtab){
-                $sql .= '
-    			AND rzn.type_nature = "'.$natEtab.'"
-    			';
-            }
-
-            // Crtitère de sélection type d'élection
-            if(!empty($idTypesElect)){
-
-                // Critère de sélection sous-type d'élection
-                if(null != $idSousTypeElect){
-                    $sql .= '
-	    			AND rte.id = '.$idSousTypeElect;
-                } else {
-
-
-                    $j = 0;
-                    $sql .= '
-    				AND rte.id IN (';
-                    foreach ($idTypesElect as $idTypeElect){
-                        $sql .= $idTypeElect;
-                        if($j < sizeof($idTypesElect) -1 ){
-                            $sql .= ', ';
-                        }
-                        $j++;
-                    }
-                    $sql .= ') 
-    					';
-
-                }
-            }
-
-            // Critère de sélection d'avancement des saisies et statut des PVs
-            if(!empty ($etatsAvancement)){
-                $j = 0;
-                $sql .= '
-    					AND (';
-                foreach($etatsAvancement as $etatAvancement){
-                    if('X' == $etatAvancement){
-                        $sql .= ' eleEtab.id IS NULL';
-                    }else{
-                        $sql .= ' eleEtab.validation = "'.$etatAvancement.'"';
-                    }
-
-                    if($j < sizeof($etatsAvancement) -1 ){
-                        $sql .= ' OR ';
-                    }
-                    $j++;
-                }
-                $sql .= ')
-    					';
-            }
-
-            // Critère de sélection sur le PV de carence
-            if(null != $ind_carence){
-                $sql .= '
-    					AND eleEtab.ind_carence = 1';
-            }
-
-            // Critère de sélection sur des nouvelles élections à organiser
-            if(null != $ind_deficit){
-                $sql .= '
-    					AND eleEtab.ind_deficit = 1';
-            }
-
-            if($i < sizeof($campagneIds) -1 ){
-                $sql .= '
-    					
-				UNION';
-            }
-            $i++;
-
-        }
-
-        $sql .= '
-    			
-				ORDER BY uai, libelle, FIELD(id_type_election, 3, 1, 2), FIELD(id_sous_type_election, 10, 11)
-    			';
-
-        /*
-        echo '<pre>';
-        var_dump($sql);
-        die();
-        */
-
-        $stmt = $this->getEntityManager()->getConnection()->prepare($sql);
-        $stmt->execute();
-        $result = array();
-        while ($row = $stmt->fetch()) {
-            $result[] = $row;
-        }
-
-        return $result;
-
-    }
-
-
-
-
-    public function findParticipationByNiveauCampagneANew($campagneId, $campagnePrecId, $typeZone, $typeEtablissement = null, $perimetre = null, $user = null, $campagneAnneeDeb = null) {
-
-        $id = 'refDept.numero as id';
-        $libelle = 'refDept.libelle';
-        if($typeZone == 'academie'){
-            $id = 'refAca.code as id';
-            $libelle = 'refAca.libelle';
-        }
-
-
-        $stringQuery = '
-        		SELECT '.$id.', '.$libelle.', eleCamp.id as idCampagne, 
-        		    sum(elePart.nbInscrits) as sumInscrits, sum(elePart.nbVotants) as sumVotants, sum(elePart.nbVotants - elePart.nbNulsBlancs) as sumExprimes, (sum(elePart.nbVotants)/sum(elePart.nbInscrits))*100 as p1,
-        		    sum(elePart.nbSiegesPourvoir) as sumSiegesPourvoir, sum(elePart.nbSiegesPourvus)+ sum(COALESCE(elePart.nbSiegesSort,0)) as sumSiegesPourvus, ((sum(elePart.nbSiegesPourvus)+ sum(COALESCE(elePart.nbSiegesSort,0)))/sum(elePart.nbSiegesPourvoir))*100 as p2, 
-        		    count(eleEtab.id) as sumEtabExprimes, count(eleEtab.id) as sumEtabTotal, refAcafu.code as parentID, refAcafu.libelle parentLibelle
-				FROM EleEtablissement eleEtab
-        		JOIN EleCampagne eleCamp WITH eleCamp.id = eleEtab.campagne
-        		JOIN EleParticipation elePart WITH elePart.id = eleEtab.participation
-        		JOIN RefEtablissement refEtab WITH refEtab.uai = eleEtab.etablissement 
-        		JOIN RefTypeEtablissement refTypeEtab WITH refTypeEtab.id = refEtab.typeEtablissement
-        		JOIN RefCommune refCommune WITH refEtab.commune = refCommune.id
-                JOIN RefDepartement refDept WITH refCommune.departement = refDept.numero
-        		JOIN RefAcademie refAca WITH refAca.code = refDept.academie ';
-        //ce teste est ajoute sur un profile RECT fusion acad
-        switch ($user->getProfil()->getCode()){
-            case  RefProfil::CODE_PROFIL_DGESCO:
-                $stringQuery .= ' JOIN RefAcademieFusion refAcafu WITH refAcafu.id = refAca.AcademieFusion ';
-                break;
-            case  RefProfil::CODE_PROFIL_RECT:
-                $acadUser = $this->_em->getRepository(RefAcademie::class)->find($user->getLogin());
-                $lasteCampage = $this->_em->getRepository(EleCampagne::class)->find($campagneId);
-                $datelasteCampage = date($lasteCampage->getAnneeDebut().'-01-01');
-
-                $hasParent = $acadUser->getAcademieFusion();
-                $hasChild = $this->_em->getRepository(RefAcademie::class)->findAcademieFisuByParParent($acadUser->getCode());;
-
-
-                if($acadUser->getDateDesactivation() <= $datelasteCampage  && !is_null($hasParent) || !empty($hasChild)){
-                    $stringQuery .= ' JOIN RefAcademieFusion refAcafu WITH refAcafu.id = refAca.AcademieFusion ';
-                }
-                break;
-            default:
-                break;
-        }
-        $stringQuery .= 'WHERE eleCamp.id IN ( '.$campagneId.', '.$campagnePrecId. ')' . ' AND refEtab.actif = 1 AND eleEtab.validation = \'V\' ';
-
-        if ($typeEtablissement != null) {
-            if ($typeEtablissement->getId() == RefTypeEtablissement::ID_TYP_2ND_DEGRE) {
-                $stringQuery .= ' AND refTypeEtab.id in ('.RefTypeEtablissement::ID_TYP_COLLEGE.', '.RefTypeEtablissement::ID_TYP_LYCEE.', '.RefTypeEtablissement::ID_TYP_LYC_PRO.')';
-            } else {
-                $stringQuery .= ' AND refTypeEtab.id = '.$typeEtablissement->getId();
-            }
-        } else {
-            if ($perimetre != null && $perimetre->getDegres() != null) {
-                $stringDegres = implode("','", $perimetre->getDegres());
-                $stringQuery .= ' AND refTypeEtab.degre in (\'' . $stringDegres . '\')';
-            }
-        }
-
-        // restriction par perimetre
-
-        if ($perimetre != null && $perimetre->getAcademies() != null) {
-            $stringAcademies = "";
-            switch ($user->getProfil()->getCode()){
-                case RefProfil::CODE_PROFIL_RECT:
-                    foreach ($perimetre->getAcademies() as $uneAca) {
-                        $stringAcademies .= "'" . $uneAca->getCode() . "',";
-                    }
-                    $stringAcademies = substr($stringAcademies, 0,  strlen($stringAcademies) - 1);
-                    // Ce test été ajoute sur un profile RECT fusion acad
-                    if($acadUser->getDateDesactivation() <= $lasteCampage  && !is_null($hasParent )) {
-                        $stringQuery .= ' AND refAcafu.code in (' . $stringAcademies . ')';
-                    }else{
-                        $stringQuery .= ' AND refAca.code in (' . $stringAcademies . ')';
-                    }
-                    break;
-
-                case RefProfil::CODE_PROFIL_DGESCO:
-                    if(!is_null($campagneAnneeDeb)){
-                        $datelasteCampage = date($campagneAnneeDeb .'-01-01');
-                        $activeAcad =  $this->_em->getRepository(RefAcademie::class)->listeActiveAcademiesByDateCampagne($datelasteCampage);
-                        //get the active academies by Year
-                        foreach ($activeAcad as $uneAca) {
-                            $stringAcademies .= "'" . $uneAca->getCode() . "',";
-                        }
-                    }else{
-                        foreach ($perimetre->getAcademies() as $uneAca) {
-                            $stringAcademies .= "'" . $uneAca->getCode() . "',";
-                        }
-                    }
-
-                    $stringAcademies = substr($stringAcademies, 0,  strlen($stringAcademies) - 1);
-                    $stringQuery .= ' AND refAcafu.code in (' . $stringAcademies . ')';
-                    break;
-
-                default:
-                    foreach ($perimetre->getAcademies() as $uneAca) {
-                        $stringAcademies .= "'" . $uneAca->getCode() . "',";
-                    }
-                    $stringAcademies = substr($stringAcademies, 0,  strlen($stringAcademies) - 1);
-                    $stringQuery .= ' AND refAca.code in (' . $stringAcademies . ')';
-                    break;
-            }
-        }
-
-        if ($perimetre != null && $perimetre->getDepartements() != null) {
-            $stringDepartements = "";
-            foreach ($perimetre->getDepartements() as $unDept) {
-                $stringDepartements .= "'" . $unDept->getNumero() . "',";
-            }
-            $taca = $perimetre->getDepartements();
-            $stringDepartements = substr($stringDepartements, 0,  strlen($stringDepartements) - 1);
-            $stringQuery .= ' AND refDept.numero in (' . $stringDepartements . ')';
-        }
-
-        // pour l IEN
-        if ($perimetre != null && $perimetre->getEtablissements() != null) {
-            $stringQuery .= ' AND refEtab.uai in ('.EpleUtils::getUais($perimetre->getEtablissements()).')';
-        }
-
-        $stringQuery .= '
-				GROUP BY '.$libelle.', eleCamp.id
-        		ORDER BY '.$libelle.', eleCamp.id desc';
-
-        $query = $this->_em->createQuery($stringQuery);
-        // echo $query->getSQL();die();
-        // echo  $waww =   $query->getSQL(); die();
-
-        return $query->getResult();
     }
 
     /**
@@ -1589,7 +963,7 @@ class EleEtablissementRepository extends EntityRepository
      * @param EleCampagne $campagne
      * @param RefTypeEtablissement $typeEtab
      * @param string $zone
-     * @param unknown $etatSaisie
+     * @param $etatSaisie
      */
     public function queryBuilderModaliteVote(EleCampagne $campagne, RefTypeEtablissement $typeEtab = null, $zone = null, $etatSaisie, RefUser $refUser = null, $isEreaErpdExclus = false, $idSousTypeElection = null)
     {

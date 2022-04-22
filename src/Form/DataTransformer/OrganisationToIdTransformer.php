@@ -24,40 +24,40 @@ class OrganisationToIdTransformer implements DataTransformerInterface
     /**
      * Transforms an object (issue) to a string (number).
      *
-     * @param  Issue|null $issue
+     * @param  Issue|null $value
      * @return string
      */
-    public function transform($org)
+    public function transform($value)
     {
-        if (null === $org) {
+        if (null === $value) {
             return "";
         }
 
-        return $org->getId();
+        return $value->getId();
     }
 
     /**
      * Transforms a string (number) to an object (issue).
      *
-     * @param  string $number
+     * @param  string $value
      *
      * @return Issue|null
      *
      * @throws TransformationFailedException if object (issue) is not found.
      */
-    public function reverseTransform($id)
+    public function reverseTransform($value)
     {
-        if (!$id) {
+        if (!$value) {
             return null;
         }
 
-        $org = $this->om->getRepository(RefOrganisation::class)->findOneBy(array('id' => $id))
+        $org = $this->om->getRepository(RefOrganisation::class)->findOneBy(array('id' => $value))
         ;
 
         if (null === $org) {
             throw new TransformationFailedException(sprintf(
                 'L\organisation "%s" n\'existe pas !',
-                $id
+                $value
             ));
         }
 

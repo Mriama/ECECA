@@ -1,5 +1,5 @@
 <h3>Résultats de <span>l'établissement {{ electEtablissement.etablissement.libelle }} ({{ electEtablissement.etablissement.uai }})</span>
-{%  if  electEtablissement.etablissement.actif == null %} (fermé) {% endif %}</h3>
+	{%  if  electEtablissement.etablissement.actif == null %} (fermé) {% endif %}</h3>
 <h4>Rappel</h4>
 <table>
 	<tr>
@@ -17,10 +17,10 @@
 </table>
 
 {% if electEtablissement.participation is not empty %}
-	{% include 'resultat/consultationResultats.html.twig' with { 
-					'campagne' : electEtablissement.campagne,
-					'electEtablissement' : electEtablissement,
-					'participation' : electEtablissement.participation, 
-					'resultats' : electEtablissement.resultats,
-					'resultatsDetailles' : electEtablissement.resultatsDetailles} %}
+	{% include 'resultat/consultationResultats.html.twig' with {
+		'campagne' : electEtablissement.campagne,
+		'electEtablissement' : electEtablissement,
+		'participation' : electEtablissement.participation,
+		'resultats' : electEtablissement.resultats,
+		'resultatsDetailles' : electEtablissement.resultatsDetailles} %}
 {% endif %}

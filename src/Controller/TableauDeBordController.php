@@ -1,44 +1,40 @@
 <?php
 namespace App\Controller;
 
-use App\Entity\RefRole;
 use App\Entity\RefUser;
 use App\Utils\EpleUtils;
 use App\Entity\EleAlerte;
 use App\Entity\RefProfil;
 use App\Form\TdbEtabType;
-use App\Entity\App\Entity;
 use App\Entity\EleCampagne;
 use App\Entity\RefAcademie;
+use Doctrine\Persistence\ManagerRegistry;
 use Psr\Log\LoggerInterface;
 use App\Entity\RefTypeAlerte;
 use App\Entity\RefZoneNature;
 use App\Form\TdbZoneEtabType;
 use App\Entity\RefDepartement;
 use App\Entity\RefTypeElection;
-use App\Utils\RefUserPerimetre;
 use App\Entity\EleEtablissement;
 use App\Entity\RefEtablissement;
 use App\Entity\RefSousTypeElection;
 use App\Entity\RefTypeEtablissement;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Security\Core\Security;
-use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Validator\Constraints\Length;
-use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\Security\Core\Exception\AccessDeniedException;
-use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
-use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
-use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
+use Symfony\Component\Routing\Annotation\Route;
 
 
-class TableauDeBordController extends AbstractController
-{
+class TableauDeBordController extends AbstractController {
 
-	public function __construct(ParameterBagInterface $parameters) {
-		$this->parameters = $parameters;
-	}
+    private $request;
+    private $doctrine;
+    private $logger;
+
+    public function __construct(RequestStack $request, LoggerInterface $connexionLogger, ManagerRegistry $doctrine) {
+        $this->request = $request->getCurrentRequest();
+        $this->doctrine = $doctrine;
+        $this->logger = $connexionLogger;
+    }
 
     /**
      * Fonction permettant de récuperer l'ensemble des établissements affecté à l'utilisateur connecté
@@ -47,39 +43,30 @@ class TableauDeBordController extends AbstractController
      * L'ensemble des données à afficher sont calculées puis affichées par l'index de tableau de bord
      * @author Atos - ALZ
      */
-    public function indexAction(ParameterBagInterface $parameters,Request $request, LoggerInterface $logger,Security $security, RefUserPerimetre $refUserPerimetre)
+    public function indexAction()
     {
-       // $logger->info('TableauDeBordController - indexAction - DEBUT');
+        $this->logger->info('TableauDeBordController - indexAction - DEBUT');
+        $em = $this->doctrine->getManager();
 
-        $em = $this->getDoctrine()->getManager();
         // reset session pour les users ETAB venant de la recherche
-        $request->getSession()->remove('select_aca');
-        $request->getSession()->remove('select_dept');
-        $request->getSession()->remove('select_typeEtablissement');
-        $request->getSession()->remove('select_natureEtablissement');
-        $request->getSession()->remove('select_typeElection');
-        $request->getSession()->remove('select_sousTypeElection');
+        $this->request->getSession()->remove('select_aca');
+        $this->request->getSession()->remove('select_dept');
+        $this->request->getSession()->remove('select_typeEtablissement');
+        $this->request->getSession()->remove('select_natureEtablissement');
+        $this->request->getSession()->remove('select_typeElection');
+        $this->request->getSession()->remove('select_sousTypeElection');
 
         $tabBordZone = array();
-        //TODO : changer authentification
-        $user = $em->getRepository(RefUser::class)->find(133);
-        $perimetre = $refUserPerimetre->setPerimetreForUser($user);
-        $user->setPerimetre($perimetre);
-        $token = new UsernamePasswordToken($user, null, 'main', $user->getRoles());
-        $this->get('security.token_storage')->setToken($token);
-        $this->get('session')->set('_security_main', serialize($token));
-        /************ */
-        //exit;
-        //dd($this->get('security.token_storage')->getToken());
-        $listeTypeElection = $refUserPerimetre->getTypeElections();
-        //$listeTypeElection = $user->getPerimetre()->getTypeElections();
+        $user = $this->getUser();
+        $listeTypeElection = $user->getPerimetre()->getTypeElections();
+
         $joursCalendaires = $this->getParameter('jours_calendaires');
 
         $params = array();
 
-        if ($user != null && $refUserPerimetre->getIsPerimetreVide()){
-            $params["perimetre_vide_message"] = $parameters->get("perimetre_vide_message");
-            $params["perimetre_vide_lien_site"] = $parameters->get("perimetre_vide_lien_site");
+        if ($user != null && $user->getPerimetre()->getIsPerimetreVide()){
+            $params["perimetre_vide_message"] = $this->getParameter("perimetre_vide_message");
+            $params["perimetre_vide_lien_site"] = $this->getParameter("perimetre_vide_lien_site");
             return $this->render('tableauDeBord/perimetre_vide.html.twig', $params);
         }
         $zoneUser = ($user->getIdZone() != null) ? EpleUtils::getZone($em, $user->getIdZone()) : null;
@@ -97,7 +84,7 @@ class TableauDeBordController extends AbstractController
         $params['profil'] = $user->getProfil()->getCode();
         $params['zoneUser'] = $zoneUser;
         $listeZone = null;
-        $params = $this->getParametersRecherche($request, $user);
+        $params = $this->getParametersRecherche($user);
         $params["datesElections"] = array();
         $academies_decalage = array (
             RefAcademie::CODE_ACA_MAYOTTE,
@@ -147,7 +134,7 @@ class TableauDeBordController extends AbstractController
                 }
 
                 $params['tabBordEtab'] = $tabBordEtab;
-                $params['erreurs'] = $parameters->get('erreurs');
+                $params['erreurs'] = $this->getParameter('erreurs');
                 return $this->render('tableauDeBord/etabs.html.twig', $params);
                 break;
 
@@ -159,8 +146,8 @@ class TableauDeBordController extends AbstractController
                     $tabBordEtab[$key]['EleEtab'] = $this->getEleInfosForEtab($etab, $user, $joursCalendaires);
                 }
                 $params['tabBordEtab'] = $tabBordEtab;
-                $params['erreurs'] = $parameters->get('erreurs');
-                $params['warning'] = $parameters->get('warning');
+                $params['erreurs'] = $this->getParameter('erreurs');
+                $params['warning'] = $this->getParameter('warning');
                 $params['campagne'] = $campagne;
                 return $this->render('tableauDeBord/etabs_par_election.html.twig', $params);
                 break;
@@ -179,7 +166,7 @@ class TableauDeBordController extends AbstractController
                 $params['zone'] = 'Départements';
                 $params['zoneUser'] = $zoneUser;
                 foreach ($tabBordGeneral as $tabBord) {
-                    $request->getSession()->set('nbEtabArelancer'.$tabBord['typeElection']->getId(), $tabBord['nbEtabARelancer']);
+                    $this->request->getSession()->set('nbEtabArelancer'.$tabBord['typeElection']->getId(), $tabBord['nbEtabARelancer']);
                 }
                 break;
 
@@ -199,7 +186,7 @@ class TableauDeBordController extends AbstractController
                 $params['zone'] = 'Académie';
                 $params['zoneUser'] = $zoneUser;
                 foreach ($tabBordGeneral as $tabBord) {
-                    $request->getSession()->set('nbEtabArelancer'.$tabBord['typeElection']->getId(), $tabBord['nbEtabARelancer']);
+                    $this->request->getSession()->set('nbEtabArelancer'.$tabBord['typeElection']->getId(), $tabBord['nbEtabARelancer']);
                 }
 
                 break;
@@ -212,7 +199,7 @@ class TableauDeBordController extends AbstractController
                 $params['zone'] = 'Nationale';
                 $params['zoneUser'] = $zoneUser;
                 foreach ($tabBordGeneral as $tabBord) {
-                    $request->getSession()->set('nbEtabArelancer'.$tabBord['typeElection']->getId(), $tabBord['nbEtabARelancer']);
+                    $this->request->getSession()->set('nbEtabArelancer'.$tabBord['typeElection']->getId(), $tabBord['nbEtabARelancer']);
                 }
                 break;
 
@@ -228,9 +215,9 @@ class TableauDeBordController extends AbstractController
             foreach ($tabBordZone as $tabZone) {
                 foreach ($tabZone['resultats'] as $zoneRes) {
                     if ($user->getProfil()->getCode() == RefProfil::CODE_PROFIL_RECT || $user->getProfil()->getCode() == RefProfil::CODE_PROFIL_DSDEN) {
-                        $request->getSession()->set('nbEtabArelancer'.$zoneRes['typeElection']->getId().$tabZone['zone']->getNumero(), $zoneRes['nbEtabARelancer']);
+                        $this->request->getSession()->set('nbEtabArelancer'.$zoneRes['typeElection']->getId().$tabZone['zone']->getNumero(), $zoneRes['nbEtabARelancer']);
                     } elseif ($user->getProfil()->getCode() == RefProfil::CODE_PROFIL_DGESCO) {
-                        $request->getSession()->set('nbEtabArelancer'.$zoneRes['typeElection']->getId().$tabZone['zone']->getCode(), $zoneRes['nbEtabARelancer']);
+                        $this->request->getSession()->set('nbEtabArelancer'.$zoneRes['typeElection']->getId().$tabZone['zone']->getCode(), $zoneRes['nbEtabARelancer']);
                     }
                 }
             }
@@ -241,16 +228,16 @@ class TableauDeBordController extends AbstractController
         usort($tabBordZone, function ($a, $b) {
             return ($a["zone"]->getLibelle() < $b["zone"]->getLibelle()) ? -1 : 1;
         });
-        $params['dept_num'] = $request->getSession()->get('dept_num');
-        $params['tdbDeplieRetour'] = $request->getSession()->get('tdbDeplieRetour');
-        $request->getSession()->remove('dept_num');
-        $request->getSession()->remove('tdbDeplieRetour');
-        $request->getSession()->set('tdbRetour', true);
+        $params['dept_num'] = $this->request->getSession()->get('dept_num');
+        $params['tdbDeplieRetour'] = $this->request->getSession()->get('tdbDeplieRetour');
+        $this->request->getSession()->remove('dept_num');
+        $this->request->getSession()->remove('tdbDeplieRetour');
+        $this->request->getSession()->set('tdbRetour', true);
 
         $params['tabBordGeneral'] = $tabBordGeneral;
         $params['tabBordZone'] = $tabBordZone;
-        $params['erreurs'] = $parameters->get('erreurs');
-        $params['info'] = $parameters->get('info');
+        $params['erreurs'] = $this->getParameter('erreurs');
+        $params['info'] = $this->getParameter('info');
 
         return $this->render('tableauDeBord/index.html.twig', $params);
     }
@@ -263,14 +250,13 @@ class TableauDeBordController extends AbstractController
      * @author Atos - BBL 013E
      */
     public function rechercheAction(){
-        $em = $this->getDoctrine()->getManager();
-        $request = $this->get('request');
-        $user = $this->get('security.context')->getToken()->getUser();
+        $em = $this->doctrine->getManager();
+        $user = $this->getUser();
 
-        $joursCalendaires = $parameters->get('jours_calendaires');
+        $joursCalendaires = $this->getParameter('jours_calendaires');
         $listeZone = null;
         $zoneUser = ($user->getIdZone() != null) ? EpleUtils::getZone($em, $user->getIdZone()) : null;
-        $params = $this->getParametersRecherche($request, $user);
+        $params = $this->getParametersRecherche($user);
 
         $academies_decalage = array (
             RefAcademie::CODE_ACA_MAYOTTE,
@@ -322,7 +308,7 @@ class TableauDeBordController extends AbstractController
                 }
 
                 $params['tabBordEtab'] = $tabBordEtab;
-                $params['erreurs'] = $parameters->get('erreurs');
+                $params['erreurs'] = $this->getParameter('erreurs');
                 return $this->render('tableauDeBord/etabs.html.twig', $params);
                 break;
             case RefProfil::CODE_PROFIL_IEN:
@@ -339,9 +325,9 @@ class TableauDeBordController extends AbstractController
 
                 $params['tabBordEtab'] = $tabBordEtab;
                 $params['campagne'] = $campagne;
-                $params['erreurs'] = $parameters->get('erreurs');
-                $params['warning'] = $parameters->get('warning');
-                return $this->render('TableauDeBord/etabs_par_election.html.twig', $params);
+                $params['erreurs'] = $this->getParameter('erreurs');
+                $params['warning'] = $this->getParameter('warning');
+                return $this->render('tableauDeBord/etabs_par_election.html.twig', $params);
                 break;
             case RefProfil::CODE_PROFIL_DSDEN:
 
@@ -363,7 +349,7 @@ class TableauDeBordController extends AbstractController
                 }
                 $params['zone'] = 'Départements';
                 foreach ($tabBordGeneral as $tabBord) {
-                    $request->getSession()->set('nbEtabArelancer'.$tabBord['typeElection']->getId(), $tabBord['nbEtabARelancer']);
+                    $this->request->getSession()->set('nbEtabArelancer'.$tabBord['typeElection']->getId(), $tabBord['nbEtabARelancer']);
                 }
                 break;
             case RefProfil::CODE_PROFIL_RECT:
@@ -392,7 +378,7 @@ class TableauDeBordController extends AbstractController
                     $params['zoneUser'] = $zoneUser;
                 }
                 foreach ($tabBordGeneral as $tabBord) {
-                    $request->getSession()->set('nbEtabArelancer'.$tabBord['typeElection']->getId(), $tabBord['nbEtabARelancer']);
+                    $this->request->getSession()->set('nbEtabArelancer'.$tabBord['typeElection']->getId(), $tabBord['nbEtabARelancer']);
                 }
                 break;
             case RefProfil::CODE_PROFIL_DGESCO:
@@ -420,7 +406,7 @@ class TableauDeBordController extends AbstractController
                 }
                 $params['zone'] = 'Nationale';
                 foreach ($tabBordGeneral as $tabBord) {
-                    $request->getSession()->set('nbEtabArelancer'.$tabBord['typeElection']->getId(), $tabBord['nbEtabARelancer']);
+                    $this->request->getSession()->set('nbEtabArelancer'.$tabBord['typeElection']->getId(), $tabBord['nbEtabARelancer']);
                 }
                 break;
         }
@@ -444,9 +430,9 @@ class TableauDeBordController extends AbstractController
             foreach ($tabBordZone as $tabZone) {
                 foreach ($tabZone['resultats'] as $zoneRes) {
                     if ($user->getProfil()->getCode() == RefProfil::CODE_PROFIL_RECT || $user->getProfil()->getCode() == RefProfil::CODE_PROFIL_DSDEN) {
-                        $request->getSession()->set('nbEtabArelancer'.$zoneRes['typeElection']->getId().$tabZone['zone']->getNumero(), $zoneRes['nbEtabARelancer']);
+                        $this->request->getSession()->set('nbEtabArelancer'.$zoneRes['typeElection']->getId().$tabZone['zone']->getNumero(), $zoneRes['nbEtabARelancer']);
                     } elseif ($user->getProfil()->getCode() == RefProfil::CODE_PROFIL_DGESCO) {
-                        $request->getSession()->set('nbEtabArelancer'.$zoneRes['typeElection']->getId().$tabZone['zone']->getCode(), $zoneRes['nbEtabARelancer']);
+                        $this->request->getSession()->set('nbEtabArelancer'.$zoneRes['typeElection']->getId().$tabZone['zone']->getCode(), $zoneRes['nbEtabARelancer']);
                     }
                 }
             }
@@ -460,17 +446,17 @@ class TableauDeBordController extends AbstractController
         $params['tabBordGeneral'] = $tabBordGeneral;
 
         // 014E retour au tdb déplié pour DSDEN et Restorat (DGESCO dans le cas de l'académie)
-        $params['dept_num'] = $request->getSession()->get('dept_num');
-        $params['tdbDeplieRetour'] = $request->getSession()->get('tdbDeplieRetour');
-        $request->getSession()->remove('dept_num');
-        $request->getSession()->remove('tdbDeplieRetour');
-        $request->getSession()->set('tdbRetour', true);
+        $params['dept_num'] = $this->request->getSession()->get('dept_num');
+        $params['tdbDeplieRetour'] = $this->request->getSession()->get('tdbDeplieRetour');
+        $this->request->getSession()->remove('dept_num');
+        $this->request->getSession()->remove('tdbDeplieRetour');
+        $this->request->getSession()->set('tdbRetour', true);
 
-        $params['erreurs'] = $parameters->get('erreurs');
-        $params['warning'] = $parameters->get('warning');
+        $params['erreurs'] = $this->getParameter('erreurs');
+        $params['warning'] = $this->getParameter('warning');
 
-        $request->getSession()->set('natureEtab', $params['codeNatureEtab']);
-        $request->getSession()->set('typeEtab', $params['typeEtab']);
+        $this->request->getSession()->set('natureEtab', $params['codeNatureEtab']);
+        $this->request->getSession()->set('typeEtab', $params['typeEtab']);
 
         return $this->render('tableauDeBord/index.html.twig', $params);
     }
@@ -485,9 +471,9 @@ class TableauDeBordController extends AbstractController
      */
     private function getEleInfosForEtab($etab, $user, $joursCalendaires, $listeElection = null, $sousTypeElect = null, $etatsAvancement = null, $indCarence = null, $indDeficit = null)
     {
-        $em = $this->getDoctrine()->getManager();
+        $em = $this->doctrine->getManager();
 
-        $joursCalendairesIen = $parameters->get('jours_calendaires_ien');
+        $joursCalendairesIen = $this->getParameter('jours_calendaires_ien');
 
         $listeTypeElection = array();
         // Si le sous type d'election est saisi dans le filtre on prend en compte que le type d'election rattaché
@@ -680,17 +666,13 @@ class TableauDeBordController extends AbstractController
     /**
      * Fonction permettant de calculer l'ensemble des établissement ayant saisie une liste de type d'élection
      *
-     * @param
-     *            refDepartement ou refAcademie $zone
+     * @param refDepartement ou refAcademie $zone
      * @param RefUser $user
-     * @return tableau de bord
      * @author Atos - ALZ
      */
     private function getTableauDeBord($zone, $user, $joursCalendaires, $typeEtab = null, $codeNatEtab = null, $codeTypeElect = null, $idSousTypeElect = null)
     {
-
-        $request = new Request;
-        $em = $this->getDoctrine()->getManager();
+        $em = $this->doctrine->getManager();
         $tabBord = array();
         $nbTotalEtabAucunEnrTab = array();
         $pourcentageCarenceTab = array();
@@ -699,17 +681,17 @@ class TableauDeBordController extends AbstractController
         $nbTotalCarenceTab = array();
         $nbEtabArelancerTab = array();
         if($user->getPerimetre() != null ){
-            if ($user->getPerimetre()->getIsPerimetreVide()) {
+            if (!$user->getPerimetre()->getIsPerimetreVide()) {
                 $nbTotalEtabAucunEnr = 0;
                 $nbTotalCarence = 0;
                 $nbTotalNewElection = 0;
                 $pourcentageCarence = 0;
                 $pourcentageNewElection = 0;
                 $nbTotalEtabZone = 0;
-    
+
                 $sousTypeElect = null;
                 $listeTypeElection = array();
-    
+
                 if(null != $codeTypeElect && !empty($codeTypeElect)){
                     if(null != $idSousTypeElect && !empty($idSousTypeElect)){
                         // YME - #0145755
@@ -733,7 +715,7 @@ class TableauDeBordController extends AbstractController
                     // Tous le périmetre de l'user
                     $listeTypeElection = $user->getPerimetre()->getTypeElections();
                 }
-    
+
                 // YME - EVOL 145755
                 if(null != $typeEtab && RefTypeEtablissement::ID_TYP_EREA_ERPD == $typeEtab->getId()){
                     $listeTypeElectionTmp = array();
@@ -750,36 +732,36 @@ class TableauDeBordController extends AbstractController
                     }
                     $listeTypeElection = $listeTypeElectionTmp;
                 }
-    
+
                 // plusieurs types d'elections
                 if(!empty($listeTypeElection)){
-    
+
                     foreach ($listeTypeElection as $key => $typeElection) {
-    
+
                         // 014E exclus des EREA-ERPD dans les résultats ASS et ATE et PEE && (($typeEtab != null && $typeEtab->getCode() != RefTypeEtablissement::CODE_EREA_ERPD) || $typeEtab == null)
                         $isEreaErpdExclus = false;
                         if (($typeElection->getId () == RefTypeElection::ID_TYP_ELECT_ASS_ATE || $typeElection->getId () == RefTypeElection::ID_TYP_ELECT_PEE)
                             && (($typeEtab != null && $typeEtab->getCode () != RefTypeEtablissement::CODE_EREA_ERPD) || $typeEtab == null)) {
                             $isEreaErpdExclus = true;
                         }
-    
+
                         $nbEtabParZone = 0;
                         $nbEtabSaisie = 0;
                         $nbEtabTransmis = 0;
                         $nbEtabValide = 0;
                         $nbEtabAucunEnr = 0;
                         $nbEtabZone = 0;
-    
+
                         // YME - EVOL 145755
                         if($typeElection instanceof RefSousTypeElection ){
                             $campagne = $em->getRepository(EleCampagne::class)->getLastCampagne($typeElection->getTypeElection());
                         }else{
                             $campagne = $em->getRepository(EleCampagne::class)->getLastCampagne($typeElection);
                         }
-    
+
                         $tabBord[$key]['typeElection'] = $typeElection;
                         $tabBord[$key]['campagne'] = $campagne;
-    
+
                         // YME - 145940
                         if($zone instanceof RefAcademie){
                             $tabBord[$key]['campagneOpenSaisie'] = $campagne->isOpenSaisie($user->getPerimetre()->getAcademies(), $joursCalendaires, $zone);
@@ -801,14 +783,14 @@ class TableauDeBordController extends AbstractController
                                 $nbEtabSaisie = $em->getRepository(EleEtablissement::class)->getNbEleEtabParCampagne($campagne, $zone, 'S', $typeEtab, null, $isEreaErpdExclus, $codeNatEtab, $idSousTypeElect, false, false, true, $typeElection);
                                 $nbEtabTransmis = $em->getRepository(EleEtablissement::class)->getNbEleEtabParCampagne($campagne, $zone, 'T', $typeEtab, null, $isEreaErpdExclus, $codeNatEtab, $idSousTypeElect, false, false, true, $typeElection);
                                 $nbEtabValide = $em->getRepository(EleEtablissement::class)->getNbEleEtabParCampagne($campagne, $zone, 'V', $typeEtab, null, $isEreaErpdExclus, $codeNatEtab, $idSousTypeElect, false, false, true, $typeElection);
-                                $nbEtabZone = $em->getRepository(RefEtablissement::class)->getNbEtabParTypeEtablissementZoneTypeElection($typeEtab, $zone, $typeElection, null, $isEreaErpdExclus, $codeNatEtab, false, false, true);
+                                $nbEtabZone = $em->getRepository(RefEtablissement::class)->getNbEtabParTypeEtablissementZoneTypeElection($typeEtab, $zone, $typeElection, null, $isEreaErpdExclus, $codeNatEtab, false);
                                 $nbEtabAucunEnr = $nbEtabZone - $nbEtabSaisie - $nbEtabTransmis -$nbEtabValide;
                                 if($nbEtabAucunEnr < 0) $nbEtabAucunEnr = 0;
                                 $nbTotalCarence += $em->getRepository(EleEtablissement::class)->getNbEleEtabParCampagne($campagne, $zone, 'O', $typeEtab, null, $isEreaErpdExclus, $codeNatEtab, $idSousTypeElect, true, false, true, $typeElection);
                                 $nbTotalNewElection += $em->getRepository(EleEtablissement::class)->getNbEleEtabParCampagne($campagne, $zone, 'O', $typeEtab, null, $isEreaErpdExclus, $codeNatEtab, $idSousTypeElect, false, true, true, $typeElection);
                                 $nbTotalEtabAucunEnr += $nbEtabAucunEnr;
                                 $nbTotalEtabZone += $nbEtabZone;
-    
+
                                 $tabBord[$key]['nbEtabTotal'] = $nbEtabParZone;
                                 $tabBord[$key]['nbEtabSaisie'] = $nbEtabSaisie;
                                 $tabBord[$key]['nbEtabTransmis'] = $nbEtabTransmis;
@@ -854,29 +836,29 @@ class TableauDeBordController extends AbstractController
                     $nbEtabValide = 0;
                     $nbEtabAucunEnr = 0;
                     $nbEtabZone = 0;
-    
+
                     $campagne = $em->getRepository(EleCampagne::class)->getLastCampagne($typeElection);
-    
+
                     if(null != $sousTypeElect){
                         $tabBord[$typeElection->getId()]['sousTypeElection'] = $sousTypeElect;
                     }
                     $tabBord[$typeElection->getId()]['typeElection'] = $typeElection;
                     $tabBord[$typeElection->getId()]['campagne'] = $campagne;
-    
+
                     // YME - 145940
                     if($zone instanceof RefAcademie){
                         $tabBord[$typeElection->getId()]['campagneOpenSaisie'] = $campagne->isOpenSaisie($user->getPerimetre()->getAcademies(), $joursCalendaires, $zone);
                     }else{
                         $tabBord[$typeElection->getId()]['campagneOpenSaisie'] = $campagne->isOpenSaisie($user->getPerimetre()->getAcademies(), $joursCalendaires);
                     }
-    
+
                     // 014E exclus des EREA-ERPD dans les résultats ASS et ATE et PEE && (($typeEtab != null && $typeEtab->getCode() != RefTypeEtablissement::CODE_EREA_ERPD) || $typeEtab == null)
                     $isEreaErpdExclus = false;
                     if (($typeElection->getId () == RefTypeElection::ID_TYP_ELECT_ASS_ATE || $typeElection->getId () == RefTypeElection::ID_TYP_ELECT_PEE)
                         && (($typeEtab != null && $typeEtab->getCode () != RefTypeEtablissement::CODE_EREA_ERPD) || $typeEtab == null)) {
                         $isEreaErpdExclus = true;
                     }
-    
+
                     if (! empty($campagne)) {
                         if ($campagne->getArchivee() == false) {
                             if($zone instanceof RefAcademie && $em->getRepository(RefAcademie::class)->countchildAcademies($zone->getCode()) > 0) {
@@ -892,23 +874,23 @@ class TableauDeBordController extends AbstractController
                             $nbEtabSaisie = $em->getRepository(EleEtablissement::class)->getNbEleEtabParCampagne($campagne, $zone, 'S', $typeEtab, null, $isEreaErpdExclus, $codeNatEtab, $idSousTypeElect, false, false, true);
                             $nbEtabTransmis = $em->getRepository(EleEtablissement::class)->getNbEleEtabParCampagne($campagne, $zone, 'T', $typeEtab, null, $isEreaErpdExclus, $codeNatEtab, $idSousTypeElect, false, false, true);
                             $nbEtabValide = $em->getRepository(EleEtablissement::class)->getNbEleEtabParCampagne($campagne, $zone, 'V', $typeEtab, null, $isEreaErpdExclus, $codeNatEtab, $idSousTypeElect, false, false, true);
-                            $nbEtabZone = $em->getRepository(RefEtablissement::class)->getNbEtabParTypeEtablissementZoneTypeElection($typeEtab, $zone, $typeElection, null, $isEreaErpdExclus, $codeNatEtab, false, false,true);
+                            $nbEtabZone = $em->getRepository(RefEtablissement::class)->getNbEtabParTypeEtablissementZoneTypeElection($typeEtab, $zone, $typeElection, null, $isEreaErpdExclus, $codeNatEtab, false);
                             $nbEtabAucunEnr = $nbEtabZone - $nbEtabSaisie - $nbEtabTransmis -$nbEtabValide;
                             if($nbEtabAucunEnr < 0)
                                 $nbEtabAucunEnr = 0;
-    
+
                             $nbTotalCarence += $em->getRepository(EleEtablissement::class)->getNbEleEtabParCampagne($campagne, $zone, 'O', $typeEtab, null, $isEreaErpdExclus, $codeNatEtab, $idSousTypeElect, true, false, true);
                             $nbTotalNewElection += $em->getRepository(EleEtablissement::class)->getNbEleEtabParCampagne($campagne, $zone, 'O', $typeEtab, null, $isEreaErpdExclus, $codeNatEtab, $idSousTypeElect, false, true, true);
                             $nbTotalEtabAucunEnr += $nbEtabAucunEnr;
                             $nbTotalEtabZone += $nbEtabZone;
-    
+
                             $tabBord[$typeElection->getId()]['nbEtabTotal'] = $nbEtabParZone;
                             $tabBord[$typeElection->getId()]['nbEtabSaisie'] = $nbEtabSaisie;
                             $tabBord[$typeElection->getId()]['nbEtabTransmis'] = $nbEtabTransmis;
                             $tabBord[$typeElection->getId()]['nbEtabValide'] = $nbEtabValide;
                             $tabBord[$typeElection->getId()]['nbEtabAucunEnr'] = $nbEtabAucunEnr;
                             $tabBord[$typeElection->getId ()]['nbEtabARelancer'] = $nbEtabAucunEnr + $nbEtabSaisie;
-    
+
                         } else {
                             ///////////////////////////////////////////////////////////////////
                             /// EVOL suppression de toute communication avec ele_consolidation
@@ -940,7 +922,7 @@ class TableauDeBordController extends AbstractController
                         }
                         $tabBord[$typeElection->getId()]['validationPossible'] = ($user->canValidate($campagne, $joursCalendaires) && $nbEtabTransmis > 0);
                     }
-    
+
                 }
                 // Pour le DSDEN et le RECTORAT on a soit un ou plusieurs departements
                 if($zone instanceof RefDepartement) {
@@ -954,23 +936,23 @@ class TableauDeBordController extends AbstractController
                 // ECT on met en session les parametres de calcul pour chaque departement
                 foreach ($nbTotalEtabAucunEnrTab as $key => $value) {
                     $nbTotalEtabAucunEnrSession = 'nbTotalEtabAucunEnrTab'.$key;
-                    $request->getSession()->set($nbTotalEtabAucunEnrSession, $value);
+                    $this->request->getSession()->set($nbTotalEtabAucunEnrSession, $value);
                 }
                 foreach ($pourcentageCarenceTab as $key => $value) {
                     $pourcentageCarenceSession = 'pourcentageCarenceTab'.$key;
-                    $request->getSession()->set($pourcentageCarenceSession, $value);
+                    $this->request->getSession()->set($pourcentageCarenceSession, $value);
                 }
                 foreach ($pourcentageNewElectionTab as $key => $value) {
                     $pourcentageNewElectionSession = 'pourcentageNewElectionTab'.$key;
-                    $request->getSession()->set($pourcentageNewElectionSession, $value);
+                    $this->request->getSession()->set($pourcentageNewElectionSession, $value);
                 }
                 foreach ($nbTotalCarenceTab as $key => $value) {
                     $nbTotalCarenceSession = 'nbTotalCarenceTab'.$key;
-                    $request->getSession()->set($nbTotalCarenceSession, $value);
+                    $this->request->getSession()->set($nbTotalCarenceSession, $value);
                 }
                 foreach ($nbTotalNewElectionTab as $key => $value) {
                     $nbTotalNewElectionSession = 'nbTotalNewElectionTab'.$key;
-                    $request->getSession()->set($nbTotalNewElectionSession, $value);
+                    $this->request->getSession()->set($nbTotalNewElectionSession, $value);
                 }
                 // fin mis en session
             }
@@ -980,12 +962,12 @@ class TableauDeBordController extends AbstractController
     }
 
     public function getEtablissementsByNumDepartementAction() {
-        $em = $this->getDoctrine()->getManager();
+        $em = $this->doctrine->getManager();
         //Evolution 219401 mass validation
         //Nombre max des résultats à valider par la validation de masse
-        $maxMassValidationSelect = $parameters->get('max_mass_validation_select');
-        $user = $this->get('security.context')->getToken()->getUser();
-        $joursCalendaires = $parameters->get('jours_calendaires');
+        $maxMassValidationSelect = $this->getParameter('max_mass_validation_select');
+        $user = $this->getUser();
+        $joursCalendaires = $this->getParameter('jours_calendaires');
 
         $params = array();
         $tabBordEtab = array();
@@ -993,32 +975,20 @@ class TableauDeBordController extends AbstractController
         $listeSousType = array();
         $etatsAvancement = array();
 
-        //les élections RP ne sont pas concernées par les étabs 1er degré
-        // $degre = null;
-        // ECT ce bloc n'est plus utile
-        // $listeTypeElection = $user->getPerimetre()->getTypeElections();
-        /*foreach ($listeTypeElection as $typeElection) {
-            if ($typeElection->getId()==RefTypeElection::ID_TYP_ELECT_ASS_ATE || $typeElection->getId()==RefTypeElection::ID_TYP_ELECT_PEE )  {
-                $degre='2';
-                break;
-            }
-        }*/
-        $request = $this->get('request');
-
         // On recupere les champs selectionnés dans le 1er filtre
-        $departement_numero = $request->request->get('departement_numero');
-        $idTypeEtab = $request->request->get('idTypeEtab');
-        $codeTypeElect = $request->request->get('codeTypeElect');
-        $idSousTypeElection = $request->request->get('idSousTypeElect');
-        $natEtab = $request->request->get('natEtab');
+        $departement_numero = $this->request->request->get('departement_numero');
+        $idTypeEtab = $this->request->request->get('idTypeEtab');
+        $codeTypeElect = $this->request->request->get('codeTypeElect');
+        $idSousTypeElection = $this->request->request->get('idSousTypeElect');
+        $natEtab = $this->request->request->get('natEtab');
 
         // On recupere les champs selectionnés dans le 2eme filtre
-        $etatSaisi = $request->request->get('etatSaisi');
-        $etatNonEff = $request->request->get('etatNonEff');
-        $etatValide = $request->request->get('etatValide');
-        $etatTransmis = $request->request->get('etatTransmis');
-        $pvCarence = $request->request->get('pvCarence');
-        $nvElect = $request->request->get('nvElect');
+        $etatSaisi = $this->request->request->get('etatSaisi');
+        $etatNonEff = $this->request->request->get('etatNonEff');
+        $etatValide = $this->request->request->get('etatValide');
+        $etatTransmis = $this->request->request->get('etatTransmis');
+        $pvCarence = $this->request->request->get('pvCarence');
+        $nvElect = $this->request->request->get('nvElect');
 
         // aucune saisi n'est effectue
         if(!empty($etatNonEff)){
@@ -1069,7 +1039,7 @@ class TableauDeBordController extends AbstractController
         }
 
         //$listeTypeElection = $user->getPerimetre()->getTypeElections();
-        $departement = $em->getRepository(RefDepartement::class)->find($departement_numero);
+        $departement = $departement_numero != null ? $em->getRepository(RefDepartement::class)->find($departement_numero) : null;
         if(null != $idTypeEtab && !empty($idTypeEtab)){
             $typeEtab = $em->getRepository(RefTypeEtablissement::class)->find($idTypeEtab);
         } else {
@@ -1099,7 +1069,7 @@ class TableauDeBordController extends AbstractController
             }
         }
 
-        $params = $this->getParametersTdbRecherche($request, $user);
+        $params = $this->getParametersTdbRecherche($user);
         $params['maxMassValidationSelect'] = $maxMassValidationSelect;
         // Si aucune case n'est cochée
         if(empty($etatNonEff) && empty($etatSaisi) && empty($etatTransmis) && empty($etatValide) && empty($pvCarence) && empty($nvElect)){
@@ -1129,11 +1099,11 @@ class TableauDeBordController extends AbstractController
         $nbTotalCarenceSession = 'nbTotalCarenceTab'.$departement_numero;
         $nbTotalNewElectionSession = 'nbTotalNewElectionTab'.$departement_numero;
 
-        $params['nbTotalEtabAucunEnr'] = $request->getSession()->get($nbTotalEtabAucunEnrSession);
-        $params['nbTotalCarence'] = $request->getSession()->get($nbTotalCarenceSession);
-        $params['nbTotalNewElection'] = $request->getSession()->get($nbTotalNewElectionSession);
-        $params['pourcentageCarence'] = $request->getSession()->get($pourcentageCarenceSession);
-        $params['pourcentageNewElection'] = $request->getSession()->get($pourcentageNewElectionSession);
+        $params['nbTotalEtabAucunEnr'] = $this->request->getSession()->get($nbTotalEtabAucunEnrSession);
+        $params['nbTotalCarence'] = $this->request->getSession()->get($nbTotalCarenceSession);
+        $params['nbTotalNewElection'] = $this->request->getSession()->get($nbTotalNewElectionSession);
+        $params['pourcentageCarence'] = $this->request->getSession()->get($pourcentageCarenceSession);
+        $params['pourcentageNewElection'] = $this->request->getSession()->get($pourcentageNewElectionSession);
 
         $params['departementSelectionne'] = $departement;
         $params['tabBordEtab'] = $tabBordEtab;
@@ -1142,19 +1112,18 @@ class TableauDeBordController extends AbstractController
     }
 
 
-    private function getParametersRecherche(Request $request, $user){
-        $em = $this->getDoctrine()->getManager();
+    private function getParametersRecherche($user){
+        $em = $this->doctrine->getManager();
         $profilsLimitEtab = array(RefProfil::CODE_PROFIL_IEN, RefProfil::CODE_PROFIL_CE, RefProfil::CODE_PROFIL_DE);
 
         $params = array();
         $datasSearch = array();
         $listeSte = array();
-        $datasSearch['academie'] = $em->getRepository(RefAcademie::class)->findByCode($request->getSession()->get('select_aca'));
-        $datasSearch['departement'] = $em->getRepository(RefDepartement::class)->findByNumero($request->getSession()->get('select_dept'));
-       // $datasSearch['typeEtablissement'] = $em->getRepository(RefTypeEtablissement::class)->findBy($request->getSession()->get('select_typeEtablissement'));
-        $datasSearch['natureEtablissement'] = $request->getSession()->get('select_natureEtablissement');
-        $datasSearch['typeElection'] = $request->getSession()->get('select_typeElection');
-        $datasSearch['sousTypeElection'] = $request->getSession()->get('select_sousTypeElection');
+        $datasSearch['academie'] = $em->getRepository(RefAcademie::class)->findByCode($this->request->getSession()->get('select_aca'));
+        $datasSearch['departement'] = $em->getRepository(RefDepartement::class)->findByNumero($this->request->getSession()->get('select_dept'));
+        $datasSearch['natureEtablissement'] = $this->request->getSession()->get('select_natureEtablissement');
+        $datasSearch['typeElection'] = $this->request->getSession()->get('select_typeElection');
+        $datasSearch['sousTypeElection'] = $this->request->getSession()->get('select_sousTypeElection');
 
         // On recupere la liste des sous-type d'election
         $sousTypeElectionParams =  $em->getRepository(RefSousTypeElection::class)->getSousTypesElections();
@@ -1162,8 +1131,8 @@ class TableauDeBordController extends AbstractController
         $listeSte = $sousTypeElectionParams + $typeElectionParams;
         $form = $this->createForm(TdbEtabType::class,null,['user'=>$user, 'liste'=>$listeSte]);
         // a la validation du formulaire
-        if ($request->getMethod() == 'POST') {
-            $form->handleRequest($request);
+        if ($this->request->getMethod() == 'POST') {
+            $form->handleRequest($this->request);
             if ($form->isSubmitted() && $form->isValid()) {
                 $datasForm = $form->getData();
                 $datasSearch['natureEtablissement'] = $datasForm['natureEtablissement'];
@@ -1173,7 +1142,7 @@ class TableauDeBordController extends AbstractController
                 $datasSearch['academie'] = $datasForm['academie'];
                 $datasSearch['departement'] = $datasForm['departement'];
             } else {
-                $arrayRequest = $request->request->all();
+                $arrayRequest = $this->request->request->all();
                 $arrayTdbEtabType = $arrayRequest['tdbEtabType'];
                 $datasSearch['academie'] = $em->getRepository(RefAcademie::class)->find($arrayTdbEtabType['academie']);
                 $datasSearch['departement'] = $em->getRepository(RefDepartement::class)->find($arrayTdbEtabType['departement']);
@@ -1231,369 +1200,25 @@ class TableauDeBordController extends AbstractController
         $params['idSousTypeElect'] = $idSousTypeElect;
 
         // Mise à jour des variables de session
-        $request->getSession()->set('select_aca', ($datasSearch['academie'] instanceof RefAcademie) ? $datasSearch['academie']->getIdZone() : null);
-        $request->getSession()->set('select_dept', ($datasSearch['departement'] instanceof RefDepartement) ? $datasSearch['departement']->getIdZone() : null);
-       // $request->getSession()->set('select_typeEtablissement', ($datasSearch['typeEtablissement'] instanceof RefTypeEtablissement) ? $datasSearch['typeEtablissement']->getId() : null);
-        $request->getSession()->set('select_natureEtablissement', $codeNatEtab);
-        $request->getSession()->set('select_typeElection', $codeTypeElect);
-        $request->getSession()->set('select_sousTypeElection', $idSousTypeElect);
-        // Serialisation des paramètres et mise en session
-        //$request->getSession()->set('params', serialize($params));
+        $this->request->getSession()->set('select_aca', ($datasSearch['academie'] instanceof RefAcademie) ? $datasSearch['academie']->getIdZone() : null);
+        $this->request->getSession()->set('select_dept', ($datasSearch['departement'] instanceof RefDepartement) ? $datasSearch['departement']->getIdZone() : null);
+        $this->request->getSession()->set('select_natureEtablissement', $codeNatEtab);
+        $this->request->getSession()->set('select_typeElection', $codeTypeElect);
+        $this->request->getSession()->set('select_sousTypeElection', $idSousTypeElect);
 
         if($codeTypeElect == null || $codeTypeElect == RefTypeElection::CODE_RP)
-            $params['info'] = $this->parameters ->get('info');
+            $params['info'] = $this->getParameter('info');
 
         $params['form'] = $form->createView();
         return $params;
 
     }
 
-    private function getParametersTdbRecherche(Request $request, $user){
-
-        $em = $this->getDoctrine()->getManager();
+    private function getParametersTdbRecherche($user){
         $params = array();
-
         $form = $this->createForm(TdbZoneEtabType::class, null, ['user'=>$user]);
-
         $params['form'] = $form->createView();
         return $params;
 
     }
-
-    /**
-     * YME - HPQC DEFECT #195
-     * @param unknown $departement_numero
-     * @param unknown $user
-     * @return Ambigous <multitype:, unknown>
-     */
-    private function getEleInfosForEtabsTdb($departement_numero, $uais, $user, $idTypeEtab = null, $natEtab = null, $idTypesElect = null, $idSousTypeElect = null,  $etatsAvancement = null, $ind_carence = null, $ind_deficit = null){
-
-        $em = $this->getDoctrine()->getManager();
-        $joursCalendaires = $parameters->get('jours_calendaires');
-
-        $tabBord = array();
-        $k = 0;
-        $campagneIds = array();
-
-        $listeTypeElection = $user->getPerimetre()->getTypeElections();
-        foreach ($listeTypeElection as $typeElection) {
-            $campagne = $em->getRepository(EleCampagne::class)->getLastCampagne($typeElection);
-            $campagneIds[] = $campagne->getId();
-        }
-
-        // Récupération des EleEtabs
-        $datas = $em->getRepository(EleEtablissement::class)->findEtbsByCampagneZone($campagneIds, $departement_numero, $uais, $idTypeEtab, $natEtab, $idTypesElect, $idSousTypeElect,  $etatsAvancement, $ind_carence, $ind_deficit);
-
-        foreach($datas as $data){
-
-            $afficheEleEtab = true;
-            $eleEtab = array();
-
-            // Pas d'élection RP pour les établissements du premier degré
-            if($data['degre'] == '1' && ($data['id_type_election'] == RefTypeElection::ID_TYP_ELECT_ASS_ATE || $data['id_type_election'] == RefTypeElection::ID_TYP_ELECT_PEE)){
-                $afficheEleEtab = false;
-            }
-
-            if($afficheEleEtab){
-
-                $refEtablissement = new RefEtablissement();
-
-                $refEtablissement->setUai($data['uai']);
-                $refEtablissement->setLibelle($data['libelle']);
-                $refEtablissement->setActif($data['actif']);
-
-                $typeEtablissement = new RefTypeEtablissement();
-                $typeEtablissement->setDegre($data['degre']);
-
-                $refEtablissement->setTypeEtablissement($typeEtablissement);
-
-                $typeElection = new RefTypeElection();
-                $typeElection->setId($data['id_type_election']);
-                $typeElection->setCode($data['code_type_election']);
-                $eleEtab['typeElection'] = $typeElection;
-
-                $campagne = new EleCampagne($typeElection);
-                $campagne->setId($data['id_campagne']);
-                $campagne->setArchivee($data['archivee'] == 1 ? true : false);
-                $campagne->setAnneeDebut($data['annee_debut']);
-                $campagne->setAnneeFin($data['annee_fin']);
-                $eleEtab['campagne'] = $campagne;
-
-                if(null == $data['id']){
-                    $eleEtab['eleEtablissement'] = null;
-                }else{
-                    $eleEtablissement = new EleEtablissement();
-                    $eleEtablissement->setId($data['id']);
-                    $eleEtablissement->setValidation($data['validation']);
-                    $eleEtablissement->setEtablissement($refEtablissement);
-                    $eleEtablissement->setCampagne($campagne);
-                    $eleEtab['eleEtablissement'] = $eleEtablissement;
-                }
-
-
-
-                // Détermine si la campagne est ouverte à la saisie et / à la validation pour cet ele_etab
-                $date_debut_saisie = new \DateTime($data['date_debut_saisie']);
-                $date_fin_saisie = new \DateTime($data['date_fin_saisie']);
-                $date_debut_validation = new \DateTime($data['date_debut_validation']);
-                $date_fin_validation = new \DateTime($data['date_fin_validation']);
-                $today = new \DateTime();
-                $today->setTime(0, 0, 0);
-                $decalage = false;
-                // TODO YME A CORRIGER 145940
-                foreach ($user->getPerimetre()->getAcademies() as $academie){
-                    if($academie->getCode() == RefAcademie::CODE_ACA_MAYOTTE || $academie->getCode() == RefAcademie::CODE_ACA_REUNION){
-                        $decalage = true;
-                        break;
-                    }
-                }
-
-                if (!$decalage){
-                    $campagneOpenSaisie = (null != $data['date_debut_saisie']) && (null != $data['date_fin_saisie']) && ($date_debut_saisie <= $today && $date_fin_saisie >= $today);
-                    $campagneOpenValidation = (null != $data['date_debut_validation']) && (null != $data['date_fin_validation']) && ($date_debut_validation <= $today && $date_fin_validation >= $today);
-                }else{
-                    $campagneOpenSaisie = (null != $data['date_debut_saisie']) && (null != $data['date_fin_saisie']) && ($date_debut_saisie->modify('-'.$joursCalendaires.' day') <= $today && $date_fin_saisie->modify('-'.$joursCalendaires.' day') >= $today);
-                    $campagneOpenValidation = ($date_debut_validation->modify('-'.$joursCalendaires.' day') <= $today && $date_fin_validation->modify('-'.$joursCalendaires.' day') >= $today);
-                }
-
-                $eleEtab['campagneOpenSaisie'] = $campagneOpenSaisie;
-                $eleEtab['campagneOpenValidation'] = $campagneOpenValidation;
-
-                // Détermine si l'établissement est dans le périmètre utilisateur
-                switch ($user->getProfil()->getCode()) {
-                    case RefProfil::CODE_PROFIL_CE:
-                    case RefProfil::CODE_PROFIL_DE:
-                    case RefProfil::CODE_PROFIL_IEN:
-                        foreach($user->getPerimetre()->getEtablissements() as $etablissement){
-                            if($etablissement->getUai() == $data['uai']){
-                                $etabInScope = true;
-                                break;
-                            }
-                        }
-                        break;
-
-                    case RefProfil::CODE_PROFIL_DSDEN:
-                    case RefProfil::CODE_PROFIL_RECT:
-                        foreach($user->getPerimetre()->getDepartements() as $departement){
-                            if($departement->getNumero() == $departement_numero){
-                                $etabInScope = true;
-                                break;
-                            }
-                        }
-
-                    default:
-                        $etabInScope = true;
-                        break;
-                }
-
-
-                // Test de saisie possible des résultats des élections pour un ele_etablissement
-                $saisie = $etabInScope && (null == $data['id'] || EleEtablissement::ETAT_SAISIE == $data['validation']);
-                if($saisie){
-                    // Test type d'élection
-                    if ($data['id_type_election'] == RefTypeElection::ID_TYP_ELECT_PARENT) {
-                        $saisie = in_array('ROLE_SAISIE_RES_PAR', $user->getRoles());
-                    } else {
-                        $saisie = in_array('ROLE_SAISIE_RES_PE', $user->getRoles());
-                    }
-                }
-
-                // Saisie possible que pour les établissements du premier degré pour les élections de parents.
-                // Un DSDEN peut saisir les resultats de l'election parents d'eleves a la place d'un directeur d'ecole
-                // pour une campagne modifiable en periode de validation
-                // Un rectorat peut saisir les resultats des elections ASS/ATE et PEE � la place d'un chef d'etablissement
-                // pour une campagne modifiable en periode de validation
-
-                if($saisie){
-
-                    $saisie =
-                        ( $campagneOpenSaisie
-                            && ($user->getProfil()->getCode() != RefProfil::CODE_PROFIL_DSDEN && $user->getProfil()->getCode() != RefProfil::CODE_PROFIL_RECT)
-                            && ((( $data['id_type_election'] == RefTypeElection::ID_TYP_ELECT_ASS_ATE || $data['id_type_election'] == RefTypeElection::ID_TYP_ELECT_PEE ) && $data['degre'] == '2' ) || $data['id_type_election'] == RefTypeElection::ID_TYP_ELECT_PARENT)
-                        )
-                        ||
-                        ($user->getProfil()->getCode() == RefProfil::CODE_PROFIL_DSDEN
-                            && $data['post_editable'] == '1'
-                            && $campagneOpenValidation
-                            && ($data['id_type_election'] == RefTypeElection::ID_TYP_ELECT_PARENT))
-                        ||
-                        ($user->getProfil()->getCode() == RefProfil::CODE_PROFIL_RECT
-                            && $data['post_editable'] == '1'
-                            && $campagneOpenValidation
-                            && (RefTypeElection::ID_TYP_ELECT_ASS_ATE == $data['id_type_election'] || RefTypeElection::ID_TYP_ELECT_PEE == $data['id_type_election'])
-                            && $data['degre'] == '2');
-                }
-
-                $eleEtab['saisiePossible'] = $saisie;
-
-
-                // Affichage de la case à cocher validation des résultats
-                // La validation n'est disponible que pour les résultats transmis
-                $validation = $etabInScope && $campagneOpenValidation && (EleEtablissement::ETAT_TRANSMISSION == $data['validation']);
-                if($validation){
-                    if ($data['id_type_election'] == RefTypeElection::ID_TYP_ELECT_PARENT) {
-                        $validation = in_array('ROLE_VALID_RES_PAR', $user->getRoles());
-                    } else {
-                        $validation = in_array('ROLE_VALID_RES_PE', $user->getRoles());
-                    }
-                }
-
-                $eleEtab['validationPossible'] = $validation;
-                $eleEtab['validation'] = $data['validation'];
-
-
-                // Label en attente de nouvelles elections
-                $enAttenteNllesElec = ($data['id_type_election'] == RefTypeElection::ID_TYP_ELECT_ASS_ATE || $data['id_type_election'] == RefTypeElection::ID_TYP_ELECT_PEE);
-
-                // Etablissement du second degré
-                if($enAttenteNllesElec){
-                    $enAttenteNllesElec = ($data['degre'] == '2');
-                }
-
-                // Cas de déficit de candidats
-                if($enAttenteNllesElec){
-                    $enAttenteNllesElec = ($data['ind_deficit'] == 1);
-                }
-
-                // Saisie transmise
-                if($enAttenteNllesElec){
-                    $enAttenteNllesElec = (EleEtablissement::ETAT_TRANSMISSION == $data['validation']);
-                }
-
-                $eleEtab['en_attente_nlles_elec'] = $enAttenteNllesElec;
-
-
-                // Test de saisie d'élection en cas de déficit de candidats
-                $canSaisieNouvelleElection = $enAttenteNllesElec;
-                if((null != $data['id']) && $canSaisieNouvelleElection){
-
-                    // Test périmètre et ouverture campagne
-                    $canSaisieNouvelleElection = $etabInScope && $campagneOpenSaisie;
-
-                    // Test rôle
-                    if($canSaisieNouvelleElection){
-                        $canSaisieNouvelleElection = ($user->getProfil()->getCode() == RefProfil::CODE_PROFIL_DSDEN || $user->getProfil()->getCode() == RefProfil::CODE_PROFIL_RECT);
-                    }
-
-                }
-
-                $eleEtab['canSaisieNouvelleElection'] = $canSaisieNouvelleElection;
-
-                // Récupération des alertes
-                $eleEtab['Deficit'] = false;
-                $eleEtab['Carence'] = false;
-                if(EleEtablissement::ETAT_TRANSMISSION == $data['validation']){
-                    $eleEtab['Deficit'] = ($data['code_type_alerte'] == RefTypeAlerte::CODE_DEFICIT);
-                    $eleEtab['Carence'] = ($data['code_type_alerte'] == RefTypeAlerte::CODE_CARENCE);
-                }
-
-                // Affichage de la case à cocher envoi de courriel
-                $envoiCourriel = $campagneOpenSaisie && ($data['actif'] == 1);
-
-                if($envoiCourriel){
-                    $envoiCourriel = (null == $data['id'] || EleEtablissement::ETAT_SAISIE == $data['validation']);
-                }
-
-                // Création du lien sous-type election
-                /*
-                if($envoiCourriel){
-                    $tabBord[$key]['id_type_election_courriel'] = '';
-                    if (null != $data['id_sous_type_election']){
-                        $eleEtablissement['id_type_election_courriel'] .= '#';
-                    }
-                    $eleEtablissement['id_type_election_courriel'] .= $data['id_type_election'];
-                }*/
-
-                $eleEtab['envoiCourrielPossible'] = $envoiCourriel;
-
-                // Test tirage au sort possible (IEN)
-                $saisiePVTirageAuSortPossible = $etabInScope && $campagneOpenSaisie && ($eleEtab['Deficit'] || $eleEtab['Carence']);
-                if ($saisiePVTirageAuSortPossible){
-                    $saisiePVTirageAuSortPossible = ($data['ind_tirage_sort'] == 0);
-                }
-
-                if ($saisiePVTirageAuSortPossible){
-                    // Test type election et role saisie tirage au sort
-                    if ($data['id_type_election'] == RefTypeElection::ID_TYP_ELECT_PARENT) {
-                        $saisiePVTirageAuSortPossible = in_array('ROLE_SAISIE_TS_PAR', $user->getRoles());
-                    } else {
-                        $saisiePVTirageAuSortPossible = in_array('ROLE_SAISIE_TS_PE', $user->getRoles()); // rôle non attribué mais pour anticiper selon ECT
-                    }
-                }
-
-                if ($saisiePVTirageAuSortPossible) {
-                    $saisiePVTirageAuSortPossible = ($data['ind_carence'] == 1 || $data['ind_deficit'] == 1);
-                }
-
-                if ($saisiePVTirageAuSortPossible) {
-                    $saisiePVTirageAuSortPossible = (EleEtablissement::ETAT_TRANSMISSION == $data['validation']);
-                }
-
-                $eleEtab['saisiePVTirageAuSortPossible'] = $saisiePVTirageAuSortPossible;
-
-
-
-                if(!empty($tabBord[$k]['Etab'])){
-
-                    //echo $tabBord[$k]['Etab']->getUai().' / '.$refEtablissement->getUai();
-
-                    if($tabBord[$k]['Etab']->getUai() != $refEtablissement->getUai()){
-                        // Changement d'établissement
-                        //echo ' -> Changement </br>';
-                        $k++;
-                        $tabBord[$k]['Etab'] = $refEtablissement;
-                        $tabBord[$k]['EleEtab'] = array();
-                    }
-                    //$tabBord[$k]['EleEtab'][] = $eleEtab;
-                    $this->addSousTypesElections($data, $eleEtab, $tabBord[$k]['EleEtab']);
-                }else{
-                    // Cas particulier Premier établissement
-                    $tabBord[$k]['Etab'] = $refEtablissement;
-                    $tabBord[$k]['EleEtab'] = array();
-                    //$tabBord[$k]['EleEtab'][] = $eleEtab;
-                    $this->addSousTypesElections($data, $eleEtab, $tabBord[$k]['EleEtab']);
-                }
-
-            }
-
-        }
-
-        return $tabBord;
-
-    }
-
-    /**
-     * Cas particulier des EREA-ERPD pour le tableau de bord par département
-     * @param unknown $eleEtab
-     * @param unknown $array
-     * @return unknown
-     */
-    private function addSousTypesElections($data, $eleEtab, &$array){
-
-        $em = $this->getDoctrine()->getManager();
-
-        if(null == $eleEtab['eleEtablissement']
-            && $data['id_type_election'] == RefTypeElection::ID_TYP_ELECT_ASS_ATE
-            && $data['id_type_etablissement'] == RefTypeEtablissement::ID_TYP_EREA_ERPD){
-            $sousTypesElection = $em->getRepository(RefSousTypeElection::class)->findSousTypesElectionsByRefTypeElection($data['id_type_election']);
-
-            foreach($sousTypesElection as $sousTypeElection){
-                $eleEtab['hasSousType'] = '#';
-                $eleEtab['typeElection'] = $sousTypeElection;
-                $array[] = $eleEtab;
-            }
-        }else if(null != $data['id_sous_type_election']){
-            $sousTypeElection = new RefSousTypeElection();
-            $sousTypeElection->setId($data['id_sous_type_election']);
-            $sousTypeElection->setCode($data['code_sous_type_election']);
-            $eleEtab['hasSousType'] = '#';
-            $eleEtab['typeElection'] = $sousTypeElection;
-            $array[] = $eleEtab;
-        }else{
-            $array[] = $eleEtab;
-        }
-
-        return $array;
-    }
-
 }

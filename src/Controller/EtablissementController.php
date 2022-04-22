@@ -1,64 +1,51 @@
 <?php
 namespace App\Controller;
 
-use App\Form\EtablissementType;
-use App\Model\EtablissementModel;
-use App\Form\EtablissementHandler;
-use App\Controller\BaseController;
-use Psr\Log\LoggerInterface;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use App\Utils\ImportRamseseService;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
-use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\HttpFoundation\Request;
 
 
-class EtablissementController extends BaseController
+class EtablissementController extends AbstractController
 {
-
-    /**
-      * @Route("importRamsese", name="import_ramesese")
-      */
-    public function importRamseseAction(ParameterBagInterface $parameters,Request $request,LoggerInterface $logger,ImportRamseseService $importService)
+    public function importRamseseAction(Request $request, ImportRamseseService $importService)
     {
         $user = $this->getUser();
         if (! $user->canImportRamsese()) {
             throw new AccessDeniedException();
         }
-        
-        $uploadDir = $parameters->get('ramsese_upload_dir');
-        //$logger->get("import_logger");
-        
-        $em = $this->getDoctrine()->getManager();
-        
+
+        $uploadDir = $this->getParameter('ramsese_upload_dir');
+
         $form = $this->createFormBuilder()
             ->add('fichier', FileType::class, array(
-            'required' => true,
-            'label' => 'Fichier',
-            'mapped' => false
-        ))
+                'required' => true,
+                'label' => 'Fichier',
+            ))
             ->getForm();
-        
+
         $params = array();
 
         if ($request->getMethod() == 'POST') {
             $form->handleRequest($request);
             if ($form->isSubmitted() && $form->isValid()) {
                 // Récupération de l'objet fichier
-                $fichier = $form['fichier']->getData();
-                
+                $fichier = $form->getData();
+
                 // Stocke dans le répertoire temporaire
                 $fichier->move($this->getRootDir() . $uploadDir, $fichier->getClientOriginalName());
                 $url = $uploadDir . $fichier->getClientOriginalName();
-                
+
                 // Appel du service d'import
                 $params = $importService->import($url);
-                
+
             }
         }
         $params['form'] = $form->createView();
-        return $this->render('Etablissement/importFichier.html.twig', $params);
+        return $this->render('etablissement/importFichier.html.twig', $params);
     }
 
     /**
@@ -67,6 +54,6 @@ class EtablissementController extends BaseController
      */
     protected function getRootDir()
     {
-        return __DIR__ . '/../../../../web/';
+        return __DIR__ . '/../../public/';
     }
 }

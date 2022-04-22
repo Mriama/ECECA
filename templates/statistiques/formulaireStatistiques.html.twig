@@ -1,31 +1,30 @@
-<form action="{{ path('EPLEElectionBundle_recherche_statistiques', { 'codeUrlTypeElect': typeElect.codeUrlById } ) }}" method="post" accept-charset="UTF-8">
+<form action="{{ path('ECECA_recherche_statistiques', { 'codeUrlTypeElect': typeElect.codeUrlById } ) }}" method="post" accept-charset="UTF-8">
 	<p class="note">Un astérisque * marque un champ obligatoire</p>
-	<div id="form">	
+	<div id="form">
 		{{ form_errors(form) }}
 		<div id="stats_campagne">{{ form_label(form['campagne']) }}{{ form_widget(form['campagne']) }}</div>
- 		<div id="academie">{{ form_label(form['academie']) }}{{ form_widget(form['academie']) }}</div>
- 		<div id="departement">{{ form_label(form['departement']) }}{{ form_widget(form['departement']) }}</div>
-		<div id="choix_commune">{{ form_label(form['commune']) }}{{ form_widget(form['commune']) }}</div>		
- 		<div>{{ form_label(form['typeEtablissement']) }}{{ form_widget(form['typeEtablissement']) }}</div>
- 		<div>{{ form_label(form['choix_etab']) }}{{ form_widget(form['choix_etab']) }}</div>
- 		<div id="choix_etablissement">{{ form_label(form['etablissement']) }}{{ form_widget(form['etablissement']) }}</div>		
-		{{ form_rest(form) }}			
-	</div>	
-        
+		<div id="academie">{{ form_label(form['academie']) }}{{ form_widget(form['academie']) }}</div>
+		<div id="departement">{{ form_label(form['departement']) }}{{ form_widget(form['departement']) }}</div>
+		<div id="choix_commune">{{ form_label(form['commune']) }}{{ form_widget(form['commune']) }}</div>
+		<div>{{ form_label(form['typeEtablissement']) }}{{ form_widget(form['typeEtablissement']) }}</div>
+		<div>{{ form_label(form['choix_etab']) }}{{ form_widget(form['choix_etab']) }}</div>
+		<div id="choix_etablissement">{{ form_label(form['etablissement']) }}{{ form_widget(form['etablissement']) }}</div>
+		{{ form_rest(form) }}
+	</div>
+
 	<input type="hidden" value="{{ app.session.get('select_academie') }}" id="academie_selectionne" />
 	<input type="hidden" value="{{ app.session.get('select_departement') }}" id="departement_selectionne" />
 	<input type="hidden" value="{{ app.session.get('select_commune') }}" id="commune_selectionne" />
 	<input type="hidden" value="{{ app.session.get('select_etablissement') }}" id="etablissement_selectionne" />
 	<input type="hidden" value="{{ app.user.idZone }}" id="id_zone_user" />
-	
+
 	<div class="boutons"><input type="submit" value="Rechercher" onclick="return formSubmit('campagneZoneEtabType');" title="Rechercher les statistiques" /></div>
 </form>
 
 <script type="text/javascript">
-	var getAcademieDepartementCommuneFromZoneAjaxPath = "{{ path('EPLEAdminBundle_ajax_getAcaDepComByZone') }}";
+	var getAcademieDepartementCommuneFromZoneAjaxPath = "{{ path('ECECA_ajax_getAcaDepComByZone') }}";
 	var codeUrlTypeElect = "{{ typeElect.codeUrlById }}";
-	//afficherChampsEtablissement('campagneZoneEtabType');
-	afficheAcademieDepartementCommune('campagneZoneEtabType');	
+	afficheAcademieDepartementCommune('campagneZoneEtabType');
 	ajouterIndicatorChargement('campagneZoneEtabType');
 	// Pas de 1er degré si c RP
 	afficheTypeEtab('campagneZoneEtabType', codeUrlTypeElect);

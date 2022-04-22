@@ -105,7 +105,6 @@ form {
 		list-style-type: none;
 	}
 	form textarea {
-		width: 40em;
 		width: calc(100% - 25em);
 		height: 10em;
 	}

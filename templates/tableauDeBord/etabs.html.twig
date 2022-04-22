@@ -34,13 +34,13 @@
 							<img src="{{ asset('images/pictos/deficit.png') }}" alt="déficit de candidats" title="déficit de candidats"/>
 						{% endif %}
 						{% if eleEtab['saisiePVTirageAuSortPossible'] %}
-							<a href="{{ path('EPLEElectionBundle_saisie_nb_sieges_tirage_sort', { 'uai': etab['Etab'].uai, 'codeUrlTypeElect': eleEtab['typeElection'].getCodeUrlById() }) }}"><img src="{{ asset('images/pictos/edit.png') }}" alt="Saisir ou modifier les résultats" title="Saisir ou modifier les résultats"/></a>
+							<a href="{{ path('ECECA_saisie_nb_sieges_tirage_sort', { 'uai': etab['Etab'].uai, 'codeUrlTypeElect': eleEtab['typeElection'].getCodeUrlById() }) }}"><img src="{{ asset('images/pictos/edit.png') }}" alt="Saisir ou modifier les résultats" title="Saisir ou modifier les résultats"/></a>
 						{% endif %}
 						{% if eleEtab['eleEtablissement'] is not empty %}
-							<a href="{{ path('EPLEElectionBundle_resultats_etablissement', { 'codeUrlTypeElect':(eleEtab['typeElection'].getCodeUrlById()), 'uai':etab['Etab'].uai }) }}"><img src="{{ asset('images/pictos/consultation.png') }}" alt="Consulter les résultats" title="Consulter les résultats"/></a>
+							<a href="{{ path('ECECA_resultats_etablissement', { 'codeUrlTypeElect':(eleEtab['typeElection'].getCodeUrlById()), 'uai':etab['Etab'].uai }) }}"><img src="{{ asset('images/pictos/consultation.png') }}" alt="Consulter les résultats" title="Consulter les résultats"/></a>
 						{% endif %}
 						{% if eleEtab['saisiePossible'] and etab['Etab'].actif == true %}
-							<a href="{{ path('EPLEElectionBundle_saisie_resultats_etab', { 'etablissementUai':etab['Etab'].uai, 'codeUrlTypeElect':(eleEtab['typeElection'].getCodeUrlById()) }) }}"><img src="{{ asset('images/pictos/edit.png') }}" alt="Saisir ou modifier les résultats" title="Saisir ou modifier les résultats"/></a>
+							<a href="{{ path('ECECA_saisie_resultats_etab', { 'etablissementUai':etab['Etab'].uai, 'codeUrlTypeElect':(eleEtab['typeElection'].getCodeUrlById()) }) }}"><img src="{{ asset('images/pictos/edit.png') }}" alt="Saisir ou modifier les résultats" title="Saisir ou modifier les résultats"/></a>
 						{% endif %}
 					</td>
 				{% else %}

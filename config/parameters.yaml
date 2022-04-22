@@ -1,0 +1,22 @@
+parameters:
+    database_host: 127.0.0.1
+    database_port: 3306
+    database_name: ececa
+    database_user: root
+    database_password: 
+    mailer_transport: smtp
+    mailer_host: 55.7.158.189
+    mailer_user: ~
+    mailer_password: ~
+    mailer_from: contact-defaut@atos.net
+    mailer_admin: ahmed.mourhri@atos.net
+    mailer_port: 25
+    default_url_return: http://localhost/sso/
+    wsdl_location: http://55.7.158.171:9180/cpsws/services/composantsecurite?wsdl
+    wsdl_uri: http://55.7.158.171:9180/
+    rgaa_status: Non conforme
+    rgaa_declaration_link: https://conformite.education.fr/?appli=ececa
+    ramsese_ftp_password: d2mAct
+    url_documentation: http://eduscol.education.fr/cid48223/elections-des-representants-des-parents-d-eleves.html
+    url_documentation_ce: http://eduscol.education.fr/cid48223/elections-des-representants-des-parents-d-eleves.html
+    url_documentation_de: http://eduscol.education.fr/cid48223/elections-des-representants-des-parents-d-eleves.html

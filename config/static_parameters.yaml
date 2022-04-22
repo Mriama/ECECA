@@ -1,0 +1,46 @@
+parameters:
+    version: 22.1.0.0 # version actuelle de l'application
+    database_driver: pdo_mysql
+    database_host: ZZ_MYSQL_HOST
+    database_port: ZZ_MYSQL_PORT
+    database_name: ZZ_MYSQL_DBNAME
+    database_user: ZZ_MYSQL_USER
+    database_password: ZZ_MYSQL_PASSWORD
+    mailer_transport: smtp
+    mailer_host: ZZ_SMTP_HOST
+    mailer_user: ~
+    mailer_password: ~
+    mailer_from: ZZ_MAIL_FROM
+    mailer_admin: ZZ_MAIL_ADMIN
+    mailer_port: ~
+    ramsese_ftp_server: ZZ_RAMS_FTP_HOST
+    ramsese_ftp_port: ZZ_RAMS_FTP_PORT
+    ramsese_ftp_user: ZZ_RAMS_FTP_USER
+    ramsese_ftp_password: ZZ_RAMS_FTP_PASSWORD
+    ramsese_ftp_path: ZZ_RAMS_FTP_PATH
+    ramsese_upload_dir: uploads/ramsese/
+    ramsese_traite_dir: uploads/traite/
+    ramsese_etab_pattern: uais
+    ramsese_comm_pattern: uairatt
+    ramsese_file_delimiter: '|'
+    ref_commune_file_delimiter: ';'
+    communes_refcom_pattern: COMMUNES_laposte_
+    max_mass_validation_select: 100
+    documents_dir: uploads/documents/
+    purge_years: 2 # variable pour la purge des PV
+    jours_calendaires: 14 #nombre de jours calendaires pour le décalage des périodes d'ouverture et de fermeture (Mayotte et La Réunion)
+    jours_calendaires_ien: 5 #nombre de jours calendaires pour le décalage de la période de fermeture de saisie du tirage au sort par l'ien
+    locale: fr
+    secret: fcyeple55
+    default_url_return: ZZ_URL_RETOUR
+    url_eduscol: http://eduscol.education.fr/cid48223/elections-des-representants-des-parents-d-eleves.html
+    url_documentation: ZZ_URL_DOCUMENTATION  # pour l'url de la documentation A définir
+    url_documentation_ce: ZZ_URL_DOCUMENTATION_CE # pour l'url de la documentation pour les CE A définir
+    url_documentation_de: ZZ_URL_DOCUMENTATION_DE # pour l'url de la documentation pour les DE A définir
+    purge_years_campagne_archiver: 10 # pour la suppression des résultats consolidés de plus de X ans
+    liste_code_aca_dgesco: 18_45_33 #liste de codes académies séparés par _ reconnus comme un profil DGESCO
+    liste_mail_dgesco: Alexandrine.Voisin@ac-orleans-tours.fr,Frederic.Roy2@ac-orleans-tours.fr,bernard.roulier@ac-orleans-tours.fr #liste d'adresses mail séparées par virgule reconnues comme un profil DGESCO
+    wsdl_location: ZZ_WSDL_LOCATION
+    wsdl_uri: ZZ_WSDL_URI
+    rgaa_status: non conforme
+    rgaa_declaration_link: https://conformite.education.fr/?appli=ececa

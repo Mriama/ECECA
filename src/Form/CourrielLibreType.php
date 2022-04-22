@@ -20,48 +20,48 @@ class CourrielLibreType extends AbstractType {
     public function buildForm(FormBuilderInterface $builder, array $options = null) {
 
         $builder->add('contacts_academie', TextType::class, array(
-                    'label' => 'Contacts en académie',
-        			'required' => false,
-                    'trim' => true,
-        			'attr' => array(
-        							'placeholder' => 'tapez le nom de l\'académie'
-    				),
-                    'error_bubbling' => true))
-                 ->add('code_academie', HiddenType::class, array(
+            'label' => 'Contacts en académie',
+            'required' => false,
+            'trim' => true,
+            'attr' => array(
+                'placeholder' => 'tapez le nom de l\'académie'
+            ),
+            'error_bubbling' => true))
+            ->add('code_academie', HiddenType::class, array(
                     'data' => '')
-                    )
-                 ->add('contacts_departementaux', TextType::class, array(
-                    'label' => 'Contacts départementaux',
-        			'required' => false,
-                    'trim' => true,
-        			'attr' => array(
-        							'placeholder' => 'tapez le nom du département'
-    				),
-                    'error_bubbling' => true))
-                 ->add('numero_departement', HiddenType::class, array(
+            )
+            ->add('contacts_departementaux', TextType::class, array(
+                'label' => 'Contacts départementaux',
+                'required' => false,
+                'trim' => true,
+                'attr' => array(
+                    'placeholder' => 'tapez le nom du département'
+                ),
+                'error_bubbling' => true))
+            ->add('numero_departement', HiddenType::class, array(
                     'data' => '')
-                    )
-                 ->add('contacts_etablissements', TextType::class, array(
-                    'label' => 'Etablissements',
-        			'required' => false,
-                    'trim' => true,
-        			'attr' => array(
-        							'placeholder' => 'tapez l\'UAI ou le nom de l\'établissement'
-    				),
-                    'error_bubbling' => true))
-                 ->add('uai_etablissement', HiddenType::class, array(
+            )
+            ->add('contacts_etablissements', TextType::class, array(
+                'label' => 'Etablissements',
+                'required' => false,
+                'trim' => true,
+                'attr' => array(
+                    'placeholder' => 'tapez l\'UAI ou le nom de l\'établissement'
+                ),
+                'error_bubbling' => true))
+            ->add('uai_etablissement', HiddenType::class, array(
                     'data' => '')
-                    )
-                 ->add('objet', TextType::class, array(
-                    'label' => '* Objet du courriel',
-                    'required' => true,
-                    'trim' => true,
-                    'error_bubbling' => true))
-                ->add('message', TextareaType::class, array(
-                    'label' => '* Message',
-                    'required' => true,
-                    'trim' => true,
-                    'error_bubbling' => true))
+            )
+            ->add('objet', TextType::class, array(
+                'label' => '* Objet du courriel',
+                'required' => true,
+                'trim' => true,
+                'error_bubbling' => true))
+            ->add('message', TextareaType::class, array(
+                'label' => '* Message',
+                'required' => true,
+                'trim' => true,
+                'error_bubbling' => true))
         ;
     }
 

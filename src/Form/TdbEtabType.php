@@ -20,7 +20,7 @@ use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 
 class TdbEtabType extends AbstractType {
 
-    
+
     public function buildForm(FormBuilderInterface $builder, array $options) {
         $user = $options['user'];
         $listeSte = $options['liste'];
@@ -60,7 +60,7 @@ class TdbEtabType extends AbstractType {
                 return $qb;
             },
             'choice_label' => 'libelle',
-            'empty_data' => 'Toutes'
+            'placeholder' => 'Toutes'
         );
 
         // Paramètre par défaut pour le département
@@ -82,7 +82,7 @@ class TdbEtabType extends AbstractType {
             },
             'choice_label' => 'libelle',
             'required' => false,
-            'empty_data' => 'Tous'
+            'placeholder' => 'Tous'
         );
         // Paramètre par défaut pour le type d'établissement
         $typeEtablissementParams = array(
@@ -93,44 +93,44 @@ class TdbEtabType extends AbstractType {
                 $qb = $er->createQueryBuilder('t');
                 if (!empty($degres)) {
                     $qb->where('t.degre in (:degres)')
-                            ->setParameter('degres', $degres);
+                        ->setParameter('degres', $degres);
                 }
                 $qb->orderBy('t.ordre', 'ASC');
                 return $qb;
             },
             'required' => false,
             'choice_label' => 'code',
-            'empty_data' => 'Tous'
-            );
+            'placeholder' => 'Tous'
+        );
 
         $builder->add('academie', EntityType::class, $academieParams)
-                ->add('departement', EntityType::class, $departementParams)
-                ->add('typeEtablissement', EntityType::class, $typeEtablissementParams)
-                ->add('natureEtablissement', ChoiceType::class, array(
-                    'label' => 'Nature d\'établissement',
-                    'choices'   => array(
-                        '1ORD'   => '1ORD',
-                        'APPL' => 'APPL',
-                        'SPEC' => 'SPEC',
-                    ),
-                    'required' => false,
-                    'empty_data' => 'Toutes',
-                    'multiple'  => false,))
-                ->add('typeElection', ChoiceType::class, array(
-                    'label' => 'Type d\'élection',
-                    'choices'   => array(
-                        'PE'   => 'pe',
-                        'RP' => 'rp',
-                    ),
-                    'required' => false,
-                    'empty_data' => 'Tous',
-                    'multiple'  => false,))
-                ->add('sousTypeElection', ChoiceType::class, array(
-                    'label' => 'Sous-type d\'élection',
-                    'choices'   => $listeSousTypeElection,
-                    'required' => false,
-                    'empty_data' => 'Tous',
-                    'multiple'  => false));
+            ->add('departement', EntityType::class, $departementParams)
+            ->add('typeEtablissement', EntityType::class, $typeEtablissementParams)
+            ->add('natureEtablissement', ChoiceType::class, array(
+                'label' => 'Nature d\'établissement',
+                'choices'   => array(
+                    '1ORD'   => '1ORD',
+                    'APPL' => 'APPL',
+                    'SPEC' => 'SPEC',
+                ),
+                'required' => false,
+                'placeholder' => 'Toutes',
+                'multiple'  => false,))
+            ->add('typeElection', ChoiceType::class, array(
+                'label' => 'Type d\'élection',
+                'choices'   => array(
+                    'PE'   => 'pe',
+                    'RP' => 'rp',
+                ),
+                'required' => false,
+                'placeholder' => 'Tous',
+                'multiple'  => false,))
+            ->add('sousTypeElection', ChoiceType::class, array(
+                'label' => 'Sous-type d\'élection',
+                'choices'   => $listeSousTypeElection,
+                'required' => false,
+                'placeholder' => 'Tous',
+                'multiple'  => false));
     }
     public function configureOptions(OptionsResolver $resolver)
     {

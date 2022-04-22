@@ -102,13 +102,11 @@
 
 	{% if listEtabConso != null %}
 		<div class="pageactions">
-			<a class="xls" href="{{ path('EPLEElectionBundle_recapitulatif_participation_detaillee_export_XLS', { 'codeUrlTypeElect': typeElect.codeUrlById }) }}">Export XLS</a>
+			<a class="xls" href="{{ path('ECECA_recapitulatif_participation_detaillee_export_XLS', { 'codeUrlTypeElect': typeElect.codeUrlById }) }}">Export XLS</a>
 		</div>
 	{% endif %}
 	<div class="pageactions">
-		<a href="{{ path('homepage') }}" class="retour">Retour</a>
+		<a href="{{ path('ECECA_homepage') }}" class="retour">Retour</a>
 	</div>
-
-
 {% endblock %}
 

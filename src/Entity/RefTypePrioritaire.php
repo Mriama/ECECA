@@ -12,9 +12,9 @@ use Doctrine\ORM\Mapping as ORM;
  */
 class RefTypePrioritaire
 {
-    
+
     const REF_TYPE_PRIORITAIRE_AUTRE = 'SANS OBJET';
-    
+
     /**
      * @var integer
      *
@@ -41,7 +41,7 @@ class RefTypePrioritaire
     /**
      * Get id
      *
-     * @return integer 
+     * @return integer
      */
     public function getId()
     {
@@ -57,14 +57,14 @@ class RefTypePrioritaire
     public function setCode($code)
     {
         $this->code = $code;
-    
+
         return $this;
     }
 
     /**
      * Get code
      *
-     * @return string 
+     * @return string
      */
     public function getCode()
     {
@@ -80,14 +80,14 @@ class RefTypePrioritaire
     public function setLibelle($libelle)
     {
         $this->libelle = $libelle;
-    
+
         return $this;
     }
 
     /**
      * Get libelle
      *
-     * @return string 
+     * @return string
      */
     public function getLibelle()
     {
@@ -103,7 +103,7 @@ class RefTypePrioritaire
     public function setId($id)
     {
         $this->id = $id;
-    
+
         return $this;
     }
 }

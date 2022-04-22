@@ -1,6 +1,6 @@
-<form method="post" accept-charset="UTF-8" {{ form_enctype(form) }}>
-	
-	<div id="form">	
+<form method="post" accept-charset="UTF-8">
+	{{ form_start(form) }}
+	<div id="form">
 		{{ form_errors(form) }}
 		{% if form_label(form['etatAvancement']) %}
 			<div>{{ form_label(form['etatAvancement']) }}{{ form_widget(form['etatAvancement']) }}</div>
@@ -14,14 +14,15 @@
 		{% endif %}
 		<div>{{ form_label(form['pvCarence']) }}{{ form_widget(form['pvCarence']) }}</div>
 		<div>{{ form_label(form['nvElect']) }}{{ form_widget(form['nvElect']) }}</div>
-        {{ form_rest(form) }}
+		{{ form_rest(form) }}
 	</div>
-    <input type="hidden" value="{{ app.session.get('select_etatAvancement') }}" id="etatAvancement_selectionne" />
+	<input type="hidden" value="{{ app.session.get('select_etatAvancement') }}" id="etatAvancement_selectionne" />
 	<input type="hidden" value="{{ app.session.get('select_statutPv') }}" id="statutPv_selectionne" />
 	<input type="hidden" value="{{ app.session.get('select_pvCarence') }}" id="pvCarence_selectionne" />
 	<input type="hidden" value="{{ app.session.get('select_nvElect') }}" id="nvElect_selectionne" />
 	<!-- YME - DEFECT HPQC #212 -->
 	<input type="hidden" name="departement_selectionne" id="departement_selectionne" value="{{ departementSelectionne.numero }}"/>
-	
+
 	<div class="boutons"><input id="tdb_recherche" type="button"  value="Rechercher" title="Rechercher" /></div>
+	{{ form_end(form) }}
 </form>

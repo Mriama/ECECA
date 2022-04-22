@@ -24,7 +24,8 @@ class ElePrioritaire
 
     /**
      *
-     * @var App\Entity\RefTypePrioritaire @ORM\ManyToOne(targetEntity="App\Entity\RefTypePrioritaire")
+     * 		@var RefTypePrioritaire
+     *      @ORM\ManyToOne(targetEntity="App\Entity\RefTypePrioritaire")
      *      @ORM\JoinColumn(name="id_type_prioritaire", referencedColumnName="id")
      */
     private $typePrioritaire;
@@ -66,20 +67,20 @@ class ElePrioritaire
     /**
      * Set typePrioritaire
      *
-     * @param string $typePrioritaire            
+     * @param string $typePrioritaire
      * @return ElePrioritaire
      */
     public function setTypePrioritaire($typePrioritaire)
     {
         $this->typePrioritaire = $typePrioritaire;
-        
+
         return $this;
     }
 
     /**
      * Get typePrioritaire
      *
-     * @return string
+     * @return RefTypePrioritaire
      */
     public function getTypePrioritaire()
     {
@@ -89,13 +90,13 @@ class ElePrioritaire
     /**
      * Set nbInscrits
      *
-     * @param integer $nbInscrits            
+     * @param integer $nbInscrits
      * @return ElePrioritaire
      */
     public function setNbInscrits($nbInscrits)
     {
         $this->nbInscrits = $nbInscrits;
-        
+
         return $this;
     }
 
@@ -112,13 +113,13 @@ class ElePrioritaire
     /**
      * Set nbVotants
      *
-     * @param integer $nbVotants            
+     * @param integer $nbVotants
      * @return ElePrioritaire
      */
     public function setNbVotants($nbVotants)
     {
         $this->nbVotants = $nbVotants;
-        
+
         return $this;
     }
 
@@ -133,17 +134,17 @@ class ElePrioritaire
     }
 
     /**
-     * 
+     *
      */
     public function getNbNulsBlancs()
     {
         return $this->nbNulsBlancs;
     }
-    
+
     /**
-     * 
-     * @param unknown $nbNulsBlancs
-     * @return \App\Entity\ElePrioritaire
+     *
+     * @param $nbNulsBlancs
+     * @return ElePrioritaire
      */
     public function setNbNulsBlancs($nbNulsBlancs)
     {
@@ -154,7 +155,7 @@ class ElePrioritaire
     /**
      * Set participation
      *
-     * @param App\Entity\EleParticipation $participation            
+     * @param EleParticipation $participation
      */
     public function setParticipation(EleParticipation $participation)
     {
@@ -164,7 +165,7 @@ class ElePrioritaire
     /**
      * Get participation
      *
-     * @return App\Entity\EleParticipation
+     * @return EleParticipation
      */
     public function getParticipation()
     {
@@ -174,11 +175,11 @@ class ElePrioritaire
     /**
      * ******************************************* LOGIQUE METIER ***********************************************
      */
-    
+
     /**
      * *************** Données Calculées ****************************
      */
-    
+
     /**
      * Get nbExprimes = (nbVotants - nbBlancs)
      *
@@ -192,11 +193,11 @@ class ElePrioritaire
     /**
      * Get taux = (nbExprimes / nbInscrits) * 100
      *
-     * @return pourcentage
+     * @return float
      */
     public function getTaux()
     {
         return (empty($this->nbInscrits) ? 0 : ($this->nbVotants / $this->nbInscrits) * 100);
     }
-	
+
 }

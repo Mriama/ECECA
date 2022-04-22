@@ -28,15 +28,15 @@ class RefFederation
      */
     private $libelle;
 
-    
+
     public function __construct() {
-    	$this->id = 0;
+        $this->id = 0;
     }
-    
+
     /**
      * Get id
      *
-     * @return integer 
+     * @return integer
      */
     public function getId()
     {
@@ -52,14 +52,14 @@ class RefFederation
     public function setLibelle($libelle)
     {
         $this->libelle = $libelle;
-    
+
         return $this;
     }
 
     /**
      * Get libelle
      *
-     * @return string 
+     * @return string
      */
     public function getLibelle()
     {

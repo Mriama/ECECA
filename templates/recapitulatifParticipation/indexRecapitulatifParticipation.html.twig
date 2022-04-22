@@ -119,15 +119,12 @@
 		<p class="message erreur">Aucun résultat disponible</p>
 	{% endif %}
 
-	<script type="text/javascript">
-		//document.onload=charger();
-	</script>
 	{% if listEtabConso != null %}
 		<div class="pageactions">
-			<a class="xls" href="{{ path('EPLEElectionBundle_recapitulatif_participation_export_XLS', { 'codeUrlTypeElect': typeElect.codeUrlById }) }}">Export XLS</a>
+			<a class="xls" href="{{ path('ECECA_recapitulatif_participation_export_XLS', { 'codeUrlTypeElect': typeElect.codeUrlById }) }}">Export XLS</a>
 		</div>
 	{% endif %}
 	<div class="pageactions">
-		<a href="{{ path('EPLEElectionBundle_homepage') }}" class="retour">Retour</a>
+		<a href="{{ path('ECECA_homepage') }}" class="retour">Retour</a>
 	</div>
 {% endblock %}

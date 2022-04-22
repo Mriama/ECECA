@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Utils\EpleUtils;
 use App\Entity\RefContact;
 
+use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\EntityRepository;
 
 /**
@@ -47,46 +48,6 @@ class RefAcademieRepository extends EntityRepository {
         return $this->queryBuilderFindRefAcademieSansContactByRefTypeElection($typeElect)->getQuery()->getResult();
     }
 
-    public function findListAcademies(){
-        $qb  = $this->createQueryBuilder('acad');
-        $qb->groupBy('acad.code');
-        return $qb->getQuery()->getResult();
-    }
-
-    //Check date desactivation:
-    public function checkifAcademieHasDisactivateDate($codeAcademie){
-        $query = $this->createQueryBuilder('acad')
-            ->select('acad.dateDesactivation')
-            ->where('acad.code = :code')
-            ->setParameter('code', $codeAcademie)
-            ->setMaxResults(1);
-        return $query->getQuery()->getResult();
-    }
-
-    //Check date activation:
-    public function checkifAcademieHasActivateDate($codeAcademie){
-        $query = $this->createQueryBuilder('acad')
-            ->select('acad.dateDesactivation')
-            ->where('acad.code = :code')
-            ->setParameter('code', $codeAcademie)
-            ->setMaxResults(1);
-        return $query->getQuery()->getResult();
-    }
-
-
-    public function findTheAcademie($code){
-        $query = $this->createQueryBuilder('acad')
-            ->select('acadf.code, acadf.libelle')
-            ->leftJoin('acad.AcademieFusion', 'acadf')
-            ->where('acad.code = :code ')
-            ->setParameter('code', $code)
-            ->setMaxResults(1);
-
-        return $query->getQuery()->getResult();
-
-    }
-
-
     public function listeActiveAcademies($campagne = null){
         if($campagne) {
             $qb = $this->createQueryBuilder('acad')
@@ -103,16 +64,6 @@ class RefAcademieRepository extends EntityRepository {
             return $qb->getQuery()->getResult();
         }
     }
-    public function listeActiveAcademiesByDateCampagne($dateCamp){
-
-        $qb  = $this->createQueryBuilder('acad')
-            ->where('acad.dateDesactivation > :dateCamp')
-            ->andwhere('acad.dateActivation <= :dateCamp')
-            ->setParameter('dateCamp',  $dateCamp);
-
-
-        return $qb->getQuery()->getResult();
-    }
 
     public function findAcademieFisuByParParent($code){
         $qb  = $this->createQueryBuilder('acad')
@@ -121,7 +72,6 @@ class RefAcademieRepository extends EntityRepository {
             ->setParameter('code', $code);
         return $qb->getQuery()->getResult();
     }
-
 
     public function countchildAcademies($codeAcademie){
         $query = $this->createQueryBuilder('acad')
@@ -142,13 +92,4 @@ class RefAcademieRepository extends EntityRepository {
         return $query->getQuery()->getResult();
 
     }
-
-    public function getActiveAcademies($datenow){
-        $qb  = $this->createQueryBuilder('acad')
-            ->where('acad.dateDesactivation > :datenow')
-            ->setParameter('datenow', $datenow)
-            ->groupBy('acad.code');
-        return $qb->getQuery()->getResult();
-    }
-
 }

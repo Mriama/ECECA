@@ -1,0 +1,72 @@
+parameters:
+  database_user_provider.class: App\Security\DatabaseUserProvider
+  ref_user_perimetre.class: App\Utils\RefUserPerimetre
+
+  nb_sieges_typeElection_typeEtab:
+      'ASS et ATE':
+        COLLEGES-600: 2
+        COLLEGES+600: 3
+        LYCEES: 3
+        L.P.: 3
+        EREA-ERPD-PEE: 4
+        EREA-ERPD-ASS: 2
+        EREA-ERPD-ATE: 2
+
+      'PEE':
+        COLLEGES-600: 6
+        COLLEGES+600: 7
+        LYCEES: 7
+        L.P.: 7
+        EREA-ERPD-PEE: 4
+        EREA-ERPD-ASS: 2
+        EREA-ERPD-ATE: 2
+
+      'Parents':
+        COLLEGES-600: 6
+        COLLEGES+600: 7
+        LYCEES: 5
+        L.P.: 5
+        EREA: 5
+        ERPD: 4
+
+  nb_sieges_typeElection_typeEtab_mayotte:
+      'ASS et ATE':
+        COLLEGES-600: 2
+        COLLEGES+600: 3
+        LYCEES: 3
+        L.P.: 3
+        EREA-ERPD-PEE: 4
+        EREA-ERPD-ASS: 2
+        EREA-ERPD-ATE: 2
+
+      'PEE':
+        COLLEGES-600: 6
+        COLLEGES+600: 7
+        LYCEES: 7
+        L.P.: 7
+        EREA-ERPD-PEE: 4
+        EREA-ERPD-ASS: 2
+        EREA-ERPD-ATE: 2
+
+      'Parents':
+        COLLEGES-600: 6
+        COLLEGES+600: 5
+        LYCEES: 5
+        L.P.: 5
+        EREA: 5
+        ERPD: 4
+
+  libelle_aide_ecole: Indiquez le nombre de classes de votre école, dans la limite de
+  libelle_aide_college_moins_600: Collèges de moins de 600 élèves et ne comportant pas une section d'éducation spécialisée
+  libelle_aide_college: Collèges
+  libelle_aide_lycee: Lycées généraux, technologiques et professionnels
+  libelle_aide_erea: EREA
+  libelle_aide_erpd: ERPD
+  libelle_aide_erea_et_erpd: EREA et ERPD
+  libelle_aide_indiquer_nombre_classes: Veuillez indiquer le nombre de classes dans votre école
+  libelle_aide_nombre_classes: Nombre de classes
+  libelle_aide_question_college: Votre collège a-t-il moins de 600 élèves et ne comporte pas une section d'éducation spécialisée
+  libelle_aide_indiquer_type_etablissement: Veuillez indiquer le type de votre établissement
+  nombre_limite_ecole: 32
+  message_erreur_nombre_limite_ecole: La valeur saisie dépassant le nombre maximal autorisé (%nb_max) sera remplacée par la valeur maximale
+  libelle_aide_titre: Le nombre de sièges à pourvoir dépend du type de votre établissement

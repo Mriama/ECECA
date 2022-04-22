@@ -8,6 +8,7 @@ use App\Entity\RefDepartement;
 use App\Utils\EpleUtils;
 use App\Entity\RefProfil;
 
+use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\EntityRepository;
 
 /**
@@ -168,12 +169,10 @@ class RefContactRepository extends EntityRepository {
 
     /**
      *
-     * @param unknown $idZone
-     * @return unknown
+     * @param $idZone
+     * @return ArrayCollection
      */
     public function findContactsByIdZone($idZone){
-        $contacts = array();
-
         $qb = $this->createQueryBuilder('refCon');
         $qb->where('refCon.idZone = (:idZone)');
         $qb->setParameter('idZone', $idZone);

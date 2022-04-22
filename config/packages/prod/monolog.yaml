@@ -1,16 +1,44 @@
 monolog:
+    channels: ['connexion', 'import', 'import_commune', 'purge']
     handlers:
         main:
-            type: fingers_crossed
+            type: stream
             action_level: error
             handler: nested
-            excluded_http_codes: [404, 405]
             buffer_size: 50 # How many messages should be saved? Prevent memory leaks
+            path: "%kernel.logs_dir%/%kernel.environment%.log"
+            channels: ['!connexion', '!import', '!import_commune', '!purge' ] # Include all channels, except 'foo' and 'bar'
+
+        connexion:
+            type: stream
+            handler: file_log
+            path: '%kernel.logs_dir%/connexion.log'
+            channels: connexion
+
+        import:
+            type: stream
+            handler: file_log
+            path: '%kernel.logs_dir%/import.log'
+            channels: import
+
+        import_commune:
+            type: stream
+            handler: file_log
+            path: '%kernel.logs_dir%/import_commune.log'
+            channels: import_commune
+
+        purge:
+            type: stream
+            handler: file_log
+            path: '%kernel.logs_dir%/purge.log'
+            channels: purge
+
         nested:
             type: stream
             path: php://stderr
             level: debug
             formatter: monolog.formatter.json
+
         console:
             type: console
             process_psr_3_messages: false

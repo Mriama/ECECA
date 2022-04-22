@@ -10,7 +10,7 @@
         </td>
         <td class="actionsAlerte">
             {% if eleEtab['eleEtablissement'] is not empty %}
-                <a href="{{ path('EPLEElectionBundle_resultats_etablissement', { 'codeUrlTypeElect':(eleEtab['typeElection'].getCodeUrlById()), 'uai':etab['Etab'].uai }) }}"><img
+                <a href="{{ path('ECECA_resultats_etablissement', { 'codeUrlTypeElect':(eleEtab['typeElection'].getCodeUrlById()), 'uai':etab['Etab'].uai }) }}"><img
                             src="{{ asset('images/pictos/consultation.png') }}" alt="Consulter les résultats"
                             title="Consulter les résultats"/></a>
             {% endif %}
@@ -23,12 +23,12 @@
                      title="déficit de candidats"/>
             {% endif %}
             {% if eleEtab['saisiePossible'] and etab['Etab'].actif == true %}
-                <a href="{{ path('EPLEElectionBundle_saisie_resultats_etab', { 'etablissementUai':etab['Etab'].uai, 'codeUrlTypeElect':(eleEtab['typeElection'].getCodeUrlById()) }) }}"><img
+                <a href="{{ path('ECECA_saisie_resultats_etab', { 'etablissementUai':etab['Etab'].uai, 'codeUrlTypeElect':(eleEtab['typeElection'].getCodeUrlById()) }) }}"><img
                             src="{{ asset('images/pictos/edit.png') }}" alt="Saisir ou modifier les résultats"
                             title="Saisir ou modifier les résultats"/></a>
             {% endif %}
             {% if eleEtab['canSaisieNouvelleElection'] %}
-                <a href="{{ path('EPLEElectionBundle_saisie_resultats_etab', { 'etablissementUai':etab['Etab'].uai, 'codeUrlTypeElect':(eleEtab['typeElection'].getCodeUrlById()) }) }}"><img
+                <a href="{{ path('ECECA_saisie_resultats_etab', { 'etablissementUai':etab['Etab'].uai, 'codeUrlTypeElect':(eleEtab['typeElection'].getCodeUrlById()) }) }}"><img
                             src="{{ asset('images/pictos/edit.png') }}" alt="Saisir ou modifier les résultats"
                             title="Saisir ou modifier les résultats"/></a>
             {% endif %}
@@ -42,7 +42,7 @@
         <td class="actions">
             {# YME - HPQC DEFECT #214 #}
             {% if eleEtab['campagneOpenSaisie'] and etab['Etab'].actif == true
-            and (eleEtab['eleEtablissement'] is empty or ( eleEtab['eleEtablissement'] is not empty and eleEtab['eleEtablissement'].isSaisi == true )) %}
+                and (eleEtab['eleEtablissement'] is empty or ( eleEtab['eleEtablissement'] is not empty and eleEtab['eleEtablissement'].isSaisi == true )) %}
                 <input type="checkbox"
                        name="{{ etab['Etab'].uai }}_C{{ eleEtab['campagne'].id }}_{% if eleEtab['hasSousType'] is defined %}{{ eleEtab['hasSousType'] }}{% endif %}{{ eleEtab['typeElection'].id }}"
                        id="courriel_{{ etab['Etab'].uai }}"/>

@@ -1,6 +1,8 @@
 <?php
 namespace App\Entity;
 
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
@@ -55,14 +57,13 @@ class EleParticipation
      * @var ArrayCollection $detailsPrioritaires (pour les consolidations uniquement)
      */
     protected $detailsPrioritaires;
-    
-    
+
+
     /**
      * Non mappé par ORM
-     * @var unknown
      */
     protected $nbExprimes;
-    
+
     /**
      *
      * @var integer @ORM\Column(name="nb_sieges_sort", type="integer", nullable=true)
@@ -85,7 +86,7 @@ class EleParticipation
      */
     public function __construct()
     {
-        $this->detailsPrioritaires = new \Doctrine\Common\Collections\ArrayCollection();
+        $this->detailsPrioritaires = new ArrayCollection();
     }
 
     /**
@@ -101,13 +102,13 @@ class EleParticipation
     /**
      * Set nbInscrits
      *
-     * @param integer $nbInscrits            
+     * @param integer $nbInscrits
      * @return EleParticipation
      */
     public function setNbInscrits($nbInscrits)
     {
         $this->nbInscrits = $nbInscrits;
-        
+
         return $this;
     }
 
@@ -124,13 +125,13 @@ class EleParticipation
     /**
      * Set nbVotants
      *
-     * @param integer $nbVotants            
+     * @param integer $nbVotants
      * @return EleParticipation
      */
     public function setNbVotants($nbVotants)
     {
         $this->nbVotants = $nbVotants;
-        
+
         return $this;
     }
 
@@ -153,8 +154,8 @@ class EleParticipation
 
     /**
      *
-     * @param unknown $nbNulsBlancs            
-     * @return \App\Entity\EleParticipation
+     * @param $nbNulsBlancs
+     * @return EleParticipation
      */
     public function setNbNulsBlancs($nbNulsBlancs)
     {
@@ -165,13 +166,13 @@ class EleParticipation
     /**
      * Set nbSiegesPourvoir
      *
-     * @param integer $nbSiegesPourvoir            
+     * @param integer $nbSiegesPourvoir
      * @return EleParticipation
      */
     public function setNbSiegesPourvoir($nbSiegesPourvoir)
     {
         $this->nbSiegesPourvoir = $nbSiegesPourvoir;
-        
+
         return $this;
     }
 
@@ -188,13 +189,13 @@ class EleParticipation
     /**
      * Set nbSiegesPourvus
      *
-     * @param integer $nbSiegesPourvus            
+     * @param integer $nbSiegesPourvus
      * @return EleParticipation
      */
     public function setNbSiegesPourvus($nbSiegesPourvus)
     {
         $this->nbSiegesPourvus = $nbSiegesPourvus;
-        
+
         return $this;
     }
 
@@ -211,9 +212,9 @@ class EleParticipation
     /**
      * Add detailPrioritaire
      *
-     * @param App\Entity\ElePrioritaire $detailPrioritaire            
+     * @param ElePrioritaire $detailPrioritaire
      */
-    public function addDetailPrioritaire(\App\Entity\ElePrioritaire $detailPrioritaire)
+    public function addDetailPrioritaire(ElePrioritaire $detailPrioritaire)
     {
         $this->detailsPrioritaires[] = $detailPrioritaire;
     }
@@ -221,7 +222,7 @@ class EleParticipation
     /**
      * Get detailsPrioritaires
      *
-     * @return Doctrine\Common\Collections\Collection
+     * @return Collection
      */
     public function getDetailsPrioritaires()
     {
@@ -238,19 +239,19 @@ class EleParticipation
     {
         $this->detailsPrioritaires = $detailsPrioritaires;
     }
-    
+
     public function getNbSiegesSort() {
-    	return $this->nbSiegesSort;
+        return $this->nbSiegesSort;
     }
     public function setNbSiegesSort($nbSiegesSort) {
-    	$this->nbSiegesSort = $nbSiegesSort;
-    	return $this;
+        $this->nbSiegesSort = $nbSiegesSort;
+        return $this;
     }
 
     /**
      * Set modaliteVote
      *
-     * @param \App\Entity\RefModaliteVote $modaliteVote
+     * @param RefModaliteVote $modaliteVote
      */
     public function setModaliteVote($modaliteVote) {
         $this->modaliteVote = $modaliteVote;
@@ -259,7 +260,7 @@ class EleParticipation
     /**
      * Get modaliteVote
      *
-     * @return \App\Entity\RefModaliteVote
+     * @return RefModaliteVote
      */
     public function getModaliteVote() {
         return $this->modaliteVote;
@@ -285,22 +286,22 @@ class EleParticipation
     /**
      * *************************************** LOGIQUE METIER ************************************
      */
-    
+
     /**
      * *************** Données Calculées ****************************
      */
-    
+
     /**
-     * 
-     * @param unknown $nbExprimes
-     * @return \App\Entity\EleParticipation
+     *
+     * @param $nbExprimes
+     * @return EleParticipation
      */
     public function setNbExprimes($nbExprimes)
     {
         $this->nbExprimes = $nbExprimes;
         return $this;
     }
-    
+
     /**
      * Get nbExprimes = (nbVotants - nbBlancs)
      *
@@ -314,49 +315,48 @@ class EleParticipation
     /**
      * Get taux = (nbVotants / nbInscrits) * 100
      *
-     * @return pourcentage
      */
     public function getTaux()
     {
         $taux = 0;
         if ($this->nbInscrits != 0)
             $taux = (($this->nbVotants / $this->nbInscrits) * 100);
-        
+
         return $taux;
     }
 
     /**
      * Get quotient = (nbExprimes / nbSiegesPourvoir)
      *
-     * @return decimal
+     * @return float
      */
     public function getQuotient()
     {
         $quotient = 0;
         if ($this->nbSiegesPourvoir != 0)
             $quotient = round(($this->getNbExprimes() / $this->nbSiegesPourvoir), 2);
-        
+
         return $quotient;
     }
 
     /**
      * Get tauxSieges = (nbSiegesPourvus / nbSiegesPourvoir)
      *
-     * @return pourcentage
+     * @return float
      */
     public function getTauxSieges()
     {
         $taux_sieges = 0;
         if ($this->nbSiegesPourvoir != 0)
             $taux_sieges = ($this->nbSiegesPourvus / $this->nbSiegesPourvoir) * 100;
-        
+
         return $taux_sieges;
     }
 
     /**
      * Get quotient = ( (Somme des ElePrioritaire.nbExprimes) / nbSiegesPourvoir)
      *
-     * @return decimal
+     * @return float
      */
     public function getQuotientDetailsPrioritaires()
     {
@@ -366,5 +366,4 @@ class EleParticipation
         }
         return ($nbExprimesEclair / $this->nbSiegesPourvoir);
     }
-	
 }

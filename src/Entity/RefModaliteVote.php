@@ -25,7 +25,7 @@ class RefModaliteVote {
      */
     private $id;
 
-       /**
+    /**
      * @var string
      *
      * @ORM\Column(name="libelle", type="string", length=255)
@@ -50,7 +50,7 @@ class RefModaliteVote {
     /**
      * Get id
      *
-     * @return integer 
+     * @return integer
      */
     public function getId()
     {
@@ -66,14 +66,14 @@ class RefModaliteVote {
     public function setLibelle($libelle)
     {
         $this->libelle = $libelle;
-    
+
         return $this;
     }
 
     /**
      * Get libelle
      *
-     * @return string 
+     * @return string
      */
     public function getLibelle()
     {

@@ -4,7 +4,6 @@
 	{% if lst_electEtab is defined %} - Liste des établissements
 	{% elseif electEtablissementlissement is defined %} de l'établissement {{ electEtablissement.etablissement.libelle }} ({{ electEtablissement.etablissement.uai }})
 	{% elseif nationale is defined %} nationaux
-		{# 	{% elseif circons is defined %} circonscription #}
 	{% else %} par {{ (dept is defined) ? "département" : "académie" }}{% endif %}
 {% endblock %}
 
@@ -18,18 +17,16 @@
 	{% if lst_electEtab is defined %} - Liste des établissements
 	{% elseif electEtablissement is defined %} d'un établissement
 	{% elseif nationale is defined %} nationaux
-		{# 	{% elseif circons is defined %} circonscription #}
 	{% else %} par {{ (dept is defined) ? "département" : "academie" }}{% endif %}
 	</li>{% endblock %}
 
 {% block contentPage %}
 
-	<h3>{% if sousTypeElect is defined %}{{ sousTypeElect.libelle }}{% endif %} - Résultats
+	<h3>{% if sousTypeElect is defined %}{{ sousTypeElect.libelle }}{% else %}{{ typeElect.libelle }}{% endif %} - Résultats
 		{% if lst_electEtab is defined %} - Liste des établissements
 		{% elseif electEtablissement is defined %} de l'établissement {{ electEtablissement.etablissement.libelle }} ({{ electEtablissement.etablissement.uai }})
 			{%  if  electEtablissement.etablissement.actif== null %} (fermé) {% endif %}
 		{% elseif nationale is defined %} nationaux
-			{# 	{% elseif circons is defined %} circonscription #}
 		{% else %} par {{ (dept is defined) ? "département" : "académie" }}{% endif %}
 	</h3>
 
@@ -50,11 +47,10 @@
 
 	<div class="pageactions">
 		{% if retourLstRech is defined and retourLstRech %}
-			<a href="{{ path('EPLEElectionBundle_retour_resultats', { 'codeUrlTypeElect':typeElect.codeUrlById}) }}" class="retour">Retour</a>
+			<a href="{{ path('ECECA_retour_resultats', { 'codeUrlTypeElect':typeElect.codeUrlById}) }}" class="retour">Retour</a>
 		{% else %}
-			<a href="{{ path('EPLEElectionBundle_recherche_TableauDeBord') }}" class="retour">Retour</a>
+			<a href="{{ path('ECECA_recherche_TableauDeBord') }}" class="retour">Retour</a>
 		{% endif %}
-		{# 	<a href="javascript: history.go(-1)" class="retour">Retour</a>#}
 
 		{###    GESTION DES LIENS DE TELECHARGEMENT DES PV    ###}
 		{% if electEtablissement is defined
@@ -62,50 +58,50 @@
 			and electEtablissement.etablissement.actif == true
 		%}
 			{#CAS AFFICHAGE PV REMPLI#}
-			{% if (electEtablissement.validation == constant('App\Entity\EleEtablissement::ETAT_SAISIE'))
-				or ((electEtablissement.validation == constant('App\Entity\EleEtablissement::ETAT_TRANSMISSION')
-				or electEtablissement.validation == constant('App\Entity\EleEtablissement::ETAT_VALIDATION')
+			{% if (electEtablissement.validation == constant('\\App\\Entity\\EleEtablissement::ETAT_SAISIE'))
+				or ((electEtablissement.validation == constant('\\App\\Entity\\EleEtablissement::ETAT_TRANSMISSION')
+				or electEtablissement.validation == constant('\\App\\Entity\\EleEtablissement::ETAT_VALIDATION')
 				) and electEtablissement.indCarence == 0
 				)
 			%}
 				{% if isDE is defined and isDE == true and electEtablissement.indDeficit > 0 %}
 					{% if sousTypeElect is defined %}
-						<a class="pv" href="{{ path('EPLEElectionBundle_creation_PV', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': sousTypeElect.codeUrlById , 'statut' : 'rempli' }) }}">
+						<a class="pv" href="{{ path('ECECA_creation_PV', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': sousTypeElect.codeUrlById , 'statut' : 'rempli' }) }}">
 							Télécharger le PV initial</a>
 					{% else %}
-						<a class="pv" href="{{ path('EPLEElectionBundle_creation_PV', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': typeElect.codeUrlById , 'statut' : 'rempli' }) }}">
+						<a class="pv" href="{{ path('ECECA_creation_PV', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': typeElect.codeUrlById , 'statut' : 'rempli' }) }}">
 							Télécharger le PV initial</a>
 					{% endif %}
 				{% else %}
 					{% if sousTypeElect is defined %}
-						<a class="pv" href="{{ path('EPLEElectionBundle_creation_PV', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': sousTypeElect.codeUrlById , 'statut' : 'rempli' }) }}">
+						<a class="pv" href="{{ path('ECECA_creation_PV', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': sousTypeElect.codeUrlById , 'statut' : 'rempli' }) }}">
 							Télécharger le PV rempli</a>
 					{% else %}
-						<a class="pv" href="{{ path('EPLEElectionBundle_creation_PV', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': typeElect.codeUrlById , 'statut' : 'rempli' }) }}">
+						<a class="pv" href="{{ path('ECECA_creation_PV', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': typeElect.codeUrlById , 'statut' : 'rempli' }) }}">
 							Télécharger le PV rempli</a>
 					{% endif %}
 				{% endif %}
 
 
 				{#CAS AFFICHAGE PV DE CARENCE#}
-			{% elseif (electEtablissement.validation == constant('App\Entity\EleEtablissement::ETAT_TRANSMISSION')
-				or electEtablissement.validation == constant('App\Entity\EleEtablissement::ETAT_VALIDATION')
+			{% elseif (electEtablissement.validation == constant('\\App\\Entity\\EleEtablissement::ETAT_TRANSMISSION')
+				or electEtablissement.validation == constant('\\App\\Entity\\EleEtablissement::ETAT_VALIDATION')
 				) and electEtablissement.indCarence > 0
 			%}
 				{% if isDE is defined and isDE == true %}
 					{% if sousTypeElect is defined %}
-						<a class="pv" href="{{ path('EPLEElectionBundle_creation_PV', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': sousTypeElect.codeUrlById , 'statut' : 'carence' }) }}">
+						<a class="pv" href="{{ path('ECECA_creation_PV', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': sousTypeElect.codeUrlById , 'statut' : 'carence' }) }}">
 							Télécharger le PV initial</a>
 					{% else %}
-						<a class="pv" href="{{ path('EPLEElectionBundle_creation_PV', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': typeElect.codeUrlById , 'statut' : 'carence' }) }}">
+						<a class="pv" href="{{ path('ECECA_creation_PV', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': typeElect.codeUrlById , 'statut' : 'carence' }) }}">
 							Télécharger le PV initial</a>
 					{% endif %}
 				{% else %}
 					{% if sousTypeElect is defined %}
-						<a class="pv" href="{{ path('EPLEElectionBundle_creation_PV', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': sousTypeElect.codeUrlById , 'statut' : 'carence' }) }}">
+						<a class="pv" href="{{ path('ECECA_creation_PV', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': sousTypeElect.codeUrlById , 'statut' : 'carence' }) }}">
 							Télécharger le PV rempli</a>
 					{% else %}
-						<a class="pv" href="{{ path('EPLEElectionBundle_creation_PV', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': typeElect.codeUrlById , 'statut' : 'carence' }) }}">
+						<a class="pv" href="{{ path('ECECA_creation_PV', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': typeElect.codeUrlById , 'statut' : 'carence' }) }}">
 							Télécharger le PV rempli</a>
 					{% endif %}
 				{% endif %}
@@ -114,56 +110,56 @@
 			{#CAS AFFICHAGE PV DE TIRAGE AU SORT#}
 			{% if (
 				(
-				(electEtablissement.validation == constant('App\Entity\EleEtablissement::ETAT_TRANSMISSION')
-				or electEtablissement.validation == constant('App\Entity\EleEtablissement::ETAT_VALIDATION'))
+				(electEtablissement.validation == constant('\\App\\Entity\\EleEtablissement::ETAT_TRANSMISSION')
+				or electEtablissement.validation == constant('\\App\\Entity\\EleEtablissement::ETAT_VALIDATION'))
 				and isDE is defined and isDE == true
 				)
 				or (
-				electEtablissement.validation == constant('App\\Entity\\EleEtablissement::ETAT_VALIDATION')
+				electEtablissement.validation == constant('\\App\\Entity\\EleEtablissement::ETAT_VALIDATION')
 				and (isDE is not defined or isDE != true)
 				)
 				)
 				and (electEtablissement.indCarence > 0 or electEtablissement.indDeficit > 0)
-				and  electEtablissement.etablissement.typeEtablissement.degre == constant('App\\Entity\\RefTypeEtablissement::ID_TYP_1ER_DEGRE')
-				and typeElect.id == constant('App\\Entity\\RefTypeElection::ID_TYP_ELECT_PARENT')
+				and  electEtablissement.etablissement.typeEtablissement.degre == constant('\\App\\Entity\\RefTypeEtablissement::ID_TYP_1ER_DEGRE')
+				and typeElect.id == constant('\\App\\Entity\\RefTypeElection::ID_TYP_ELECT_PARENT')
 			%}
-				<a class="pv" href="{{ path('EPLEElectionBundle_creation_PV', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': typeElect.codeUrlById , 'statut' : 'tirageAuSort' }) }}">
+				<a class="pv" href="{{ path('ECECA_creation_PV', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': typeElect.codeUrlById , 'statut' : 'tirageAuSort' }) }}">
 					Télécharger le PV de tirage au sort</a>
 			{% endif %}
 
 			{#CAS AFFICHAGE PV APRES TIRAGE AU SORT#}
-			{% if electEtablissement.validation == constant('App\\Entity\\EleEtablissement::ETAT_VALIDATION')
+			{% if electEtablissement.validation == constant('\\App\\Entity\\EleEtablissement::ETAT_VALIDATION')
 				and accesPVTirageAuSort is defined
 				and (electEtablissement.indCarence > 0 or electEtablissement.indDeficit > 0)
-				and  electEtablissement.etablissement.typeEtablissement.degre == constant('App\\Entity\\RefTypeEtablissement::ID_TYP_1ER_DEGRE')
-				and typeElect.id == constant('App\\Entity\\RefTypeElection::ID_TYP_ELECT_PARENT')
+				and  electEtablissement.etablissement.typeEtablissement.degre == constant('\\App\\Entity\\RefTypeEtablissement::ID_TYP_1ER_DEGRE')
+				and typeElect.id == constant('\\App\\Entity\\RefTypeElection::ID_TYP_ELECT_PARENT')
 			%}{#
-					and (electEtablissement.indTirageSort == 1 or electEtablissement.indTirageSort == 2)
-                    and (electEtablissement.participation.nbSiegesSort is not null or electEtablissement.participation.nbSiegesSort == 0)
-                    #}
-				<a class="pv" href="{{ path('EPLEElectionBundle_creation_PV', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': typeElect.codeUrlById , 'statut' : 'pvApresTirageAuSort' }) }}">
+			and (electEtablissement.indTirageSort == 1 or electEtablissement.indTirageSort == 2)
+            and (electEtablissement.participation.nbSiegesSort is not null or electEtablissement.participation.nbSiegesSort == 0)
+			#}
+				<a class="pv" href="{{ path('ECECA_creation_PV', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': typeElect.codeUrlById , 'statut' : 'pvApresTirageAuSort' }) }}">
 					Télécharger le PV après tirage au sort</a>
 			{% endif %}
 		{% endif %}
 		{% if electEtablissement is defined and electEtablissement.validation != null %}
 			{% if sousTypeElect is defined %}
-				<a class="xls" href="{{ path('EPLEElectionBundle_resultats_export_XLS', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': sousTypeElect.codeUrlById }) }}">Export XLS = résultats par liste</a>
+				<a class="xls" href="{{ path('ECECA_resultats_export_XLS', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': sousTypeElect.codeUrlById }) }}">Export XLS = résultats par liste</a>
 			{% else %}
-				<a class="xls" href="{{ path('EPLEElectionBundle_resultats_export_XLS', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': typeElect.codeUrlById }) }}">Export XLS = résultats par liste</a>
+				<a class="xls" href="{{ path('ECECA_resultats_export_XLS', { 'etablissementUai': electEtablissement.etablissement.uai, 'codeUrlTypeElect': typeElect.codeUrlById }) }}">Export XLS = résultats par liste</a>
 			{% endif %}
 		{% endif %}
 		{% if lst_electEtab is not defined and electEtablissement is not defined %}
 			{% if sousTypeElect is defined %}
-				<a class="xls" href="{{ path('EPLEElectionBundle_resultats_export_XLS', { 'codeUrlTypeElect': sousTypeElect.codeUrlById }) }}">Export XLS = résultats par liste</a>
+				<a class="xls" href="{{ path('ECECA_resultats_export_XLS', { 'codeUrlTypeElect': sousTypeElect.codeUrlById }) }}">Export XLS = résultats par liste</a>
 			{% else %}
-				<a class="xls" href="{{ path('resultats_export_XLS', { 'codeUrlTypeElect': typeElect.codeUrlById }) }}">Export XLS = résultats par liste</a>
+				<a class="xls" href="{{ path('ECECA_resultats_export_XLS', { 'codeUrlTypeElect': typeElect.codeUrlById }) }}">Export XLS = résultats par liste</a>
 			{% endif %}
 		{% endif %}
 	</div>
 	<div class="exportComplet">
 		{% if lst_electEtab is not defined and electEtablissement is not defined %}
 			{% if app.session.get('select_departement') != '' and app.session.get('select_typeEtab') != '' and app.session.get('select_choix_etab') == '' and electZone.nbEtabExprimes != 0 %}
-				<a class="xls" href="{{ path('EPLEElectionBundle_resultats_export_XLS_complet', { 'codeUrlTypeElect': typeElect.codeUrlById }) }}">Export XLS (Complet) = résultats par établissement</a>
+				<a class="xls" href="{{ path('ECECA_resultats_export_XLS_complet', { 'codeUrlTypeElect': typeElect.codeUrlById }) }}">Export XLS (Complet) = résultats par établissement</a>
 			{% endif %}
 		{% endif %}
 	</div>
@@ -171,7 +167,7 @@
 		<div class="exportComplet">
 			{% if lst_electEtab is not defined and electEtablissement is not defined %}
 				{% if app.session.get('select_departement') != '' and app.session.get('select_typeEtab') != '' and app.session.get('select_choix_etab') == '' and electZone.nbEtabExprimes != 0 %}
-					<a class="xls" href="{{ path('EPLEElectionBundle_resultats_export_CSV_detaille', { 'codeUrlTypeElect': typeElect.codeUrlById }) }}">Export CSV (Complet détaillé) = détail par liste</a>
+					<a class="xls" href="{{ path('ECECA_resultats_export_CSV_detaille', { 'codeUrlTypeElect': typeElect.codeUrlById }) }}">Export CSV (Complet détaillé) = détail par liste</a>
 				{% endif %}
 			{% endif %}
 		</div>

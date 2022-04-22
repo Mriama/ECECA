@@ -8,14 +8,12 @@
 {% block title %}{{ parent() }} - Archives
 	{% if electEtablissement is defined %} d'un établissement
 	{% elseif nationale is defined %} nationales
-		{# 	{% elseif circons is defined %} circonscription#}
 	{% else %} par {{ (dept is defined) ? "département" : "academie" }}{% endif %}
 {% endblock %}
 
 {% block arianeComplements %}{{ parent() }}<li>Archives
 	{% if electEtablissement is defined %} d'un établissement
 	{% elseif nationale is defined %} nationales
-		{# 	{% elseif circons is defined %} circonscription#}
 	{% else %} par {{ (dept is defined) ? "département" : "académie" }}{% endif %}
 	</li>{% endblock %}
 
@@ -24,15 +22,14 @@
 	<h3>{{ typeElect.libelle }} - Archives
 		{% if electEtablissement is defined %} de l'établissement {{ etablissement.libelle }} ({{ etablissement.uai }})
 		{% elseif nationale is defined %} nationales
-			{# 	{% elseif circons is defined %} circonscription#}
 		{% else %} par {{ (dept is defined) ? "département" : "académie" }}{% endif %}
 	</h3>
 
 	{% include 'archives/alerte.html.twig' %}
-		<p>Vous avez la possibilité de consulter l'ensemble des archives pour toutes les campagnes.<br />
-			Il est possible de consulter les archives sur toute la France, par académie et par département.
-			Il est également possible de consulter les archives pour un établissement en particulier.
-		</p>
+	<p>Vous avez la possibilité de consulter l'ensemble des archives pour toutes les campagnes.<br />
+		Il est possible de consulter les archives sur toute la France, par académie et par département.
+		Il est également possible de consulter les archives pour un établissement en particulier.
+	</p>
 
 	{% if form is defined %}
 		{% include 'archives/formulaireStatistiques.html.twig' with { 'form' : form, 'typeElect' : typeElect } %}
@@ -69,10 +66,6 @@
 			<h3>{% autoescape false %}
 					{{ (dept is defined) ? "Département <span>: "~dept.libelle~"</span>" : "Académie <span>: "~aca.libelle~"</span>" }}
 				{% endautoescape %}</h3>
-			{# 	{% else %}#}
-			{# 			{% if  circons is defined %}#}
-			{# 				<h3> {{ "Circonscription : "~circons }} </h3>#}
-			{# 			{% endif %}#}
 		{% endif %}
 		{% if electZone.participation is not null or electZonePrec.participation is not null %}
 			{% include "archives/tableau_participation.html.twig" with {
@@ -97,21 +90,14 @@
 		{% endif %}
 	{% endif %}
 	<div class="pageactions">
-		<a href="{{ path('EPLEElectionBundle_homepage') }}" class="retour">Retour</a>
-		{# 	<a class="pdf" href="{{ path('EPLEElectionBundle_statistiques_export_PDF', { 'codeUrlTypeElect': typeElect.codeUrlById }) }}">Export PDF</a>#}
-		{# 	{% if app.session.get('select_departement') != '' and app.session.get('select_type_etablissement') != '' and app.session.get('select_choix_etab') == '' %}#}
-		{# 		<a class="pdf" href="{{ path('EPLEElectionBundle_statistiques_export_PDF_complet', { 'codeUrlTypeElect': typeElect.codeUrlById }) }}">Export PDF (Complet)</a>#}
-		{# 	{% endif %}	#}
+		<a href="{{ path('ECECA_homepage') }}" class="retour">Retour</a>
 		{% if electEtablissement is defined %}
 			{% if electEtablissement != null%}
-				<a class="xls" href="{{ path('EPLEElectionBundle_archives_export_XLS', { 'codeUrlTypeElect': typeElect.codeUrlById }) }}">Export XLS</a>
+				<a class="xls" href="{{ path('ECECA_archives_export_XLS', { 'codeUrlTypeElect': typeElect.codeUrlById }) }}">Export XLS</a>
 			{% endif %}
 		{% endif %}
 		{% if electEtablissement is not defined and listeResultat != null %}
-			<a class="xls" href="{{ path('EPLEElectionBundle_archives_export_XLS', { 'codeUrlTypeElect': typeElect.codeUrlById }) }}">Export XLS</a>
-			{# 	{% if app.session.get('select_departement') != '' and app.session.get('select_type_etablissement') != '' and app.session.get('select_choix_etab') == '' %}#}
-			{# 		 <a class="xls" href="{{ path('EPLEElectionBundle_archives_export_XLS_complet', { 'codeUrlTypeElect': typeElect.codeUrlById }) }}">Export XLS (Complet)</a>#}
-			{# 	{% endif %}	#}
+			<a class="xls" href="{{ path('ECECA_archives_export_XLS', { 'codeUrlTypeElect': typeElect.codeUrlById }) }}">Export XLS</a>
 		{% endif %}
 
 	</div>

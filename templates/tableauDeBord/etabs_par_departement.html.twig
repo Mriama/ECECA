@@ -3,7 +3,7 @@
 {% endblock %}
 <h4>Rappel</h4>
 <form id="rappel" method="post" accept-charset="UTF-8">
-<input type="hidden" name="dept" value="{{ departementSelectionne.numero }}"/>
+	<input type="hidden" name="dept" value="{{ departementSelectionne.numero }}"/>
 	<table class="tdb_rappel">
 		<tr>
 			<th scope="row">Nombre d’écoles ou d’établissements sans aucune saisie </th>
@@ -19,52 +19,45 @@
 		</tr>
 	</table>
 	<br>
-	</form>
+</form>
 {% if form is defined %}
-    {% include 'tableauDeBord:formulaireTdbRecherche.html.twig' with { 'form' : form } %}
+	{% include 'tableauDeBord/formulaireTdbRecherche.html.twig' with { 'form' : form } %}
 {% endif %}
 
 <h4>Écoles ou Établissements du département {{ departementSelectionne.libelle }}</h4>
 <form id="traitement_en_masse" method="post" accept-charset="UTF-8">
-<input type="hidden" name="dept" value="{{ departementSelectionne.numero }}"/>
-<input type="hidden" name="nbEtabRelance" id="nbEtabRelance" value=""/>
+	<input type="hidden" name="dept" value="{{ departementSelectionne.numero }}"/>
+	<input type="hidden" name="nbEtabRelance" id="nbEtabRelance" value=""/>
 	<table class="tdb_ce">
 		<tr>
 			<th scope="col" class="campagne">Ecole ou établissement</th>
- 			<th scope="col" class="commune">Commune</th>
+			<th scope="col" class="commune">Commune</th>
 			<th scope="col" class="election">Election</th>
 			<th scope="col">Avancement de la saisie</th>
 			<th scope="col" class="actions" >Actions</th>
-			<th scope="col" class="actions" >Validation<input type = "checkbox" id="massValidChk"/></th>
-			<th scope="col" class="actions" >Courriel<input type = "checkbox" id="massCourrielChk"/></th>
+			<th scope="col" class="actions" >Validation<input type="checkbox" id="massValidChk"/></th>
+			<th scope="col" class="actions" >Courriel<input type="checkbox" id="massCourrielChk"/></th>
 		</tr>
 		{# Tableau des resultats pour les etablissement selon les filtres des cases #}
-		{# YME - HPQC DEFECT 195
 		{% for etab in tabBordEtab %}
 			{% for eleEtab in etab['EleEtab'] %}
-				{% include 'ableauDeBord:tableau_etabs_par_departement.html.twig'%}
-			{% endfor %}
-		{% endfor %}
-		#}
-		{% for etab in tabBordEtab %}
-			{% for eleEtab in etab['EleEtab'] %}
-			{# si non effectué est coché on affiche meme les etabs qui n'ont pas de eleEtab #}
-			 {% if afficheEleNull %}
-			 {# si que le non effectué qui est coché on affiche que les etabs qui n'ont pas de eleEtab #}
-			   {% if nonEff is defined %}
-			     {% if eleEtab['eleEtablissement'] is null %}  
-				    {% include 'tableauDeBord/tableau_etabs_par_departement.html.twig'%}
-				 {% endif %}
-		       {% else %}
-		       {# si le non effectué est  coché avec un autre critere on affiche eleEtab null et critere #}
-			     {% include 'tableauDeBord/tableau_etabs_par_departement.html.twig'%}
-			   {% endif %}
-			 {% else %}
-			 {# si non effectué n'est pas coché on n'affiche pas les etabs qui n'ont pas de eleEtab #}
-			     {% if eleEtab['eleEtablissement'] is not null %}
-					{% include 'tableauDeBord/tableau_etabs_par_departement.html.twig'%}
-				 {% endif %}
-			 {% endif %}
+				{# si non effectué est coché on affiche meme les etabs qui n'ont pas de eleEtab #}
+				{% if afficheEleNull %}
+					{# si que le non effectué qui est coché on affiche que les etabs qui n'ont pas de eleEtab #}
+					{% if nonEff is defined %}
+						{% if eleEtab['eleEtablissement'] is null %}
+							{% include 'tableauDeBord/tableau_etabs_par_departement.html.twig'%}
+						{% endif %}
+					{% else %}
+						{# si le non effectué est  coché avec un autre critere on affiche eleEtab null et critere #}
+						{% include 'tableauDeBord/tableau_etabs_par_departement.html.twig'%}
+					{% endif %}
+				{% else %}
+					{# si non effectué n'est pas coché on n'affiche pas les etabs qui n'ont pas de eleEtab #}
+					{% if eleEtab['eleEtablissement'] is not null %}
+						{% include 'tableauDeBord/tableau_etabs_par_departement.html.twig'%}
+					{% endif %}
+				{% endif %}
 			{% endfor %}
 		{% endfor %}
 	</table>
@@ -74,49 +67,49 @@
 	</div>
 </form>
 <script type="text/javascript">
-    //Evolution 219401 mass validation
-    var limitMassValidation = {{ maxMassValidationSelect }};
+	//Evolution 219401 mass validation
+	var limitMassValidation = {{ maxMassValidationSelect }};
 	// Clic sur le bouton de validation en haut de la liste des établissements
 	$('#massValidChk').click(function() {
 		if(this.checked) {
-	        $('[id^="valide_"]').each(function() {
-	            this.checked = true;
-	        });
+			$('[id^="valide_"]').each(function() {
+				this.checked = true;
+			});
 
-            var numberOfChecked = $('input[class="mass_validation_input"]:checked').length;
-            if(numberOfChecked > limitMassValidation){
-                var message = "Uniquement " + limitMassValidation + " résultats à valider seront sélectionnés",
-                    classNotification = "notification_warning",
-                    timeout = 5000;
-                flashNotification(message,classNotification,timeout);
-                var i = 0;
-                $('[id^="valide_"]').each(function() {
-                    i = i+1;
-                    if(i <= limitMassValidation){
-                        this.checked = true;
-                    } else {
-                        this.checked = false;
-                    }
-                });
+			var numberOfChecked = $('input[class="mass_validation_input"]:checked').length;
+			if(numberOfChecked > limitMassValidation){
+				var message = "Uniquement " + limitMassValidation + " résultats à valider seront sélectionnés",
+						classNotification = "notification_warning",
+						timeout = 5000;
+				flashNotification(message,classNotification,timeout);
+				var i = 0;
+				$('[id^="valide_"]').each(function() {
+					i = i+1;
+					if(i <= limitMassValidation){
+						this.checked = true;
+					} else {
+						this.checked = false;
+					}
+				});
 
-            }
-	    }else{
-	        $('[id^="valide_"]').each(function() {
-	            this.checked = false;
-	        });         
-	    }
+			}
+		}else{
+			$('[id^="valide_"]').each(function() {
+				this.checked = false;
+			});
+		}
 	});
 
-    $('input.mass_validation_input').on('change', function() {
-        var numberOfChecked = $('input[class="mass_validation_input"]:checked').length;
-        if(numberOfChecked > limitMassValidation){
-            var message = "Vous avez atteint la limite des résultats qui peuvent être sélectionnés",
-                classNotification = "notification_warning",
-                timeout = 5000;
-            flashNotification(message,classNotification,timeout);
-            this.checked = false;
-        }
-    });
+	$('input.mass_validation_input').on('change', function() {
+		var numberOfChecked = $('input[class="mass_validation_input"]:checked').length;
+		if(numberOfChecked > limitMassValidation){
+			var message = "Vous avez atteint la limite des résultats qui peuvent être sélectionnés",
+					classNotification = "notification_warning",
+					timeout = 5000;
+			flashNotification(message,classNotification,timeout);
+			this.checked = false;
+		}
+	});
 
 	// Clic sur le bouton de validation des résultats
 	$('#validationMasseResultats').click(function() {
@@ -124,7 +117,7 @@
 		if(!globalCheck){
 			alert('Veuillez sélectionner au moins une validation à effectuer.');
 		}else if(confirm('Confirmez-vous votre demande de validation des résultats ?')){
-			$('#traitement_en_masse').attr('action','{{ path('EPLEElectionBundle_validation_resultats_masse' ) }}' );
+			$('#traitement_en_masse').attr('action','{{ path('ECECA_validation_resultats_masse' ) }}' );
 		}else{
 			return false; // pour éviter de recharger la page.
 		}
@@ -134,14 +127,14 @@
 	// Clic sur le bouton de courriel en haut de la liste des établissements
 	$('#massCourrielChk').click(function() {
 		if(this.checked) {
-	        $('[id^="courriel_"]').each(function() {
-	            this.checked = true;
-	        });
-	    }else{
-	        $('[id^="courriel_"]').each(function() {
-	            this.checked = false;
-	        });         
-	    }
+			$('[id^="courriel_"]').each(function() {
+				this.checked = true;
+			});
+		}else{
+			$('[id^="courriel_"]').each(function() {
+				this.checked = false;
+			});
+		}
 	});
 
 	// Clic sur le bouton de validation des résultats
@@ -159,23 +152,23 @@
 				}
 			});
 			$('#nbEtabRelance').val(uais.length);
-			$('#traitement_en_masse').attr('action','{{ path('EPLEElectionBundle_masse_courriel') }}' );
+			$('#traitement_en_masse').attr('action','{{ path('ECECA_masse_courriel') }}' );
 		}
 		return globalCheck;
 	});
 
 
-    //Evolution 219401 mass validation
-    function flashNotification(message, classNotification, timeout) {
-        $(".notification_mass_validation").css("display", 'block');
-        $(".notification_mass_validation").addClass(classNotification);
-        $(".notification_mass_validation").html(message);
-        $(".notification_mass_validation").slideDown(function() {
-            setTimeout(function() {
-                $(".notification_mass_validation").slideUp();
-            }, timeout);
-        });
-    }
+	//Evolution 219401 mass validation
+	function flashNotification(message, classNotification, timeout) {
+		$(".notification_mass_validation").css("display", 'block');
+		$(".notification_mass_validation").addClass(classNotification);
+		$(".notification_mass_validation").html(message);
+		$(".notification_mass_validation").slideDown(function() {
+			setTimeout(function() {
+				$(".notification_mass_validation").slideUp();
+			}, timeout);
+		});
+	}
 
 
 </script>

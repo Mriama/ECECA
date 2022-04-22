@@ -12,7 +12,7 @@ header h2 {
 }
 
 nav#menu li{
-	margin-top:0px;
+	margin-top:0;
 }
 
 nav#menu li a {
@@ -49,7 +49,8 @@ table th.rotationEntete div {
 	height: 5.5em;
 	margin: 0;
 	writing-mode: tb-rl;
-	filter: flipv fliph;
+	filter: flipv() fliph();
+	filter: ;
 }
 
 label.displayInline {

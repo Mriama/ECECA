@@ -1,4 +1,4 @@
-{% extends 'EPLEAdminBundle::layout.html.twig' %}
+{% extends 'layout_admin.html.twig' %}
 
 {% block title %}
 	{{ parent() }} - Éditer la campagne d'élections {{ form.vars.value.typeElection.code }}
@@ -11,19 +11,19 @@
 {% block stylesheets %}
 	{{ parent() }}
 	{# JQuery DatePicker #}
-		<link type="text/css" href="{{ asset('js/jquery_ui/themes/base/jquery.ui.all.css') }}" rel="stylesheet"  />
+	<link type="text/css" href="{{ asset('js/jquery_ui/themes/base/jquery.ui.all.css') }}" rel="stylesheet"  />
 	{# /JQuery DatePicker #}
 {% endblock %}
 
 {% block js %}
 	{{ parent() }}
 	{# JQuery DatePicker #}
-		<script type="text/javascript" src="{{ asset('js/jquery_ui/jquery.ui.core.min.js') }}"></script>
-		<script type="text/javascript" src="{{ asset('js/jquery_ui/jquery.ui.datepicker.min.js') }}"></script>
-		<script type="text/javascript" src="{{ asset('js/jquery_ui/jquery.ui.widget.js') }}"></script>
-		<script type="text/javascript" src="{{ asset('js/jquery_ui/i18n/jquery.ui.datepicker-fr.js') }}"></script>
+	<script type="text/javascript" src="{{ asset('js/jquery_ui/jquery.ui.core.min.js') }}"></script>
+	<script type="text/javascript" src="{{ asset('js/jquery_ui/jquery.ui.datepicker.min.js') }}"></script>
+	<script type="text/javascript" src="{{ asset('js/jquery_ui/jquery.ui.widget.js') }}"></script>
+	<script type="text/javascript" src="{{ asset('js/jquery_ui/i18n/jquery.ui.datepicker-fr.js') }}"></script>
 	{# /JQuery DatePicker #}
-	
+
 	<script type="text/javascript">
 		// Calcul de la date du jour 
 		var now = new Date();
@@ -31,32 +31,32 @@
 
 		$(function() {
 			$("#form_dateDebutSaisie").datepicker({regional : 'fr',
-			      								   changeMonth: true,
-                  								   changeYear: false,
-                  								   minDate : '01/01/{{ annee }}',
-                  								   maxDate : '31/12/{{ annee }}'
-											   });
+				changeMonth: true,
+				changeYear: false,
+				minDate : '01/01/{{ annee }}',
+				maxDate : '31/12/{{ annee }}'
+			});
 
 			$("#form_dateFinSaisie").datepicker({regional : 'fr',
-                						         changeMonth: true,
-                                                 changeYear: false,
-                                                 minDate : '01/01/{{ annee }}',
-											     maxDate : '31/12/{{ annee }}'
-            								});
-			
+				changeMonth: true,
+				changeYear: false,
+				minDate : '01/01/{{ annee }}',
+				maxDate : '31/12/{{ annee }}'
+			});
+
 			$("#form_dateDebutValidation").datepicker({regional : 'fr',
-		         									   changeMonth: true,
-									                   changeYear: false,
-									                   minDate : '01/01/{{ annee }}',
-												       maxDate : '31/12/{{ annee }}'
-											});
-			
+				changeMonth: true,
+				changeYear: false,
+				minDate : '01/01/{{ annee }}',
+				maxDate : '31/12/{{ annee }}'
+			});
+
 			$("#form_dateFinValidation").datepicker({regional : 'fr',
-		         									 changeMonth: true,
-									                 changeYear: false,
-									                 minDate : '01/01/{{ annee }}',
-												     maxDate : '31/12/{{ annee }}'
-											});
+				changeMonth: true,
+				changeYear: false,
+				minDate : '01/01/{{ annee }}',
+				maxDate : '31/12/{{ annee }}'
+			});
 		});
 	</script>
 {% endblock %}
@@ -70,24 +70,25 @@
 {% block content %}
 	{% if annee > 0 %}
 		<h4>Campagne {{ annee }} - {{ annee+1 }}{% if isArchivee %} (archivée) {% endif %} {% if isClosed %} (fermée) {% else %} (en cours){% endif %}</h4>
-		<form action="{{ path('EPLEAdminBundle_campagne_modifier', { 'campagneId':form.vars.value.id }) }}" method="post" accept-charset="UTF-8" {{ form_enctype(form) }}>
+		<form action="{{ path('ECECA_campagne_modifier', { 'campagneId':form.vars.value.id }) }}" method="post" accept-charset="UTF-8">
+			{{ form_start(form) }}
 			<p class="note">Un astérisque * marque un champ obligatoire</p>
-			
+
 			{{ form_widget(form) }}
-			
+
 			<div class="boutons">{% if not isArchivee %}<input type="submit" value="Valider" />{% endif %}</div>
-	
+			{{ form_end(form) }}
 		</form>
 		<p class="no-print">
 			{% if isArchivee %}
-				<a href="{{ path('EPLEAdminBundle_campagne_ajouter') }}" class="ajouter">Initialiser une nouvelle campagne pour l'élection <abbr title="{{ form.vars.value.typeElection.libelle }}">{{ form.vars.value.typeElection.code }}</abbr></a>
+				<a href="{{ path('ECECA_campagne_ajouter') }}" class="ajouter">Initialiser une nouvelle campagne pour l'élection <abbr title="{{ form.vars.value.typeElection.libelle }}">{{ form.vars.value.typeElection.code }}</abbr></a>
 			{% endif %}
 			{% if isArchivable %}
-				<a href="{{ path('EPLEAdminBundle_campagne_archiver', { 'campagneId':form.vars.value.id }) }}" class="ajouter">Archiver la campagne pour l'élection <abbr title="{{ form.vars.value.typeElection.libelle }}">{{ form.vars.value.typeElection.code }}</abbr></a>
+				<a href="{{ path('ECECA_campagne_archiver', { 'campagneId':form.vars.value.id }) }}" class="ajouter">Archiver la campagne pour l'élection <abbr title="{{ form.vars.value.typeElection.libelle }}">{{ form.vars.value.typeElection.code }}</abbr></a>
 			{% endif %}
 		</p>
 	{% endif %}
 	<div class="pageactions">
-		<a href="{{ path('EPLEAdminBundle_campagnes') }}" class="retour">Retour</a>
+		<a href="{{ path('ECECA_campagnes') }}" class="retour">Retour</a>
 	</div>
 {% endblock %}

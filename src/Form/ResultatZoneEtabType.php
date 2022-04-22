@@ -22,32 +22,32 @@ class ResultatZoneEtabType extends ZoneEtabType {
 
 // 		if (!$this->campagne->isFinished()) { // mantis 122046 le filtre avancement des saisies apparait tout le temps
         $builder->add('etatSaisie', ChoiceType::class, array(
-            'label' => 'Avancement des saisies',
-            'multiple' => true,
-            'expanded' => true,
-            'choices' => array(
-                'Enregistrées' => EleEtablissement::ETAT_SAISIE,
-                'Transmises' => EleEtablissement::ETAT_TRANSMISSION,
-                'Validées' => EleEtablissement::ETAT_VALIDATION
-            ),
-             'data' => array(EleEtablissement::ETAT_VALIDATION),
-            'required' => true)
+                'label' => 'Avancement des saisies',
+                'multiple' => true,
+                'expanded' => true,
+                'choices' => array(
+                    'Enregistrées' => EleEtablissement::ETAT_SAISIE,
+                    'Transmises' => EleEtablissement::ETAT_TRANSMISSION,
+                    'Validées' => EleEtablissement::ETAT_VALIDATION
+                ),
+                'data' => array(EleEtablissement::ETAT_VALIDATION),
+                'required' => true)
         );
-        
+
         if( $hasSousTypeElect ){
-	       	$builder ->add('sousTypeElection', EntityType::class, array(
-	        		'label' => 'Sous-type d’élection',
-	        		'multiple' => false,
-	        		'class' => RefSousTypeElection::class,
-	        		'query_builder' => function(EntityRepository $er){
-	        			$qb = $er->createQueryBuilder('s');
-	        			$qb->orderBy('s.id', 'ASC');
-	        			return $qb;
-	        		},
-	        		'required' => false,
-	        		'choice_label' => 'code',
-	        		'placeholder' => false));
-	   		}
+            $builder ->add('sousTypeElection', EntityType::class, array(
+                'label' => 'Sous-type d’élection',
+                'multiple' => false,
+                'class' => RefSousTypeElection::class,
+                'query_builder' => function(EntityRepository $er){
+                    $qb = $er->createQueryBuilder('s');
+                    $qb->orderBy('s.id', 'ASC');
+                    return $qb;
+                },
+                'required' => false,
+                'choice_label' => 'code',
+                'placeholder' => false));
+        }
     }
 
     public function configureOptions(OptionsResolver $resolver) {

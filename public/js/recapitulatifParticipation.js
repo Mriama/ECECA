@@ -20,7 +20,7 @@ $(document).ready(function() {
 		var categorie = document.getElementById("recapitulatifParticipationEtabType_categorie");
 		var typeEtablissement = document.getElementById("recapitulatifParticipationEtabType_typeEtablissement");
 		
-		$.post(EPLEElectionBundle_recapitulatif_participation, 
+		$.post(ECECA_recapitulatif_participation,
 			{ 
 				formCategory: categorie,
 				formTypeEtab: typeEtablissement,

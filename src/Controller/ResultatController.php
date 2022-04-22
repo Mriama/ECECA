@@ -1,8 +1,14 @@
 <?php
 
-
 namespace App\Controller;
 
+use App\Entity\EleAlerte;
+use App\Entity\EleConsolidation;
+use App\Entity\EleParticipation;
+use App\Entity\EleResultat;
+use App\Entity\EleResultatDetail;
+use App\Entity\RefOrganisation;
+use App\Utils\ConsolidationService;
 use DateTime;
 use App\Entity\RefUser;
 use App\Utils\EpleUtils;
@@ -14,56 +20,51 @@ use App\Entity\RefDepartement;
 use App\Entity\RefModaliteVote;
 use App\Entity\RefTypeElection;
 use App\Utils\EcecaExportUtils;
-use App\Utils\RefUserPerimetre;
 use App\Entity\EleEtablissement;
 use App\Entity\RefEtablissement;
 use App\Form\ResultatZoneEtabType;
 use App\Entity\RefSousTypeElection;
 use App\Entity\RefTypeEtablissement;
 use App\Form\NbSiegesTirageAuSortType;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
+use Doctrine\Persistence\ManagerRegistry;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\StreamedResponse;
-use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
-use App\Controller\BaseController;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Symfony\Component\Routing\Annotation\Route;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
 
-class ResultatController extends BaseController {
+class ResultatController extends AbstractController {
+
+    private $request;
+    private $doctrine;
+
+    public function __construct(RequestStack $request, ManagerRegistry $doctrine) {
+        $this->request = $request->getCurrentRequest();
+        $this->doctrine = $doctrine;
+    }
 
     /**
      * Formulaire de recherche des résultats (page principale)
      *
-     * @param Request $request
-     * @param String $codeUrlTypeElect
-     *            : code type élection
+     * @param String $codeUrlTypeElect : code type élection
      */
-    public function indexAction(Request $request,RefUserPerimetre $refUserPerimetre, $codeUrlTypeElect, ParameterBagInterface $parameters) {
-        $em = $this->getDoctrine()->getManager();
+    public function indexAction($codeUrlTypeElect) {
+        $em = $this->doctrine->getManager();
 
         // reset session pour les users ETAB venant de leurs résultats
-        $request->getSession()->remove('select_academie');
-        $request->getSession()->remove('select_departement');
-        $request->getSession()->remove('select_commune');
-        $request->getSession()->remove('select_etablissement');
-        $request->getSession()->remove('select_choix_etab');
-        $request->getSession()->remove('select_typeEtab');
-        $request->getSession()->remove('select_sousTypeElect');
-        $request->getSession()->remove('select_etatSaisie');
-        $request->getSession()->remove('dept_num');
+        $this->request->getSession()->remove('select_academie');
+        $this->request->getSession()->remove('select_departement');
+        $this->request->getSession()->remove('select_commune');
+        $this->request->getSession()->remove('select_etablissement');
+        $this->request->getSession()->remove('select_choix_etab');
+        $this->request->getSession()->remove('select_typeEtab');
+        $this->request->getSession()->remove('select_sousTypeElect');
+        $this->request->getSession()->remove('select_etatSaisie');
+        $this->request->getSession()->remove('dept_num');
 
-        //TODO : changer authentification
-        $user = $em->getRepository(RefUser::class)->find(133);
-        $perimetre = $refUserPerimetre->setPerimetreForUser($user);
-        $user->setPerimetre($perimetre);
-        $token = new UsernamePasswordToken($user, null, 'main', $user->getRoles());
-        $this->get('security.token_storage')->setToken($token);
-        $this->get('session')->set('_security_main', serialize($token));
-        /************ */
-        //$user = $this->getUser();
+        $user = $this->getUser();
         $profilsLimitEtab = array(RefProfil::CODE_PROFIL_IEN, RefProfil::CODE_PROFIL_CE, RefProfil::CODE_PROFIL_DE);
 
         $typeElectionId = RefTypeElection::getIdRefTypeElectionByCodeUrl($codeUrlTypeElect);
@@ -84,40 +85,40 @@ class ResultatController extends BaseController {
         if ($user->getProfil()->getCode() == RefProfil::CODE_PROFIL_RECT) {
             $academies = $user->getPerimetre()->getAcademies();
             if(count($academies) == 1){
-                $request->getSession()->set('select_academie', $academies[0]->getCode());
+                $this->request->getSession()->set('select_academie', $academies[0]->getCode());
             }elseif(count($academies) > 1){
                 $academies[0]->getAcademieFusion()->getCode();
                 $academies[0]->setlibelle($academies[0]->getAcademieFusion()->getLibelle());
-                $request->getSession()->set('select_academie', $academies[0]->getCode());
+                $this->request->getSession()->set('select_academie', $academies[0]->getCode());
             }
         }
 
         // DSDEN -> placer l'académie et le département de l'utilisateur en session
         if ($user->getProfil()->getCode() == RefProfil::CODE_PROFIL_DSDEN) {
             $academies = $user->getPerimetre()->getAcademies();
-            $request->getSession()->set('select_academie', $academies[0]->getCode());
+            $this->request->getSession()->set('select_academie', $academies[0]->getCode());
             $departements = $user->getPerimetre()->getDepartements();
-            $request->getSession()->set('select_departement', $departements[0]->getNumero());
+            $this->request->getSession()->set('select_departement', $departements[0]->getNumero());
         }
 
         // CE / DE / IEN -> placer l'établissement de l'utilisateur en session
         if (in_array($user->getProfil()->getCode(), $profilsLimitEtab)) {
             $etablissements = $user->getPerimetre()->getEtablissements();
-            $request->getSession()->set('select_etablissement', $etablissements[0]->getUai());
+            $this->request->getSession()->set('select_etablissement', $etablissements[0]->getUai());
             $communes = $user->getPerimetre()->getCommunes();
-            $request->getSession()->set('select_commune', $communes[0]->getId());
+            $this->request->getSession()->set('select_commune', $communes[0]->getId());
             $academies = $user->getPerimetre()->getAcademies();
-            $request->getSession()->set('select_academie', $academies[0]->getCode());
+            $this->request->getSession()->set('select_academie', $academies[0]->getCode());
             $departements = $user->getPerimetre()->getDepartements();
-            $request->getSession()->set('select_departement', $departements[0]->getNumero());
-            $request->getSession()->set('select_choix_etab', true);
-            $params['retourLstRech'] = false;
+            $this->request->getSession()->set('select_departement', $departements[0]->getNumero());
+            $this->request->getSession()->set('select_choix_etab', true);
+            $params['retourLstRech'] = 0;
         }
 
-        $params = $this->getParametersRecherche($request, $user, $campagne);
+        $params = $this->getParametersRecherche($user, $campagne);
 
         if (in_array($user->getProfil()->getCode(), $profilsLimitEtab)) {
-            $params['retourLstRech'] = false;
+            $params['retourLstRech'] = 0;
         }
 
         // 0154831 changement de message des résultats transmis pour DE/CE
@@ -130,7 +131,7 @@ class ResultatController extends BaseController {
             && ($user->getProfil()->getCode() == RefProfil::CODE_PROFIL_DGESCO
                 || $user->getProfil()->getCode() == RefProfil::CODE_PROFIL_DSDEN
                 || $user->getProfil()->getCode() == RefProfil::CODE_PROFIL_RECT)) {
-            $params['info'] = $parameters->get('info');
+            $params['info'] = $this->getParameter('info');
             $params['typeElectCode'] = $typeElection->getCode();
         }
 
@@ -139,8 +140,8 @@ class ResultatController extends BaseController {
             $params['accesExportDetaille'] = true;
         }
 
-        $params['erreurs'] = $parameters->get('erreurs');
-        $params['warning'] = $parameters->get('warning');
+        $params['erreurs'] = $this->getParameter('erreurs');
+        $params['warning'] = $this->getParameter('warning');
         // 0239479: Erreur aléatoire lors de l affichage de la page Résultats
         $form = $this->createForm(NbSiegesTirageAuSortType::class, null);
         $params['formTirage'] = $form->createView();
@@ -150,17 +151,15 @@ class ResultatController extends BaseController {
     /**
      * Cette fonction permet de lancer l'action de retour dans le formulaire de recherche par établissement
      *
-     * @param Request $request
-     * @param String $codeUrlTypeElect
-     *            : code type élection
+     * @param String $codeUrlTypeElect : code type élection
      */
-    public function retourListeEtablissementAction(Request $request,  $codeUrlTypeElect){
+    public function retourListeEtablissementAction($codeUrlTypeElect){
 
-        $em = $this->getDoctrine()->getManager();
+        $em = $this->doctrine->getManager();
 
-        $request->getSession()->remove('select_sous_type_election');
-        $request->getSession()->remove('select_etablissement');
-        $request->getSession()->remove('dept_num');
+        $this->request->getSession()->remove('select_sous_type_election');
+        $this->request->getSession()->remove('select_etablissement');
+        $this->request->getSession()->remove('dept_num');
 
         $typeElectionId = RefTypeElection::getIdRefTypeElectionByCodeUrl($codeUrlTypeElect);
         $typeElection = $em->getRepository(RefTypeELection::class)->find($typeElectionId);
@@ -172,14 +171,14 @@ class ResultatController extends BaseController {
         if (empty($campagne)) {
             throw $this->createNotFoundException('Les résultats de l\'établissement n\'ont pas été trouvés car la campagne est inconnue.');
         }
-        $user = $this->get('security.context')->getToken()->getUser();
+        $user = $this->getUser();
         if (!$user->canConsult($typeElection)) {
             throw new AccessDeniedException();
         }
 
-        $params = $this->getParametersRecherche($request, $user, $campagne);
-        $params['erreurs'] = $parameters->get('erreurs');;
-        $params['warning'] = $parameters->get('warning');
+        $params = $this->getParametersRecherche($user, $campagne);
+        $params['erreurs'] = $this->getParameter('erreurs');
+        $params['warning'] = $this->getParameter('warning');
 
         return $this->render('resultat/indexConsultationResultats.html.twig', $params);
     }
@@ -188,9 +187,9 @@ class ResultatController extends BaseController {
      * Paramètres pour la recherche des résultats
      * @codeCoverageIgnore
      */
-    private function getParametersRecherche(Request $request, RefUser $user, $campagne){
+    private function getParametersRecherche(RefUser $user, $campagne){
 
-        $em = $this->getDoctrine()->getManager();
+        $em = $this->doctrine->getManager();
         $profilsLimitEtab = array(RefProfil::CODE_PROFIL_IEN, RefProfil::CODE_PROFIL_CE, RefProfil::CODE_PROFIL_DE);
         $profilsHasSousTypeElect = array(RefProfil::CODE_PROFIL_CE, RefProfil::CODE_PROFIL_RECT, RefProfil::CODE_PROFIL_DSDEN);
         $params = array();
@@ -204,8 +203,8 @@ class ResultatController extends BaseController {
         $params['campagne'] = $campagne;
         $params['typeElect'] = $campagne->getTypeElection();
 
-        $request->getSession()->set('campagne', $campagne);
-        $request->getSession()->set('typeElect', $campagne->getTypeElection());
+        $this->request->getSession()->set('campagne', $campagne);
+        $this->request->getSession()->set('typeElect', $campagne->getTypeElection());
 
 
         $datasSearch = array();
@@ -217,28 +216,28 @@ class ResultatController extends BaseController {
         $datasSearch['etablissement'] = null;
         $datasSearch['sousTypeElection'] = null;
 
-        if($request->getSession()->get('select_departement'))
-            $datasSearch['departement'] = $em->getRepository(RefDepartement::class)->find($request->getSession()->get('select_departement'));
-        if($request->getSession()->get('select_academie'))
-            $datasSearch['academie']  = $em->getRepository(RefAcademie::class)->find($request->getSession()->get('select_academie'));
-        if($request->getSession()->get('select_commune'))
-            $datasSearch['commune'] = $em->getRepository(RefCommune::class)->find($request->getSession()->get('select_commune'));
+        if($this->request->getSession()->get('select_departement'))
+            $datasSearch['departement'] = $em->getRepository(RefDepartement::class)->find($this->request->getSession()->get('select_departement'));
+        if($this->request->getSession()->get('select_academie'))
+            $datasSearch['academie']  = $em->getRepository(RefAcademie::class)->find($this->request->getSession()->get('select_academie'));
+        if($this->request->getSession()->get('select_commune'))
+            $datasSearch['commune'] = $em->getRepository(RefCommune::class)->find($this->request->getSession()->get('select_commune'));
 
-        if($request->getSession()->get('select_typeEtab'))
-            $datasSearch['typeEtablissement'] = $em->getRepository(RefTypeEtablissement::class)->find($request->getSession()->get('select_typeEtab'));
-        if($request->getSession()->get('select_choix_etab'))
-            $datasSearch['choix_etab'] = $request->getSession()->get('select_choix_etab');
-        if($request->getSession()->get('select_etablissement'))
-            $datasSearch['etablissement'] = $em->getRepository(RefEtablissement::class)->find($request->getSession()->get('select_etablissement'));
-        if($request->getSession()->get('select_sousTypeElect'))
-            $datasSearch['sousTypeElection'] = $em->getRepository(RefSousTypeElection::class)->find($request->getSession()->get('select_sousTypeElect'));
+        if($this->request->getSession()->get('select_typeEtab'))
+            $datasSearch['typeEtablissement'] = $em->getRepository(RefTypeEtablissement::class)->find($this->request->getSession()->get('select_typeEtab'));
+        if($this->request->getSession()->get('select_choix_etab'))
+            $datasSearch['choix_etab'] = $this->request->getSession()->get('select_choix_etab');
+        if($this->request->getSession()->get('select_etablissement'))
+            $datasSearch['etablissement'] = $em->getRepository(RefEtablissement::class)->find($this->request->getSession()->get('select_etablissement'));
+        if($this->request->getSession()->get('select_sousTypeElect'))
+            $datasSearch['sousTypeElection'] = $em->getRepository(RefSousTypeElection::class)->find($this->request->getSession()->get('select_sousTypeElect'));
 
         // mantis 122046 le filtre avancement des saisies apparait tout le temps
         //         if ($campagne->isFinished()) {
         //             $datasSearch['etatSaisie'] = EleEtablissement::ETAT_VALIDATION;
         //         } else {
-        if ($request->getSession()->get('select_etatSaisie')) {
-            $datasSearch['etatSaisie'] = $request->getSession()->get('select_etatSaisie');
+        if ($this->request->getSession()->get('select_etatSaisie')) {
+            $datasSearch['etatSaisie'] = $this->request->getSession()->get('select_etatSaisie');
             if (!is_array($datasSearch['etatSaisie'])) {
                 $datasSearch['etatSaisie'] = array(
                     $datasSearch['etatSaisie']
@@ -263,37 +262,33 @@ class ResultatController extends BaseController {
 
         $form = $this->createForm(ResultatZoneEtabType::class, null, ['user'=>$user, 'hasSousTypeElect'=>$hasSousTypeElect]);
 
-        if ($request->getMethod() == 'POST') {
+        if ($this->request->getMethod() == 'POST') {
 
             //If the Departementr is empty check she has a child:
 
-            $form->handleRequest($request);
+            $form->handleRequest($this->request);
             if ($form->isSubmitted() && $form->isValid()) {
-
                 $datasForm = $form->getData();
 
                 $datasSearch['typeEtablissement'] = $datasForm['typeEtablissement'];
-
                 $datasSearch['academie'] = $datasForm['academie'];
                 $datasSearch['departement'] = $datasForm['departement'];
                 $datasSearch['commune'] = $datasForm['commune'];
-
                 $datasSearch['etablissement'] = $datasForm['etablissement'];
                 $datasSearch['etatSaisie'] = $datasForm['etatSaisie'];
                 $datasSearch['choix_etab'] = $datasForm['choix_etab'];
                 // 0239686: Incohérence entre les profondeurs de consultation :  le filtre sous type delection ne saffiche jamais dans les resultats
-                // electZone.typeEtablissement.id == 5 and typeElect.codeUrlById == constant('\\EPLE\\ElectionBundle\\Entity\\RefTypeElection::CODE_URL_ASS_ATE')
+                // electZone.typeEtablissement.id == 5 and typeElect.codeUrlById == constant('\\App\\Entity\\RefTypeElection::CODE_URL_ASS_ATE')
                 if( isset($datasForm['typeEtablissement']) && $datasForm['typeEtablissement']->getId()==5 && $hasSousTypeElect){
                     $datasSearch['sousTypeElection'] = $datasForm['sousTypeElection'];
                 }
 
             } else {
                 // ECT : rustine pour DGESCO, à corriger
-                $arrayRequest = $request->request->all();
+                $arrayRequest = $this->request->request->all();
 
                 //Contient ["academie"] (code); ["departement"] (numero); ["typeEtablissement"] (id); ["etatSaisie"]; ["choix_etab"]; ["commune"] (id); ["etablissement"] (uai); ["_token"]
                 $arrayResultatZoneEtabType = $arrayRequest['resultatZoneEtabType'];
-
                 $datasSearch['academie'] = $em->getRepository(RefAcademie::class)->find($arrayResultatZoneEtabType['academie']);
                 $datasSearch['departement'] = $em->getRepository(RefDepartement::class)->find($arrayResultatZoneEtabType['departement']);
                 $datasSearch['commune'] = $em->getRepository(RefCommune::class)->find($arrayResultatZoneEtabType['commune']);
@@ -342,11 +337,8 @@ class ResultatController extends BaseController {
             $idSousTypeElect = $datasSearch['sousTypeElection']->getId();
         }
 
-
         if ($datasSearch['choix_etab']) {
-
             // Recherche par établissement
-
             if (!empty($datasSearch['etablissement'])) {
                 $zone = $datasSearch['etablissement'];
             } else if (!empty($datasSearch['commune'])) {
@@ -376,8 +368,6 @@ class ResultatController extends BaseController {
             //$logger->info('DATA SEARCH DEPT : '.$datasSearch['departement']->getNumero());
 
             if (empty($datasSearch['etablissement'])) {
-
-
                 if (!empty($datasSearch['departement'])) {
                     $zone = $datasSearch['departement'];
                     $isPeriodeP2Ter = $campagne->isP2Ter($joursCalendairesIen, $joursCalendaires, $datasSearch['departement']->getAcademie());
@@ -407,8 +397,7 @@ class ResultatController extends BaseController {
                 if (!empty($datasSearch['commune'])) {
                     $params['commune_selectionne'] = $datasSearch['commune']->getId();
                 }
-            } else
-            {
+            } else {
 
                 if (!$user->canConsultEtab($datasSearch['etablissement'], $params['typeElect'])) {
                     throw new AccessDeniedException();
@@ -449,16 +438,8 @@ class ResultatController extends BaseController {
             if (!empty($datasSearch['typeEtablissement'])) {
                 $codeUrlTypeEtab = $datasSearch['typeEtablissement']->getCodeUrlById();
                 $params['codeUrlTypeEtab'] = $codeUrlTypeEtab;
-                $request->getSession()->set('codeUrlTypeEtab', $params['codeUrlTypeEtab']);
+                $this->request->getSession()->set('codeUrlTypeEtab', $params['codeUrlTypeEtab']);
             }
-
-            // Filtrage selon le sous-type d'élection
-            /*
-            if (!empty($datasSearch['sousTypeElection'])) {
-                $idSousTypeElect = $datasSearch['sousTypeElection']->getId();
-                $params['sousTypeElection'] = $datasSearch['sousTypeElection'];
-                $request->getSession()->set('sousTypeElection', $params['sousTypeElection']);
-            }*/
 
             // Filtrage selon le périmètre de l'utilisateur
             // Etablissements
@@ -475,29 +456,22 @@ class ResultatController extends BaseController {
                         }
                     }
                 }
-                // TODO EVOL 013E EX_012 passer le sous-type d'élection
+                // EVOL 013E EX_012 passer le sous-type d'élection
                 $params['lst_electEtab'] = $em->getRepository(EleEtablissement::class)->findByCampagneTypeEtabZone($campagne, $datasSearch['typeEtablissement'], $zone, $etatSaisie, $user, $idSousTypeElect);
             } else {
-
                 $params = array_merge($params, $this->getParametersForConsultationResultatsZone($campagne, $zone, $user, $codeUrlTypeEtab, $etatSaisie, $idSousTypeElect));
-
             }
         }
 
-
-
         // Mise à jour des variables de session
-        $request->getSession()->set('select_academie', ($datasSearch['academie'] instanceof RefAcademie) ? $datasSearch['academie']->getIdZone() : null);
-        $request->getSession()->set('select_departement', ($datasSearch['departement'] instanceof RefDepartement) ? $datasSearch['departement']->getIdZone() : null);
-        $request->getSession()->set('select_commune', ($datasSearch['commune'] instanceof RefCommune) ? $datasSearch['commune']->getId() : null);
-        $request->getSession()->set('select_typeEtab', ($datasSearch['typeEtablissement'] instanceof RefTypeEtablissement) ? $datasSearch['typeEtablissement']->getId() : null);
-        $request->getSession()->set('select_etatSaisie', $datasSearch['etatSaisie']);
-        $request->getSession()->set('select_choix_etab', $datasSearch['choix_etab']);
-        $request->getSession()->set('select_etablissement', ($datasSearch['etablissement'] instanceof RefEtablissement) ? $datasSearch['etablissement']->getUai() : null);
-        $request->getSession()->set('select_sousTypeElect', ($datasSearch['sousTypeElection'] instanceof RefSousTypeElection) ? $datasSearch['sousTypeElection']->getId() : null);
-
-        // Serialisation des paramètres et mise en session
-        //$request->getSession()->set('params', serialize($params));
+        $this->request->getSession()->set('select_academie', ($datasSearch['academie'] instanceof RefAcademie) ? $datasSearch['academie']->getIdZone() : null);
+        $this->request->getSession()->set('select_departement', ($datasSearch['departement'] instanceof RefDepartement) ? $datasSearch['departement']->getIdZone() : null);
+        $this->request->getSession()->set('select_commune', ($datasSearch['commune'] instanceof RefCommune) ? $datasSearch['commune']->getId() : null);
+        $this->request->getSession()->set('select_typeEtab', ($datasSearch['typeEtablissement'] instanceof RefTypeEtablissement) ? $datasSearch['typeEtablissement']->getId() : null);
+        $this->request->getSession()->set('select_etatSaisie', $datasSearch['etatSaisie']);
+        $this->request->getSession()->set('select_choix_etab', $datasSearch['choix_etab']);
+        $this->request->getSession()->set('select_etablissement', ($datasSearch['etablissement'] instanceof RefEtablissement) ? $datasSearch['etablissement']->getUai() : null);
+        $this->request->getSession()->set('select_sousTypeElect', ($datasSearch['sousTypeElection'] instanceof RefSousTypeElection) ? $datasSearch['sousTypeElection']->getId() : null);
 
         $params['form'] = $form->createView();
 
@@ -510,28 +484,26 @@ class ResultatController extends BaseController {
      * Consultation des résultats à valider
      * Pour les DSDEN et rectorats
      *
-     * @param Request $request
-     * @param String $codeUrlTypeElect
-     *            : code type élection
+     * @param String $codeUrlTypeElect : code type élection
      */
-    public function consultationResultatsTransmisZoneAction(\Symfony\Component\HttpFoundation\Request $request, $codeUrlTypeElect, $numDept) {
+    public function consultationResultatsTransmisZoneAction($codeUrlTypeElect, $numDept) {
 
-        $em = $this->getDoctrine()->getManager();
+        $em = $this->doctrine->getManager();
 
         // on réinitialise la session et on y met tout ce qu'il faut
-        $request->getSession()->remove('select_academie');
-        $request->getSession()->remove('select_departement');
-        $request->getSession()->remove('select_typeEtab');
-        $request->getSession()->remove('select_commune');
-        $request->getSession()->remove('select_etablissement');
-        $request->getSession()->remove('select_sousTypeElect');
+        $this->request->getSession()->remove('select_academie');
+        $this->request->getSession()->remove('select_departement');
+        $this->request->getSession()->remove('select_typeEtab');
+        $this->request->getSession()->remove('select_commune');
+        $this->request->getSession()->remove('select_etablissement');
+        $this->request->getSession()->remove('select_sousTypeElect');
 
-        $request->getSession()->set('select_etatSaisie', array(
+        $this->request->getSession()->set('select_etatSaisie', array(
             EleEtablissement::ETAT_TRANSMISSION
         ));
-        $request->getSession()->set('select_choix_etab', true);
+        $this->request->getSession()->set('select_choix_etab', true);
 
-        $request->getSession()->set('select_typeEtab', $request->getSession()->get('select_typeEtablissement'));
+        $this->request->getSession()->set('select_typeEtab', $this->request->getSession()->get('select_typeEtablissement'));
 
         $typeElectionId = RefTypeElection::getIdRefTypeElectionByCodeUrl($codeUrlTypeElect);
         $typeElection = $em->getRepository(RefTypeELection::class)->find($typeElectionId);
@@ -540,12 +512,10 @@ class ResultatController extends BaseController {
         }
 
         if ($codeUrlTypeElect == RefTypeElection::CODE_URL_A_ATTE || $codeUrlTypeElect == RefTypeElection::CODE_URL_SS) {
-            $request->getSession()->set('select_sousTypeElect', RefSousTypeElection::getIdRefSousTypeElectionByCodeUrl($codeUrlTypeElect));
+            $this->request->getSession()->set('select_sousTypeElect', RefSousTypeElection::getIdRefSousTypeElectionByCodeUrl($codeUrlTypeElect));
         }
 
-        $user = $this->get('security.context')
-            ->getToken()
-            ->getUser();
+        $user = $this->getUser();
         if (!$user->canConsult($typeElection)) {
             throw new AccessDeniedException();
         }
@@ -557,24 +527,24 @@ class ResultatController extends BaseController {
 
         $zoneUser = ($user->getIdZone() != null) ? EpleUtils::getZone($em, $user->getIdZone()) : null;
         if ($zoneUser instanceof RefDepartement) {
-            $request->getSession()->set('select_academie', $zoneUser->getAcademie()
+            $this->request->getSession()->set('select_academie', $zoneUser->getAcademie()
                 ->getCode());
-            $request->getSession()->set('select_departement', $zoneUser->getNumero());
+            $this->request->getSession()->set('select_departement', $zoneUser->getNumero());
         } else
             if ($zoneUser instanceof RefAcademie) {
-                $request->getSession()->set('select_academie', $zoneUser->getCode());
+                $this->request->getSession()->set('select_academie', $zoneUser->getCode());
             }
 
         // mettre en session le flag de retour vers le tableau de bord deplié
         if ($numDept != null && $numDept != 0) {
-            $request->getSession()->set('tdbDeplieRetour', true);
-            $request->getSession()->set('select_departement', $numDept);
+            $this->request->getSession()->set('tdbDeplieRetour', true);
+            $this->request->getSession()->set('select_departement', $numDept);
         }
 
         // Et on envoie la page de résultats
-        $params = $this->getParametersRecherche($request, $user, $campagne);
-        $params['erreurs'] = $parameters->get('erreurs');
-        $params['warning'] = $parameters->get('warning');
+        $params = $this->getParametersRecherche($user, $campagne);
+        $params['erreurs'] = $this->getParameter('erreurs');
+        $params['warning'] = $this->getParameter('warning');
 
         return $this->render('resultat/indexConsultationResultats.html.twig', $params);
     }
@@ -582,21 +552,17 @@ class ResultatController extends BaseController {
     /**
      * Fonction permettant d'afficher les résultats d'un établissement pour un type d'élection
      *
-     * @param Request $request
-     * @param String $codeUrlTypeElect
-     *            : code type élection
-     * @param String $uai
-     *            : identifiant établissement
-     * @param String $fileUpload
-     *            : indique si l'upload s'est effectué correctement
+     * @param String $codeUrlTypeElect: code type élection
+     * @param String $uai: identifiant établissement
+     * @param String $fileUpload : indique si l'upload s'est effectué correctement
      */
-    public function consultationResultatsEtablissementAction(\Symfony\Component\HttpFoundation\Request $request, $codeUrlTypeElect, $uai, $fileUpload = false, $retourLstRech = false, $fromEdit = 0) {
+    public function consultationResultatsEtablissementAction($codeUrlTypeElect, $uai, $fileUpload = false, $retourLstRech = 0, $fromEdit = 0) {
 
-        $em = $this->getDoctrine()->getManager();
+        $em = $this->doctrine->getManager();
 
-        $joursCalendaires = $parameters->get('jours_calendaires');
-        $joursCalendairesIen = $parameters->get('jours_calendaires_ien');
-        $request->getSession()->set('tdbRetour', false);
+        $joursCalendaires = $this->getParameter('jours_calendaires');
+        $joursCalendairesIen = $this->getParameter('jours_calendaires_ien');
+        $this->request->getSession()->set('tdbRetour', false);
         $typeElectionId = RefTypeElection::getIdRefTypeElectionByCodeUrl($codeUrlTypeElect);
         $sousTypeElection = null;
         if(null == $typeElectionId || $codeUrlTypeElect == RefSousTypeElection::CODE_URL_A_ATTE || $codeUrlTypeElect == RefSousTypeElection::CODE_URL_SS){
@@ -618,9 +584,8 @@ class ResultatController extends BaseController {
         }
 
         $etablissement = $em->getRepository(RefEtablissement::class)->find($uai);
-        $user = $this->get('security.context')
-            ->getToken()
-            ->getUser();
+        $user = $this->getUser();
+
         if (!$user->canConsultEtab($etablissement, $typeElection)) {
             throw new AccessDeniedException();
         }
@@ -725,13 +690,11 @@ class ResultatController extends BaseController {
         // 014E retour vers la liste des établissements
         $params['retourLstRech'] = $retourLstRech;
 
-        $request->getSession()->set('select_etablissement', $uai); // nécessaire pour les exports
-        $request->getSession()->set('select_choix_etab', true);
-        $request->getSession()->set('dept_num', $etablissement->getCommune()->getDepartement()->getNumero());
-        $params['erreurs'] = $parameters->get('erreurs');
-        $params['warning'] = $parameters->get('warning');
-
-
+        $this->request->getSession()->set('select_etablissement', $uai); // nécessaire pour les exports
+        $this->request->getSession()->set('select_choix_etab', true);
+        $this->request->getSession()->set('dept_num', $etablissement->getCommune()->getDepartement()->getNumero());
+        $params['erreurs'] = $this->getParameter('erreurs');
+        $params['warning'] = $this->getParameter('warning');
         $params['fromEdit'] = $fromEdit;
         $form = $this->createForm(NbSiegesTirageAuSortType::class, null);
         $params['formTirage'] = $form->createView();
@@ -742,17 +705,16 @@ class ResultatController extends BaseController {
      * Change l'état d'avancement de la validation des résultats d'un établissement
      *
      *
-     * @param \Symfony\Component\HttpFoundation\Request $request
      * @param string $etablissementUai
      * @param string $typeElectionId
      * @param string $etat
      * @throws AccessDeniedException
      */
-    public function changementEtatEleEtabAction(\Symfony\Component\HttpFoundation\Request $request, $etablissementUai, $codeUrlTypeElect, $etat, $retourLstRech) {
+    public function changementEtatEleEtabAction(ConsolidationService $consolidationService, $etablissementUai, $codeUrlTypeElect, $etat, $retourLstRech) {
 
-        $em = $this->getDoctrine()->getManager();
+        $em = $this->doctrine->getManager();
 
-        $joursCalendaires = $parameters->get('jours_calendaires');
+        $joursCalendaires = $this->getParameter('jours_calendaires');
 
         $typeElectionId = RefTypeElection::getIdRefTypeElectionByCodeUrl($codeUrlTypeElect);
         $sousTypeElection = null;
@@ -766,7 +728,7 @@ class ResultatController extends BaseController {
         }
 
         if (empty($typeElection) && null != $sousTypeElection) { throw $this->createNotFoundException('Le type d\'élection '.$codeUrlTypeElect.' n\'a pas été trouvé.'); }
-        $request->getSession()->set('typeElectionId', $typeElection->getId());
+        $this->request->getSession()->set('typeElectionId', $typeElection->getId());
 
         $campagne = $em->getRepository(EleCampagne::class)->getLastCampagneNonArchive($typeElection);
         if (empty($campagne)) {
@@ -781,9 +743,7 @@ class ResultatController extends BaseController {
         $eleEtab = $em->getRepository(EleEtablissement::class)->getEleEtablissementGlobale($campagne, $etablissement, $sousTypeElection);
 
         // Vérification des droits d'accès à la transmission des résultats
-        $user = $this->get('security.context')
-            ->getToken()
-            ->getUser();
+        $user = $this->getUser();
 
         if (!$user->canTransmitResultsEtab($etablissement, $typeElection) && $etat == EleEtablissement::ETAT_TRANSMISSION) {
             throw new AccessDeniedException();
@@ -799,7 +759,7 @@ class ResultatController extends BaseController {
             && !($eleEtab->getEtablissement()->getTypeEtablissement()->getCode() == RefTypeEtablissement::CODE_EREA_ERPD
                 && ($typeElectionId == RefTypeElection::ID_TYP_ELECT_ASS_ATE || $typeElectionId == RefTypeElection::ID_TYP_ELECT_PEE))
         ){
-            $this->get('consolidation_service')->consolidationEleEtab($eleEtab);
+            $consolidationService->consolidationEleEtab($eleEtab);
         }
 
         // Retour pour Anomalie (passage de l'état Transmis à l'état Saisi)
@@ -839,12 +799,12 @@ class ResultatController extends BaseController {
             $array['retourLstRech'] = $retourLstRech;
         }
 
-        return $this->redirect($this->generateUrl('EPLEElectionBundle_resultats_etablissement', $array));
+        return $this->redirect($this->generateUrl('ECECA_resultats_etablissement', $array));
     }
 
-    public function devalidationTirageAuSortEleEtabAction(\Symfony\Component\HttpFoundation\Request $request, $etablissementUai, $codeUrlTypeElect, $retourLstRech = false) {
+    public function devalidationTirageAuSortEleEtabAction($etablissementUai, $codeUrlTypeElect, $retourLstRech = 0) {
 
-        $em = $this->getDoctrine()->getManager();
+        $em = $this->doctrine->getManager();
 
         $typeElectionId = RefTypeElection::getIdRefTypeElectionByCodeUrl($codeUrlTypeElect);
         $sousTypeElection = null;
@@ -871,8 +831,8 @@ class ResultatController extends BaseController {
         $array = array('uai'=>$etablissementUai, 'codeUrlTypeElect'=> $typeElection->getCodeUrlById());
 
         $form = $this->createForm(NbSiegesTirageAuSortType::class, null);
-        if ($request->getMethod() == 'POST') {
-            $form->handleRequest($request);
+        if ($this->request->getMethod() == 'POST') {
+            $form->handleRequest($this->request);
             if ($form->isSubmitted() && $form->isValid()) {
 
                 $datasForm = $form->getData();
@@ -908,23 +868,22 @@ class ResultatController extends BaseController {
                 }
             }
         }
-        return $this->redirect($this->generateUrl('EPLEElectionBundle_resultats_etablissement', $array));
+        return $this->redirect($this->generateUrl('ECECA_resultats_etablissement', $array));
     }
 
     /**
      * Change l'état d'avancement de la dévalidation des résultats d'un établissement
      *
      *
-     * @param \Symfony\Component\HttpFoundation\Request $request
      * @param string $etablissementUai
      * @param string $typeElectionId
      * @param string $etat
      * @throws AccessDeniedException
      */
-    public function changementEtatEleEtabDevalidationAction(\Symfony\Component\HttpFoundation\Request $request, $etablissementUai, $codeUrlTypeElect, $etat, $retourLstRech) {
-        $em = $this->getDoctrine()->getManager();
+    public function changementEtatEleEtabDevalidationAction(ConsolidationService $consolidationService, $etablissementUai, $codeUrlTypeElect, $etat, $retourLstRech) {
+        $em = $this->doctrine->getManager();
 
-        $joursCalendaires = $parameters->get('jours_calendaires');
+        $joursCalendaires = $this->getParameter('jours_calendaires');
 
         $typeElectionId = RefTypeElection::getIdRefTypeElectionByCodeUrl($codeUrlTypeElect);
         $sousTypeElection = null;
@@ -938,7 +897,7 @@ class ResultatController extends BaseController {
         }
 
         if (empty($typeElection) && null != $sousTypeElection) { throw $this->createNotFoundException('Le type d\'élection '.$codeUrlTypeElect.' n\'a pas été trouvé.'); }
-        $request->getSession()->set('typeElectionId', $typeElection->getId());
+        $this->request->getSession()->set('typeElectionId', $typeElection->getId());
 
         $campagne = $em->getRepository(EleCampagne::class)->getLastCampagneNonArchive($typeElection);
         if (empty($campagne)) {
@@ -953,7 +912,7 @@ class ResultatController extends BaseController {
         $eleEtab = $em->getRepository(EleEtablissement::class)->getEleEtablissementGlobale($campagne, $etablissement, $sousTypeElection);
 
         // Vérification des droits d'accès à la transmission des résultats
-        $user = $this->get('security.context')->getToken()->getUser();
+        $user = $this->getUser();
 
         // Vérification des droits d'accès à la dévalidation des résultats validés
         if (!$user->canDevalidateEtab($etablissement, $campagne, $joursCalendaires) && $etat == EleEtablissement::ETAT_TRANSMISSION) {
@@ -965,7 +924,7 @@ class ResultatController extends BaseController {
             && !($eleEtab->getEtablissement()->getTypeEtablissement()->getCode() == RefTypeEtablissement::CODE_EREA_ERPD
                 && ($typeElectionId == RefTypeElection::ID_TYP_ELECT_ASS_ATE || $typeElectionId == RefTypeElection::ID_TYP_ELECT_PEE))
         ){
-            $this->get('consolidation_service')->deconsolidationEleEtab($eleEtab, $campagne);
+            $consolidationService->deconsolidationEleEtab($eleEtab, $campagne);
         }
 
         // Changement d'état
@@ -988,23 +947,22 @@ class ResultatController extends BaseController {
             $array['retourLstRech'] = $retourLstRech;
         }
 
-        return $this->redirect($this->generateUrl('EPLEElectionBundle_resultats_etablissement', $array));
+        return $this->redirect($this->generateUrl('ECECA_resultats_etablissement', $array));
     }
 
     /**
      * Validation en masse des résultats des établissements
      *
-     * @param \Symfony\Component\HttpFoundation\Request $request
      * @param string $etablissementUai
      * @param string $typeElectionId
      * @param string $etat
      * @throws AccessDeniedException
      */
-    public function massValidationAction(\Symfony\Component\HttpFoundation\Request $request) {
-        $em = $this->getDoctrine()->getManager();
+    public function massValidationAction(ConsolidationService $consolidationService) {
+        $em = $this->doctrine->getManager();
 
         // Vérification des droits d'accès à la validation en masse des résultats
-        $user = $this->get('security.context')->getToken()->getUser();
+        $user = $this->getUser();
         if (!$user->canMassValidate()) {
             throw new AccessDeniedException();
         }
@@ -1013,7 +971,7 @@ class ResultatController extends BaseController {
         $listEleEtabsValid = array(); // liste des eleEtabs à valider
 
         // Récupération des informations ele_etablissements
-        foreach($request->request as $idEleEtab=>$on){
+        foreach($this->request->request as $idEleEtab=>$on){
             // YME - DEFECT HPQC #211
             if (is_int($idEleEtab)){
                 $eleEtab = $em->getRepository(EleEtablissement::class)->getEleEtablissementGlobaleById($idEleEtab);
@@ -1028,269 +986,27 @@ class ResultatController extends BaseController {
         }
 
         // Consolidation en masse
-        $this->get('consolidation_service')->massConsolidationEleEtab($listEleEtabsConso);
+        $consolidationService->massConsolidationEleEtab($listEleEtabsConso);
 
         // Validation en masse
         $em->getRepository(EleEtablissement::class)->massValideEtabs($listEleEtabsValid);
 
         // Redirection vers la liste des résultats par département
-        return $this->redirect($this->generateUrl('EPLEElectionBundle_tableau_bord'));
+        return $this->redirect($this->generateUrl('ECECA_tableau_bord'));
     }
 
-    /**
-     * Fonction permettant d'afficher les résultats d'une zone (nationale, académie ou département) pour un type d'élection
-     *
-     * @param Request $request
-     * @param String $codeUrlTypeElect
-     *            : code type élection
-     * @param String $codeUrlTypeEtab
-     *            : code url type établissement
-     * @param String $idZone
-     */
-    public function consultationResultatsZoneAction(Request $request, $codeUrlTypeElect, $codeUrlTypeEtab = "tous", $idZone) {
-
-        $em = $this->getDoctrine()->getManager();
-
-        $typeElectionId = RefTypeElection::getIdRefTypeElectionByCodeUrl($codeUrlTypeElect);
-        $typeElection = $em->getRepository(RefTypeELection::class)->find($typeElectionId);
-        if (null == $typeElection) {
-            throw $this->createNotFoundException('Type élection inconnu');
-        }
-
-        $user = $this->get('security.context')
-            ->getToken()
-            ->getUser();
-        if (!$user->canConsult($typeElection)) {
-            throw new AccessDeniedException();
-        }
-
-        $params = array();
-
-        // Identification de la zone
-        $zone = EpleUtils::getZone($em, $idZone);
-        if ($zone === 'nationale') {
-            $params['nationale'] = true;
-            // En session
-            $request->getSession()->set('select_academie', null);
-            $request->getSession()->set('select_departement', null);
-        } else {
-            if ($zone instanceof RefDepartement) {
-                $params['dept'] = $zone;
-                // En session
-                $request->getSession()->set('select_academie', $zone->getAcademie()
-                    ->getIdZone());
-                $request->getSession()->set('select_departement', $zone->getIdZone());
-            } else {
-                if ($zone instanceof RefAcademie) {
-                    $params['aca'] = $zone;
-                    $request->getSession()->set('select_academie', $zone->getIdZone());
-                    $request->getSession()->set('select_departement', null);
-                } else {
-                    throw $this->createNotFoundException('Les résultats n\'ont pas été trouvés car la zone (académie ou département) est inconnue (' . $idZone . ').');
-                }
-            }
-        }
-
-        // Identification du type d'établissement
-        if ($codeUrlTypeEtab === RefTypeEtablissement::CODE_URL_2ND_DEGRE or $codeUrlTypeEtab == 'tous') {
-            $typeEtab = $codeUrlTypeEtab; // Convertit en string
-        } else {
-            $typeEtab = $em->getRepository(RefTypeEtablissement::class)->find(RefTypeEtablissement::getIdRefTypeEtabByCodeUrl($codeUrlTypeEtab));
-        }
-        if (empty($typeEtab)) {
-            $request->getSession()->set('select_typeEtab', false);
-            throw $this->createNotFoundException('Les résultats n\'ont pas été trouvés car le type d\'établissement est inconnu (' . $codeUrlTypeEtab . ').');
-        } else {
-            // En session
-            $request->getSession()->set('select_typeEtab', ($typeEtab instanceof RefTypeEtablissement) ? $typeEtab->getId() : $typeEtab);
-        }
-
-        // Identification de la campagne
-        $campagne = $em->getRepository(EleCampagne::class)->getLastCampagne($typeElectionId);
-        if (empty($campagne)) {
-            throw $this->createNotFoundException('Les résultats de l\'établissement n\'ont pas été trouvés car la campagne est inconnue.');
-        }
-
-        $params['campagne'] = $campagne;
-        $params['typeElect'] = $campagne->getTypeElection();
-        $params['electZone'] = $em->getRepository(EleConsolidation::class)->getEleConsolidationGlobale($campagne, $typeEtab, $zone);
-        if ($codeUrlTypeEtab === RefTypeEtablissement::CODE_URL_2ND_DEGRE or $codeUrlTypeEtab == 'tous') {
-            $params['nbEtabExprDetailles'] = $em->getRepository(EleConsolidation::class)->getNbEtabExprWithTypeEtabFromEleConsolidationByCampagneZoneTypeEtab($campagne, $zone, $typeEtab);
-        } else {
-            $params['nbEtabExprDetailles'] = array();
-        }
-
-        /* calcul du nombre d'établissements par campagne, type établissement et zone */
-        if ($zone === 'nationale') {
-            $zone = null;
-        }
-        if ($typeEtab == 'tous') {
-            $typeEtablissement = null;
-        } else {
-            $typeEtablissement = $typeEtab;
-        }
-
-        if ($params['electZone']->getNbEtabTotal() == null) {
-            $params['electZone']->setNbEtabTotal($em->getRepository(RefEtablissement::class)->getNbEtabParTypeEtablissementZoneCommune($typeEtablissement, $zone, null, false, true));
-        }
-
-        if ($params['electZone']->getNbEtabExprimes() == null) {
-            $params['electZone']->setNbEtabExprimes(0);
-        }
-
-        // TODO CHECK USEFUL OR NOT
-        $params['nbEtabParZone'] = $em->getRepository(RefEtablissement::class)->getNbEtabParTypeEtablissementZoneTypeElection($typeEtablissement, $zone, $params['typeElect']);
-        $params['erreurs'] = $parameters->get('erreurs');
-        $params['warning'] = $parameters->get('warning');
-        $params['isIEN'] = ($user->getProfil()->getCode() == RefProfil::CODE_PROFIL_IEN);
-        $params['isDE'] = ($user->getProfil()->getCode() == RefProfil::CODE_PROFIL_DE);
-
-        return $this->render('resultat/indexConsultationResultats.html.twig', $params);
-    }
-
-    /**
-     * Fonction permettant la génération d'un PDF à partir du twig résultat
-     *
-     * @param Request $request
-     * @param string $codeUrlTypeElect
-     * @throws AccessDeniedException
-     * @return Response
-     */
-    public function exportResultatsPDFAction(\Symfony\Component\HttpFoundation\Request $request, $codeUrlTypeElect) {
-        $em = $this->getDoctrine()->getManager();
-
-        $typeElectionId = RefTypeElection::getIdRefTypeElectionByCodeUrl($codeUrlTypeElect);
-        $typeElection = $em->getRepository(RefTypeELection::class)->find($typeElectionId);
-        if (null == $typeElection) {
-            throw $this->createNotFoundException('Type élection inconnu');
-        }
-
-        $user = $this->get('security.context')
-            ->getToken()
-            ->getUser();
-        if (!$user->canConsult($typeElection)) {
-            throw new AccessDeniedException();
-        }
-
-        $campagne = $em->getRepository(EleCampagne::class)->getLastCampagne($typeElectionId);
-        if (empty($campagne)) {
-            throw $this->createNotFoundException('Les résultats de l\'établissement n\'ont pas été trouvés car la campagne est inconnue.');
-        }
-
-        $params = $this->getParametersRecherche($request, $user, $campagne);
-
-        $fileName = EcecaExportUtils::generateFileName('Resultats', $params);
-
-        $pdf = $this->get("white_october.tcpdf")->create('L');
-        $pdf->SetAuthor('ECECA');
-        $pdf->SetTitle($fileName);
-        $pdf->SetSubject('');
-        $pdf->SetKeywords('');
-        $pdf->setPrintHeader(false);
-        $pdf->AddPage();
-        $response = new Response();
-        $params['erreurs'] = $parameters->get('erreurs');
-        $params['warning'] = $parameters->get('warning');
-        $this->render('resultat/exportPDFResultats.html.twig', $params, $response);
-        $html = $response->getContent();
-        $pdf->writeHTML($html, true, 0, true, 0);
-        $pdf->lastPage();
-        $response = new Response($pdf->Output($fileName . '.pdf', 'D'));
-        $response->headers->set('Content-Type', 'application/pdf');
-
-        return $response;
-    }
-
-    /**
-     * Fonction permettant la génération d'un PDF à partir du twig résultat
-     * Export complet des établissements classés par code postal
-     *
-     * @param Request $request
-     * @param string $codeUrlTypeElect
-     * @throws AccessDeniedException
-     * @return Response
-     */
-    public function exportResultatsPDFCompletAction(Request $request, $codeUrlTypeElect) {
-        $em = $this->getDoctrine()->getManager();
-        $user = $this->get('security.context')
-            ->getToken()
-            ->getUser();
-
-        $typeElectionId = RefTypeElection::getIdRefTypeElectionByCodeUrl($codeUrlTypeElect);
-        $typeElection = $em->getRepository(RefTypeELection::class)->find($typeElectionId);
-        if (null == $typeElection) {
-            throw $this->createNotFoundException('Type élection inconnu');
-        }
-
-        if (!$user->canConsult($typeElection)) {
-            throw new AccessDeniedException();
-        }
-
-        $campagne = $em->getRepository(EleCampagne::class)->getLastCampagne($typeElectionId);
-        if (empty($campagne)) {
-            throw $this->createNotFoundException('Les résultats de l\'établissement n\'ont pas été trouvés car la campagne est inconnue.');
-        }
-
-        $params = $this->getParametersRecherche($request, $user, $campagne);
-
-        $typeEtabForm = $em->getRepository(RefTypeEtablissement::class)->find($request->getSession()
-            ->get('select_typeEtab'));
-        $deptForm = $em->getRepository(RefDepartement::class)->find($request->getSession()
-            ->get('select_departement'));
-        $etatSaisie = $request->getSession()->get('select_etatSaisie');
-
-        $lstElectEtab = $em->getRepository(EleEtablissement::class)->findByCampagneTypeEtabZone($campagne, $typeEtabForm, $deptForm, $etatSaisie);
-
-        $fileName = EcecaExportUtils::generateFileName('Resultats', $params);
-
-        $pdf = $this->get("white_october.tcpdf")->create('L');
-        $pdf->SetAuthor('ECECA');
-        $pdf->SetTitle($fileName);
-        $pdf->SetSubject('');
-        $pdf->SetKeywords('');
-        $pdf->setPrintHeader(false);
-
-        $pdf->AddPage();
-        $response = new Response();
-        $params['erreurs'] = $parameters->get('erreurs');
-        $params['warning'] = $parameters->get('warning');
-        $this->render('resultat/exportPDFResultatsComplet.html.twig', $params, $response);
-        $html = $response->getContent();
-        $pdf->writeHTML($html, true, 0, true, 0);
-
-        foreach ($lstElectEtab as $electEtab) {
-            $data = $this->getParametersForConsultationResultatsEtablissement($campagne, $electEtab['uai']);
-            $pdf->AddPage();
-            $response = new Response();
-            $params['erreurs'] = $parameters->get('erreurs');
-            $params['warning'] = $parameters->get('warning');
-
-            $this->render('resultat/exportPDFResultatsCompletDetailEtablissement.html.twig', $data, $response, $params);
-            $html = $response->getContent();
-            $pdf->writeHTML($html, true, 0, true, 0);
-        }
-
-        $pdf->lastPage();
-        $response = new Response($pdf->Output($fileName . '.pdf', 'D'));
-        $response->headers->set('Content-Type', 'application/pdf');
-
-        return $response;
-    }
 
     /**
      * Fonction permettant l'édition au format Excel des résultats d'une zone ou d'un établissement
      *
-     * @param Request $request
      * @param string $codeUrlTypeElect
      * @throws AccessDeniedException
-     * @return file xls
-     * @Route("/{codeUrlTypeElect}/{etablissementUai}/resultats/exportXLS", name="resultats_export_XLS")
      */
-    public function exportResultatsXLSAction(Request $request, ParameterBagInterface $parameters, RefUserPerimetre $refUserPerimetre, $codeUrlTypeElect, $etablissementUai = 'tous') {
-        $em = $this->getDoctrine()->getManager();
-        //TODO : changer authentification
+    public function exportResultatsXLSAction($codeUrlTypeElect, $etablissementUai = 'tous') {
+        $em = $this->doctrine->getManager();
         $user = $this->getUser();
-        $joursCalendaires = $parameters->get('jours_calendaires');
+
+        $joursCalendaires = $this->getParameter('jours_calendaires');
 
         $typeElectionId = RefTypeElection::getIdRefTypeElectionByCodeUrl($codeUrlTypeElect);
         $sousTypeElection = null;
@@ -1306,6 +1022,7 @@ class ResultatController extends BaseController {
         if (empty($typeElection) && null != $sousTypeElection) {
             throw $this->createNotFoundException('Type élection inconnu');
         }
+
         if (!$user->canConsult($typeElection)) {
             throw new AccessDeniedException();
         }
@@ -1327,8 +1044,8 @@ class ResultatController extends BaseController {
             }
         }
 
-        //$params = unserialize($request->getSession()->get('params'));
-        $params = $this->getParametersRecherche($request, $user, $campagne);
+        //$params = unserialize($this->request->getSession()->get('params'));
+        $params = $this->getParametersRecherche($user, $campagne);
         $params['typeElect'] = $typeElection;
         if ($sousTypeElection != null) {
             $params['sousTypeElect'] = $sousTypeElection;
@@ -1637,17 +1354,15 @@ class ResultatController extends BaseController {
      * Fonction permettant l'édition au format Excel des résultats d'une zone
      * Export complet des établissements classés par code postal
      *
-     * @param \Symfony\Component\HttpFoundation\Request $request
      * @param string $codeUrlTypeElect
      * @throws AccessDeniedException
-     * @return file xls
      */
-    public function exportResultatsXLSCompletAction(\Symfony\Component\HttpFoundation\Request $request, $codeUrlTypeElect) {
+    public function exportResultatsXLSCompletAction($codeUrlTypeElect) {
         ini_set("memory_limit", '-1');
         ini_set('max_execution_time', '300');
         set_time_limit(300);
 
-        $em = $this->getDoctrine()->getManager();
+        $em = $this->doctrine->getManager();
 
         $typeElectionId = RefTypeElection::getIdRefTypeElectionByCodeUrl($codeUrlTypeElect);
         $typeElection = $em->getRepository(RefTypeELection::class)->find($typeElectionId);
@@ -1657,6 +1372,7 @@ class ResultatController extends BaseController {
         }
 
         $user = $this->getUser();
+
         if (!$user->canConsult($typeElection)) {
             throw new AccessDeniedException();
         }
@@ -1667,13 +1383,12 @@ class ResultatController extends BaseController {
         }
 
 
-        $params = $this->getParametersRecherche($request, $user, $campagne);
-        //$params = unserialize($request->getSession()->get('params'));
+        $params = $this->getParametersRecherche($user, $campagne);
 
-        $typeEtabForm = $em->getRepository(RefTypeEtablissement::class)->find($request->getSession()->get('select_typeEtab'));
-        $deptForm = $em->getRepository(RefDepartement::class)->find($request->getSession()->get('select_departement'));
-        $etatSaisie = $request->getSession()->get('select_etatSaisie');
-        $idSousTypeElect = $request->getSession()->get('select_sousTypeElect');
+        $typeEtabForm = $em->getRepository(RefTypeEtablissement::class)->find($this->request->getSession()->get('select_typeEtab'));
+        $deptForm = $em->getRepository(RefDepartement::class)->find($this->request->getSession()->get('select_departement'));
+        $etatSaisie = $this->request->getSession()->get('select_etatSaisie');
+        $idSousTypeElect = $this->request->getSession()->get('select_sousTypeElect');
 
         // 014E exclus des EREA-ERPD dans les résultats ASS et ATE et PEE && (($typeEtab != null && $typeEtab->getCode() != RefTypeEtablissement::CODE_EREA_ERPD) || $typeEtab == null)
         $isEreaErpdExclus = false;
@@ -1946,13 +1661,17 @@ class ResultatController extends BaseController {
         $sheet->getColumnDimension('E')->setWidth(25);
 
         // Création du writer
-        $writer = $this->get('phpexcel')->createWriter($spreadsheet, 'Excel5');
+        $writer = new Xlsx($spreadsheet, 'Excel5');
 
         // Création du nom du fichier
         $fileName = EcecaExportUtils::generateFileName('Resultats', $params);
 
         // Créer la réponse
-        $response = $this->get('phpexcel')->createStreamedResponse($writer);
+        $response =  new StreamedResponse(
+            function () use ($writer) {
+                $writer->save('php://output');
+            }
+        );
         $response->headers->set('Content-Type', 'text/vnd.ms-excel; charset=utf-8');
         $response->headers->set('Content-Disposition', 'attachment;filename=' . $fileName . '.xls');
 
@@ -1964,14 +1683,12 @@ class ResultatController extends BaseController {
      * Fonction permettant l'édition au format CSV des résultats d'une zone
      * Export CSV des resultats par etablissement par liste
      *
-     * @param \Symfony\Component\HttpFoundation\Request $request
      * @param string $codeUrlTypeElect
      * @throws AccessDeniedException
-     * @return file xls
      */
-    public function exportResultatsCSVCompletDetailleAction(\Symfony\Component\HttpFoundation\Request $request, $codeUrlTypeElect) {
+    public function exportResultatsCSVCompletDetailleAction($codeUrlTypeElect) {
 
-        $em = $this->getDoctrine()->getManager();
+        $em = $this->doctrine->getManager();
 
         $typeElectionId = RefTypeElection::getIdRefTypeElectionByCodeUrl($codeUrlTypeElect);
         $typeElection = $em->getRepository(RefTypeELection::class)->find($typeElectionId);
@@ -1980,9 +1697,8 @@ class ResultatController extends BaseController {
             throw $this->createNotFoundException('Type élection inconnu');
         }
 
-        $user = $this->get('security.context')
-            ->getToken()
-            ->getUser();
+        $user = $this->getUser();
+
         if (!$user->canConsult($typeElection)) {
             throw new AccessDeniedException();
         }
@@ -1992,12 +1708,12 @@ class ResultatController extends BaseController {
             throw $this->createNotFoundException('Les résultats de l\'établissement n\'ont pas été trouvés car la campagne est inconnue.');
         }
 
-        $params = $this->getParametersRecherche($request, $user, $campagne);
+        $params = $this->getParametersRecherche($user, $campagne);
 
-        $typeEtabForm = $em->getRepository(RefTypeEtablissement::class)->find($request->getSession()->get('select_typeEtab'));
-        $deptForm = $em->getRepository(RefDepartement::class)->find($request->getSession()->get('select_departement'));
-        $idSousTypeElection = $request->getSession()->get('select_sousTypeElect');
-        $etatSaisie = $request->getSession()->get('select_etatSaisie');
+        $typeEtabForm = $em->getRepository(RefTypeEtablissement::class)->find($this->request->getSession()->get('select_typeEtab'));
+        $deptForm = $em->getRepository(RefDepartement::class)->find($this->request->getSession()->get('select_departement'));
+        $idSousTypeElection = $this->request->getSession()->get('select_sousTypeElect');
+        $etatSaisie = $this->request->getSession()->get('select_etatSaisie');
 
         // 014E exclus des EREA-ERPD dans les résultats ASS et ATE et PEE && (($typeEtab != null && $typeEtab->getCode() != RefTypeEtablissement::CODE_EREA_ERPD) || $typeEtab == null)
         $isEreaErpdExclus = false;
@@ -2180,7 +1896,7 @@ class ResultatController extends BaseController {
      * @codeCoverageIgnore
      */
     private function getParametersForConsultationResultatsEtablissement(EleCampagne $campagne, $uai, RefSousTypeElection $sousTypeElection = null) {
-        $em = $this->getDoctrine()->getManager();
+        $em = $this->doctrine->getManager();
         $params = array();
         $etab = $em->getRepository(RefEtablissement::class)->find($uai);
 
@@ -2248,8 +1964,8 @@ class ResultatController extends BaseController {
         $params['electEtablissement'] = $eleEtab;
         $params['campagne'] = $campagne;
 
-        $joursCalendairesIen = $parameters->get('jours_calendaires_ien');
-        $joursCalendaires = $parameters->get('jours_calendaires');
+        $joursCalendairesIen = $this->getParameter('jours_calendaires_ien');
+        $joursCalendaires = $this->getParameter('jours_calendaires');
         $isPeriodeP2Ter = $campagne->isP2Ter($joursCalendairesIen, $joursCalendaires, $etab->getCommune()->getDepartement()->getAcademie());
         $params['P2Ter'] = $isPeriodeP2Ter;
 
@@ -2302,7 +2018,7 @@ class ResultatController extends BaseController {
      * @codeCoverageIgnore
      */
     private function getParametersForConsultationResultatsZone($campagne, $zone, $user, $codeUrlTypeEtab = 'tous', $etatSaisie, $idSousTypeElect) {
-        $em = $this->getDoctrine()->getManager();
+        $em = $this->doctrine->getManager();
 
         $params = array();
 
@@ -2322,7 +2038,7 @@ class ResultatController extends BaseController {
         }else{
             $typeEtab = null;
         }
-        
+
         if (empty($campagne)) {
             throw $this->createNotFoundException('Les résultats de l\'établissement n\'ont pas été trouvés car la campagne est inconnue.');
         }
@@ -2358,11 +2074,11 @@ class ResultatController extends BaseController {
 
     /**
      * Permet de déterminer si l'utilisateur a des établissements de type EREA-ERPD dans son périmètre.
-     * @param unknown $user
+     * @param $user
      * @return boolean
      */
     private function hasEreaErpd($user){
-        $em = $this->getDoctrine()->getManager();
+        $em = $this->doctrine->getManager();
 
         if($user->getPerimetre()->isLimitedToEtabs()){
 

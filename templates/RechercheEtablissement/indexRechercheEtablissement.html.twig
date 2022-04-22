@@ -1,4 +1,4 @@
-{% extends 'layout.html.twig' %}
+{% extends 'layout_admin.html.twig' %}
 
 {% block title %}{{ parent() }} - Recherche d'établissements{% endblock %}
 
@@ -13,13 +13,13 @@
 {# Formulaire de recherche #}
 
 {% block h3 %}
-<h3>Recherche d'un établissement</h3>
+	<h3>Recherche d'un établissement</h3>
 {% endblock %}
 
 {% block content %}
-	<form action="{{ path('EPLEAdminBundle_affichage_resultat_recherche_etablissements') }}" method="post" accept-charset="UTF-8" >
+	<form action="{{ path('ECECA_affichage_resultat_recherche_etablissements') }}" method="post" accept-charset="UTF-8" >
 		<p class="note">Un astérisque * marque un champ obligatoire</p>
-		{{ form_widget(form) }}		
+		{{ form_widget(form) }}
 		<div class="boutons"><input type="submit" value="Rechercher" /></div>
 	</form>
 {% endblock %}

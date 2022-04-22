@@ -5,31 +5,35 @@ security:
         App\Entity\RefEtablissement: plaintext
         App\Security\DatabaseUserProvider: plaintext
 
+    role_hierarchy:
+        ROLE_ADMIN: ROLE_USER
+        ROLE_SUPER_ADMIN: [ ROLE_USER, ROLE_ADMIN, ROLE_ALLOWED_TO_SWITCH ]
+
     providers:
         database:
             id: database_user_provider
-        secured_provider:
-            entity:
-                class: App\Entity\RefUser
-                property: login
 
     firewalls:
-        main:
-            anonymous: true
-            provider: secured_provider
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
-        login:
-            pattern:  ^/login #^/demo/secured/login$
-            security: false
 
-        secured_area:
-            pattern: ^/login
-            lazy: false
-            security: true
-            user_checker: App\Security\DatabaseUserProvider
-            provider:  database
+        login:
+            pattern: ^/login/
+            anonymous: true
+
+        main:
+            pattern: ^/
+            provider: database
             form_login:
-                login_path: login
-                check_path: login
+                login_path: /login/
+                check_path: /login_check/
+                username_parameter: form[login]
+                password_parameter: form[password]
+            #logout:
+            #    path: ECECA_logout
+            #    target: '%default_url_return%'
+
+    access_control:
+        - { path: ^/login/, roles: PUBLIC_ACCESS }
+        - { path: ^/.*, roles: IS_AUTHENTICATED_FULLY }

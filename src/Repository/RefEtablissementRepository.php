@@ -2,6 +2,8 @@
 
 namespace App\Repository;
 
+use App\Entity\EleCampagne;
+use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\EntityRepository;
 use App\Entity\RefAcademie;
 use App\Entity\RefDepartement;
@@ -18,7 +20,6 @@ use App\Entity\RefSousTypeElection;
 class RefEtablissementRepository extends EntityRepository {
 
     public function queryBuilderEtablissementPaginationParTypeEtablissementZoneCommune($typeEtablissement, $zone = null, $profil = null, $commune = null, $etabSansCom = false, $page = null, $etablissement_per_page = null) {
-
         $query = $this->createQueryBuilder('e')->leftjoin(' e.commune', 'c')->addSelect('c');
         if ($zone != null) {
             $query->leftJoin('c.departement', 'd');
@@ -45,9 +46,7 @@ class RefEtablissementRepository extends EntityRepository {
             }
         }
 
-
         $query->setParameter('type', $typeEtablissement);
-
         if ($page != null && $etablissement_per_page != null)
             $query->setFirstResult(($page * $etablissement_per_page) - $etablissement_per_page)->setMaxResults($etablissement_per_page);
 
@@ -62,33 +61,13 @@ class RefEtablissementRepository extends EntityRepository {
      * @param integer $zone : facultatif : entity département ou academie
      * @param integer $commune : facultatif : entity commune
      * @param integer $etabSansCom : facultatif : boolean à true si on cherche des établissements sans commune
-     * @param integer $page : identifiant de la page à afficher
-     * @param integer $nbEtabParPage : nombre de résultat à rechercher pour l'affichage
-     * "getEtablissementPaginationParTypeEtablissementZoneCommune" Recherche Etablissement en fonction du typeEtablissementId obligatoire
-     * 	et de zone (academie ou departement), commune, etabSansCom si donné
-     *  La liste d'établissement trouvé est ordonné par actif et inactif et par code postal croissant
-     *  La fonction filtre le nombre de résultat avec les parametres $page et $etablissement_per_page
-     *  @return ArrayCollection of RefEtablissement
-     *
-     */
-    function getEtablissementPaginationParTypeEtablissementZoneCommune($typeEtablissement, $zone = null, $profil = null, $commune = null, $etabSansCom = false, $page = null, $nbEtabParPage = null) {
-        return $this->queryBuilderEtablissementPaginationParTypeEtablissementZoneCommune($typeEtablissement, $zone, $profil, $commune, $etabSansCom, $page, $nbEtabParPage)->getQuery()->getResult();
-    }
-
-    /**
-     * @param integer $typeEtablissement : entity type d'établissement
-     * @param integer $zone : facultatif : entity département ou academie
-     * @param integer $commune : facultatif : entity commune
-     * @param integer $etabSansCom : facultatif : boolean à true si on cherche des établissements sans commune
      * "getNbEtabParTypeEtablissementZoneCommune" Compte le nombre d'établissement en fonction du typeEtablissementId obligatoire
      * 	et de zone (academie ou departement), commune, etabSansCom si donné
      *  @return int nbEtablissement
      *
      */
     function getNbEtabParTypeEtablissementZoneCommune($typeEtablissement = null, $zone = null, $commune = null, $etabSansCom = false, $actif = false, $user = null, $campagne = null, $isEreaErpdExclus = false) {
-
         $query = $this->createQueryBuilder("e")->select("count(e.uai)");
-
         $query->leftjoin("e.commune", "c");
 
         if ($zone != null) {
@@ -130,7 +109,6 @@ class RefEtablissementRepository extends EntityRepository {
                         $query->setParameter("aca", $zone);
                     }
                 }
-
             }
         }
 
@@ -179,16 +157,9 @@ class RefEtablissementRepository extends EntityRepository {
                 $query->leftJoin('c.departement', 'd');
                 if (null != $zone->getCode()) { // ajout DSDEN multidepartements
 
-                    //getLastCampagne($typeElectionId);
-                    /* $lasteCampage = $this->_em->getRepository(EleCampagne::class)->getLastCampagne($typeElection->getId());
-                     $lasteCampage =  date($lasteCampage->getAnneeDebut().'-01-01');*/
-
                     // DSDEN multidepartements Resultat : [ECT] fonctionnellement, tous les departements appartiennent a la meme academie
                     if (null != $user && $user->getProfil()->getCode() == RefProfil::CODE_PROFIL_DSDEN) {
                         $query->andWhere('d.numero in (' . EpleUtils::getNumerosDepts($user->getPerimetre()->getDepartements()) . ')');
-//                    }elseif(null != $user && $user->getProfil()->getCode() == RefProfil::CODE_PROFIL_RECT){
-//                        $dd = EpleUtils::getNumerosDepts($user->getPerimetre()->getDepartements());
-//                        $query->andWhere('d.numero in (' . EpleUtils::getNumerosDepts($user->getPerimetre()->getDepartements()) . ')');
                     } else {
                         //Evol 018E : Reforme territoriale
                         $children = $this->getEntityManager()->getRepository(RefAcademie::class)->getchildnewAcademies($zone->getCode());
@@ -258,13 +229,12 @@ class RefEtablissementRepository extends EntityRepository {
      * @param integer $nbEtabParPage : nombre de résultat à rechercher pour l'affichage
      * "findEtablissementParZone" récupère la liste d'établissement
      *  filtré par $zone (academie, département ou commune) et $typeEtablissement si donné
-     *  @return liste RefEtablissement
+     *  @return array RefEtablissement
      *
      */
     function findEtablissementParZone($zone, $degre= null, $typeEtablissement = null, $page = null, $nbEtabParPage = null, $actif = false, $uai = '', $profil = null, $natEtab = null, $isEreaErpdExclus = false) {
 
         $query = $this->createQueryBuilder('e');
-
         $query->leftjoin('e.commune', 'c')->addSelect('c')->leftjoin('c.departement', 'd')->addSelect('d');
         if ($zone instanceof RefDepartement) {
             $query->where('d.numero = :zone');
@@ -326,7 +296,6 @@ class RefEtablissementRepository extends EntityRepository {
     }
 
     function findListEtablissementForExport($lstElectEtab) {
-
         $qb = $this->createQueryBuilder('refEtab');
         $qb->select('refEtab');
         $qb->join('refEtab.commune', 'commune');
@@ -344,7 +313,6 @@ class RefEtablissementRepository extends EntityRepository {
     }
 
     function findListEtablissementsByUais($uais) {
-
         $qb = $this->createQueryBuilder('refEtab');
         $qb->select('refEtab');
         $qb->join('refEtab.commune', 'commune');
@@ -353,7 +321,6 @@ class RefEtablissementRepository extends EntityRepository {
             $qb->where('refEtab.uai IN (:uais)');
             $qb->setParameter('uais',$uais);
         }
-
         return $qb->getQuery()->getResult();
     }
 
@@ -366,7 +333,7 @@ class RefEtablissementRepository extends EntityRepository {
      * "findEtablissementsARelancer" récupère la liste des établissements qui n'ont pas encore saisi leurs résultats
      *  filtré par $campagne, $zone (academie, département)
      *
-     *  @return liste RefEtablissement
+     *  @return array RefEtablissement
      */
     public function findEtablissementsARelancer($campagne, $zone, $typeEtab = null, $natureEtab = null, $isEreaErpdExclus = false, $offset) {
         $query_etab = $this->_em->createQueryBuilder()
@@ -392,7 +359,6 @@ class RefEtablissementRepository extends EntityRepository {
             }
             $query_etab->andWhere('d.academie in ( :zone )')->setParameter('zone', $codesAca);
         }
-
 
         // Type établissement (pas de premier degré pour élections PEE / ASS)
         if ($campagne->getTypeElection()->getId() != RefTypeElection::ID_TYP_ELECT_PARENT) {
@@ -444,7 +410,7 @@ class RefEtablissementRepository extends EntityRepository {
      * "findEtablissementsWithoutMail" récupère la liste des établissements qui n'ont pas encore saisi leurs résultats et n'ayant pas des adresses mails
      *  filtré par $campagne, $zone (academie, département)
      *
-     *  @return liste RefEtablissement
+     *  @return array RefEtablissement
      */
     public function findEtablissementsWithoutMail($campagne, $zone) {
         $query_etab = $this->_em->createQueryBuilder()
@@ -545,10 +511,7 @@ class RefEtablissementRepository extends EntityRepository {
 	    														date_fermeture,
     															uai_nature)
 																VALUES ";
-
-
             }
-
 
             $dateFermeture = "";
 
@@ -579,7 +542,7 @@ class RefEtablissementRepository extends EntityRepository {
 
                 $stmt = $db->prepare($query);
                 $params = array();
-                $stmt->execute($params);
+                $stmt->executeQuery($params);
 
                 $j = 0;
             }
@@ -597,46 +560,11 @@ class RefEtablissementRepository extends EntityRepository {
 
             $stmt = $db->prepare($query);
             $params = array();
-            $stmt->execute($params);
-
+            $stmt->executeQuery($params);
             $j = 0;
         }
     }
 
-    /**
-     * Désactivation d'un établissement Ramsese
-     *
-     */
-    public function desactiveListeRefEtablissementByRamsese($listeRefEtablissementRamsese) {
-        $db = $this->_em->getConnection();
-
-        $str_uais = implode(" ', '", $listeRefEtablissementRamsese);
-
-        $query = "UPDATE ref_etablissement
-					SET actif = 0
-          			WHERE uai IN ('". $str_uais . "')";
-        $stmt = $db->prepare($query);
-
-        $params = array();
-        $stmt->execute($params);
-    }
-
-    /**
-     * Suppression d'un établissement Ramsese
-     *
-     */
-    public function removeListeRefEtablissementByRamsese($listeRefEtablissementRamsese) {
-        $db = $this->_em->getConnection();
-
-        $str_uais = implode(" ', '", $listeRefEtablissementRamsese);
-
-        $query = "DELETE FROM ref_etablissement
-          		  WHERE uai IN ('". $str_uais . "')";
-        $stmt = $db->prepare($query);
-
-        $params = array();
-        $stmt->execute($params);
-    }
 
     /**
      * Mise à jour de la commune des établissements via Ramsese avec le fichier UAIRATT
@@ -653,7 +581,7 @@ class RefEtablissementRepository extends EntityRepository {
             $query = "UPDATE ref_etablissement SET id_commune = ".$id_commune." WHERE uai = ".$db->quote($array['uai']);
             $stmt = $db->prepare($query);
             $params = array();
-            $stmt->execute($params);
+            $stmt->executeQuery($params);
         }
     }
 
@@ -669,7 +597,7 @@ class RefEtablissementRepository extends EntityRepository {
             $query = "UPDATE ref_etablissement SET id_type_prioritaire  = ".$array['typePrioritaire']." WHERE uai = ".$db->quote($array['uai']);
             $stmt = $db->prepare($query);
             $params = array();
-            $stmt->execute($params);
+            $stmt->executeQuery($params);
         }
     }
 
@@ -682,7 +610,7 @@ class RefEtablissementRepository extends EntityRepository {
         $stmt = $this->getEntityManager()->getConnection()->prepare($sql);
         $stmt->executeQuery();
         $array = array();
-        while ($row = $stmt->fetchAll()) {
+        while ($row = $stmt->fetchAllAssociative()) {
             $array[$row['uai']] = $row['uai'];
         }
 
@@ -693,15 +621,15 @@ class RefEtablissementRepository extends EntityRepository {
 
     /**
      * Retourne un tableau associatif uai <-> id_commune
-     * @return multitype:Ambigous <>
+     * @return array
      */
     public function getArrayRefEtablissementUaiIdCommune() {
         $sql = "SELECT ref_etablissement.uai, ref_etablissement.id_commune FROM ref_etablissement";
         $stmt = $this->getEntityManager()->getConnection()->prepare($sql);
-        $stmt->execute();
+        $stmt->executeQuery();
 
         $array = array();
-        while ($row = $stmt->fetch()) {
+        while ($row = $stmt->fetchAssociative()) {
             $array[$row['uai']] = $row['id_commune'];
         }
 
@@ -711,23 +639,21 @@ class RefEtablissementRepository extends EntityRepository {
 
     /**
      * Retourne un tableau associatif uai <-> id_type_prioritaire
-     * @return multitype:Ambigous <>
+     * @return array
      */
     public function getArrayRefEtablissementUaiIdTypePrioritaire() {
         $sql = "SELECT ref_etablissement.uai, ref_etablissement.id_type_prioritaire FROM ref_etablissement";
         $stmt = $this->getEntityManager()->getConnection()->prepare($sql);
-        $stmt->execute();
+        $stmt->executeQuery();
 
         $array = array();
-        while ($row = $stmt->fetch()) {
+        while ($row = $stmt->fetchAssociative()) {
             $array[$row['uai']] = $row['id_type_prioritaire'];
         }
-
         return $array;
     }
 
     public function findEtablissementsByUaiOrLibelle($uaiOrLibelle) {
-
         $query_etab = $this->_em->createQueryBuilder()
             ->add('select', 'e')
             ->add('from', 'App\Entity\RefEtablissement e');
@@ -742,7 +668,6 @@ class RefEtablissementRepository extends EntityRepository {
     }
 
     public function findEtablissementByZoneAndUaiOrLibelle($zone, $uaiOrLibelle) {
-
         $query = $this->createQueryBuilder('e');
 
         $query->leftjoin('e.commune', 'c')->addSelect('c')->leftjoin('c.departement', 'd')->addSelect('d');
@@ -773,8 +698,8 @@ class RefEtablissementRepository extends EntityRepository {
 
         return $query->getQuery()->getResult();
     }
-    public function findEtablissementByZoneUser($zone, $user) {
 
+    public function findEtablissementByZoneUser($zone, $user) {
         $query = $this->createQueryBuilder('e');
 
         $query->leftjoin('e.commune', 'c')->addSelect('c')->leftjoin('c.departement', 'd')->addSelect('d');
@@ -797,20 +722,6 @@ class RefEtablissementRepository extends EntityRepository {
             $query->andWhere('e.uai in ('.EpleUtils::getUais($user->getPerimetre()->getEtablissements()).')');
         }
         $query->andWhere('e.actif = 1');
-
-
         return $query->getQuery()->getResult();
     }
-    public function checkAcademieEtablisementDesactivationDate($uai){
-        $query = $this->createQueryBuilder('e')
-            ->select('aca.code, aca.dateDesactivation')
-            ->leftJoin(' e.commune', 'c')
-            ->leftJoin('c.departement', 'd')
-            ->leftJoin('d.academie', 'aca')
-            ->where("e.uai = :uai")
-            ->setParameter("uai", $uai);
-        return $re=  $query->getQuery()->getResult();
-    }
-
-
 }

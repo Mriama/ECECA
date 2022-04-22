@@ -2,7 +2,9 @@
 
 namespace App\Entity;
 
+use App\Utils\RefUserPerimetre;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Security\Core\User\EquatableInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use App\Entity\RefProfil;
 use App\Entity\RefTypeElection;
@@ -13,7 +15,7 @@ use App\Entity\RefTypeElection;
  * @ORM\Table(name="ref_user", options={"collate"="utf8_general_ci"})
  * @ORM\Entity
  */
-class RefUser implements UserInterface, \Serializable
+class RefUser implements UserInterface, \Serializable, EquatableInterface
 {
     /**
      * @var integer
@@ -45,7 +47,7 @@ class RefUser implements UserInterface, \Serializable
     private $idZone;
 
     /**
-     * @var App\Entity\RefProfil
+     * @var RefProfil
      *
      * @ORM\ManyToOne(targetEntity="App\Entity\RefProfil")
      * @ORM\JoinColumn(name="id_profil", referencedColumnName="id", nullable=false)
@@ -53,8 +55,8 @@ class RefUser implements UserInterface, \Serializable
     private $profil;
 
     /**
-     * @var App\Utils\RefUserPerimetre
-    */
+     * @var RefUserPerimetre
+     */
     private $perimetre;
 
     /**
@@ -134,16 +136,16 @@ class RefUser implements UserInterface, \Serializable
     /**
      * Set profil
      *
-     * @param App\Entity\RefProfil $profil
+     * @param RefProfil $profil
      */
-    public function setProfil( \App\Entity\RefProfil $profil) {
+    public function setProfil( RefProfil $profil) {
         $this->profil = $profil;
     }
 
     /**
      * Get profil
      *
-     * @return App\Entity\RefProfil
+     * @return RefProfil
      */
     public function getProfil() {
         return $this->profil;
@@ -152,7 +154,7 @@ class RefUser implements UserInterface, \Serializable
     /**
      * Get roles
      *
-     * @return Array of attribute role in profil->getRoles()
+     * @return array of attribute role in profil->getRoles()
      */
     public function getRoles() {
         $rolesSF2 = array();
@@ -165,18 +167,18 @@ class RefUser implements UserInterface, \Serializable
 
     /**
      * Set perimetre
-     * @param App\Utils\RefUserPerimetre $perimetre
+     * @param RefUserPerimetre $perimetre
      */
-    public function setPerimetre(\App\Utils\RefUserPerimetre $perimetre) {
+    public function setPerimetre(RefUserPerimetre $perimetre) {
         $this->perimetre = $perimetre;
     }
 
     /**
      * Get perimetre
-     * @return App\Utils\RefUserPerimetre
+     * @return RefUserPerimetre
      */
-    public function getPerimetre() { 
-        return $this->perimetre; 
+    public function getPerimetre() {
+        return $this->perimetre;
     }
 
     /*************************************** LOGIQUE METIER *******************************************/
@@ -211,8 +213,6 @@ class RefUser implements UserInterface, \Serializable
             $granted = $this->isEtabInScope($etablissement);
         }
 
-        // Test periodes d'ouverture de la campagne
-        // YME evol saisie ouverte aux DSDEN / RECT
 
         // Un DSDEN peut saisir les resultats de l'election parents d'eleves a la place d'un directeur d'ecole
         // pour une campagne modifiable en periode de validation
@@ -258,8 +258,8 @@ class RefUser implements UserInterface, \Serializable
 
     /**
      *
-     * @param unknown $etablissement
-     * @param unknown $campagne
+     * @param $etablissement
+     * @param $campagne
      */
     public function canBypassControleResultatSaisie($etablissement, $campagne, $joursCalendaires){
 
@@ -327,10 +327,6 @@ class RefUser implements UserInterface, \Serializable
                 $academie = $etablissement->getCommune()->getDepartement()->getAcademie();
                 $granted = $academie->getCode() == $this->getIdZone() || $academie->getAcademieFusion()->getCode() == $this->getIdZone();
                 break;
-
-            /*     		case RefProfil::CODE_PROFIL_IEN:
-                                $granted = $etablissement->getCirconscription() == $this->getIdZone();
-                                break; */
 
             default:
                 $granted = true;
@@ -420,9 +416,6 @@ class RefUser implements UserInterface, \Serializable
         if($granted){
             $granted = $campagne->isOpenValidation($this->perimetre->getAcademies(), $joursCalendaires);
         }
-
-        //echo $campagne->getTypeElection()->getCode().' = '.($granted ? 'OK' : 'NOPE').'<br/>';
-
         return $granted;
 
     }
@@ -463,7 +456,6 @@ class RefUser implements UserInterface, \Serializable
      * Depends on ROLES granted and regional scope
      * @param RefEtablissement $etablissement
      * @param RefTypeElection $typeElection
-     * @return unknown
      */
     public function canTransmitResultsEtab($etablissement, $typeElection){
 
@@ -478,7 +470,6 @@ class RefUser implements UserInterface, \Serializable
         }
 
         return $granted;
-
     }
 
     /**
@@ -490,7 +481,6 @@ class RefUser implements UserInterface, \Serializable
     public function canValidateEtab($etablissement, $campagne, $joursCalendaires){
 
         $listeAcademies = array($etablissement->getCommune()->getDepartement()->getAcademie()); // $this->perimetre->getAcademies()
-        //$granted = $this->canValidate($campagne, $joursCalendaires);
         $granted = false;
 
         if ($campagne->getTypeElection()->getId() == RefTypeElection::ID_TYP_ELECT_PARENT) {
@@ -519,7 +509,6 @@ class RefUser implements UserInterface, \Serializable
     public function canDevalidateEtab($etablissement, $campagne, $joursCalendaires){
 
         $listeAcademies = array($etablissement->getCommune()->getDepartement()->getAcademie()); // $this->perimetre->getAcademies()
-        //return $this->canDevalidate($campagne, $joursCalendaires);
         $granted = false;
 
         if ($campagne->getTypeElection()->getId() == RefTypeElection::ID_TYP_ELECT_PARENT) {
@@ -581,10 +570,10 @@ class RefUser implements UserInterface, \Serializable
 
     /**
      * L'user peut-il saisir le nombre de sièges par tirage au sort ?
-     * @param unknown $etablissement
-     * @param unknown $eleEtablissement
-     * @param unknown $campagne
-     * @param unknown $joursCalendaires
+     * @param $etablissement
+     * @param $eleEtablissement
+     * @param $campagne
+     * @param $joursCalendaires
      * @return boolean
      */
     public function canSaisieTirageAuSort($etablissement, $eleEtablissement, $campagne, $joursCalendaires, $joursCalendairesIen) {
@@ -625,30 +614,19 @@ class RefUser implements UserInterface, \Serializable
 
     /**
      * PV tirage au sort accessible aussi pendant la période de validation et au delà si pas de saisie du tirage au sort effectué
-     * @param unknown $etablissement
-     * @param unknown $eleEtablissement
-     * @param unknown $campagne
-     * @param unknown $joursCalendaires
+     * @param $etablissement
+     * @param $eleEtablissement
+     * @param $campagne
+     * @param $joursCalendaires
      * @return boolean
      */
     public function canGetPVTirageAuSortInAndAfterValidation($etablissement, $eleEtablissement, $campagne, $joursCalendaires) {
-        // Test type election et role saisie tirage au sort
-        /*if ($campagne->getTypeElection()->getId() == RefTypeElection::ID_TYP_ELECT_PARENT) {
-            $granted = in_array('ROLE_SAISIE_TS_PAR', $this->getRoles());
-        } else {
-            $granted = in_array('ROLE_SAISIE_TS_PE', $this->getRoles()); // rôle non attribué mais pour anticiper selon ECT
-        }*/
 
         $granted = true;
         // Test etablissement dans le scope
         if ($granted) {
             $granted = $this->isEtabInScope($etablissement);
         }
-
-        // Période de validation
-//     	if ($granted) {
-//     		$granted = $campagne->isOpenValidation($this->perimetre->getAcademies(), $joursCalendaires);
-//     	}
 
         // Cas de déficit ou carence de candidats
         if ($granted) {
@@ -669,10 +647,10 @@ class RefUser implements UserInterface, \Serializable
 
     /**
      * L'user peut-il saisir une nouvelle election ?
-     * @param unknown $etablissement
-     * @param unknown $eleEtablissement
-     * @param unknown $campagne
-     * @param unknown $joursCalendaires
+     * @param $etablissement
+     * @param $eleEtablissement
+     * @param $campagne
+     * @param $joursCalendaires
      * @return boolean
      */
     public function canSaisieNouvelleElection($etablissement, $eleEtablissement, $campagne, $joursCalendaires) {
@@ -732,11 +710,11 @@ class RefUser implements UserInterface, \Serializable
         ));
     }
 
-    public function unserialize($serialized) {
+    public function unserialize($data) {
         list (
             $this->id,
             $this->login
-            ) = \json_decode($serialized);
+            ) = \json_decode($data);
     }
 
     /**
@@ -744,5 +722,10 @@ class RefUser implements UserInterface, \Serializable
      */
     public function getUserIdentifier() {
         return $this->login;
+    }
+
+    public function isEqualTo(UserInterface $user)
+    {
+        return $this->login == $user->getUserIdentifier();
     }
 }

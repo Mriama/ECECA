@@ -3,73 +3,71 @@
 namespace App\Controller;
 
 use App\Entity\RefContact;
-use App\Entity\RefRole;
-use App\Entity\RefUser;
 use App\Utils\EpleUtils;
 use App\Entity\RefProfil;
-use App\Entity\RefCommune;
 use App\Form\CourrielType;
 use App\Entity\EleCampagne;
 use App\Entity\RefAcademie;
 use App\Entity\RefDepartement;
 use App\Entity\RefTypeElection;
+use App\Form\CourrielLibreType;
 use App\Utils\EcecaExportUtils;
-use App\Utils\RefUserPerimetre;
-use App\Entity\EleEtablissement;
 use App\Entity\RefEtablissement;
 use App\Entity\RefSousTypeElection;
 use App\Entity\RefTypeEtablissement;
-use App\Form\CourrielLibreType;
-use Symfony\Component\HttpFoundation\Request;
+use Doctrine\Persistence\ManagerRegistry;
+use Swift_Mailer;
+use Swift_Message;
+use Symfony\Component\HttpFoundation\RequestStack;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
-use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
 
 class CourrielController extends AbstractController {
+
+    private $request;
+    private $doctrine;
+
+    public function __construct(RequestStack $request, ManagerRegistry $doctrine) {
+        $this->request = $request->getCurrentRequest();
+        $this->doctrine = $doctrine;
+    }
+
     /**
      * Relance : envois de courriels pour motiver la saisie
-     * @param Request $request
      * @param integer $typeElectionId : identifiant type élection
      * @param $idZone : identifiant de zone
      * @throws AccessDeniedException
      */
-    public function relanceAction(Request $request, $typeElectionId, $idZone, RefUserPerimetre $refUserPerimetre) {
-        //TODO : changer authentification
-        $user = $em->getRepository(RefUser::class)->find(136);
-        $perimetre = $refUserPerimetre->setPerimetreForUser($user);
-        $user->setPerimetre($perimetre);
-        $token = new UsernamePasswordToken($user, null, 'main', $user->getRoles());
-        $this->get('security.token_storage')->setToken($token);
-        $this->get('session')->set('_security_main', serialize($token));
-        /************ */
-        if (false === $this->get('security.token_storage')->isGranted('ROLE_CONTACT_CE')) {
+    public function relanceAction($typeElectionId, $idZone) {
+        if (false === $this->isGranted('ROLE_CONTACT_CE')) {
             throw new AccessDeniedException();
         }
 
-
         $params = array();
-        $em = $this->getDoctrine()->getManager();
-        $request->getSession()->getBag('attributes')->set('id_typeElection', $typeElectionId);
-        $request->getSession()->getBag('attributes')->set('id_zone', $idZone);
+        $em = $this->doctrine->getManager();
+        $this->request->getSession()->getBag('attributes')->set('id_typeElection', $typeElectionId);
+        $this->request->getSession()->getBag('attributes')->set('id_zone', $idZone);
 
         $typeElection = $em->getRepository(RefTypeElection::class)->find($typeElectionId);
 
         // Identification de l'expéditeur
-        //$user = $this->get('security.context')->getToken()->getUser();
-        $this->get('security.token_storage')->setToken($token);
+        $user = $this->getUser();
         $params['expediteur'] = null;
         $params["copies"] = array();
 
-        if($request->getSession()->get('cte_mail') != null && $request->getSession()->get('cte_mail') != "") {
-            $params['expediteur'] = $request->getSession()->get('cte_mail');
+        if($this->request->getSession()->get('cte_mail') != null && $this->request->getSession()->get('cte_mail') != "") {
+            $params['expediteur'] = $this->request->getSession()->get('cte_mail');
             $params["copies"][] = "Me mettre en copie (" . $params['expediteur'] . ")";
         } else {
             $params['expediteur'] = $this->getParameter('mailer_from');
         }
-        $request->getSession()->getBag('attributes')->set('expediteur', $params['expediteur']);
+        $this->request->getSession()->getBag('attributes')->set('expediteur', $params['expediteur']);
 
         //Identification des personnes a mettre en copie
         $contacts = null;
@@ -106,14 +104,14 @@ class CourrielController extends AbstractController {
         // $listeEtabs = $em->getRepository(RefEtablissement::class)->findEtablissementsARelancer($campagne, $zone, $user);
         // 	0167467 Optimisation pour accés à la page de relance
         if ($user->getProfil()->getCode() == RefProfil::CODE_PROFIL_DGESCO && $zone instanceof RefAcademie) {
-            $params['nbEtabs'] = $request->getSession()->get('nbEtabArelancer'.$typeElectionId.$zone->getCode());
+            $params['nbEtabs'] = $this->request->getSession()->get('nbEtabArelancer'.$typeElectionId.$zone->getCode());
         } elseif (($user->getProfil()->getCode() == RefProfil::CODE_PROFIL_RECT || $user->getProfil()->getCode() == RefProfil::CODE_PROFIL_DSDEN) && $zone instanceof RefDepartement) {
-            $params['nbEtabs'] = $request->getSession()->get('nbEtabArelancer'.$typeElectionId.$zone->getNumero());
+            $params['nbEtabs'] = $this->request->getSession()->get('nbEtabArelancer'.$typeElectionId.$zone->getNumero());
         } else {
-            $params['nbEtabs'] = $request->getSession()->get('nbEtabArelancer'.$typeElectionId);
+            $params['nbEtabs'] = $this->request->getSession()->get('nbEtabArelancer'.$typeElectionId);
         }
 
-        $request->getSession()->getBag('attributes')->set('nbEtabArelancer', $params['nbEtabs']);
+        $this->request->getSession()->getBag('attributes')->set('nbEtabArelancer', $params['nbEtabs']);
 
         // les params pour l'export XLS
         $params['typeElectionId'] = $typeElectionId;
@@ -122,43 +120,33 @@ class CourrielController extends AbstractController {
 
         // 014E retour depuis la page courriel
         if ($zone instanceof RefDepartement || ($zone instanceof RefAcademie && $user->getProfil()->getCode() == RefProfil::CODE_PROFIL_DGESCO)) {
-            $request->getSession()->set('tdbDeplieRetour', true);
+            $this->request->getSession()->set('tdbDeplieRetour', true);
         }
-        $form = $this->createForm(CourrielType::class, null, $params['copies']);
-        $request->getSession()->set('choix_copies', $params['copies']);
+        $form = $this->createForm(CourrielType::class, null, ["copies" => $params['copies']]);
+        $this->request->getSession()->set('choix_copies', $params['copies']);
 
         $params['form'] = $form->createView();
 
         return $this->render('courriel/relance.html.twig', $params);
     }
 
-    /**
-     *
-     */
-    public function massRelanceAction(Request $request, RefUserPerimetre $refUserPerimetre) {
-         //TODO : changer authentification
-         $user = $em->getRepository(RefUser::class)->find(136);
-         $perimetre = $refUserPerimetre->setPerimetreForUser($user);
-         $user->setPerimetre($perimetre);
-         $token = new UsernamePasswordToken($user, null, 'main', $user->getRoles());
-         $this->get('security.token_storage')->setToken($token);
-         $this->get('session')->set('_security_main', serialize($token));
-         /************ */
-        if (false === $this->get('security.token_storage')->isGranted('ROLE_CONTACT_CE')) {
+    public function massRelanceAction() {
+        if (false === $this->isGranted('ROLE_CONTACT_CE')) {
             throw new AccessDeniedException();
         }
+        $user = $this->getUser();
 
         ini_set('memory_limit','512M');
         //$user = $this->get('security.context')->getToken()->getUser();
         $params = array();
-        $em = $this->getDoctrine()->getManager();
+        $em = $this->doctrine->getManager();
 
         // Récupération des établissements à relancer
         $listeTypeElection = array();
         $uais = array();
         $nbEtabs = 0;
         $nbEtabsReel = 0;
-        foreach($request->request as $key=>$value){
+        foreach($this->request->request as $key=>$value){
             if($key == "dept"){
                 $params["dept"] = $value;
             } else if($key == "nbEtabRelance") {
@@ -180,14 +168,14 @@ class CourrielController extends AbstractController {
             }
         }
 
-        $request->getSession()->getBag('attributes')->set('massRelanceEtabs', $uais);
+        $this->request->getSession()->getBag('attributes')->set('massRelanceEtabs', $uais);
         $params['nbEtabs'] = $nbEtabs == $nbEtabsReel ? $nbEtabs : $nbEtabsReel;
 
         // Identification de l'expéditeur
         $params['expediteur'] = null;
         $params['copies'] = array();
-        if($request->getSession()->get('cte_mail') != null && $request->getSession()->get('cte_mail') != "") {
-            $params['expediteur'] = $request->getSession()->get('cte_mail');
+        if($this->request->getSession()->get('cte_mail') != null && $this->request->getSession()->get('cte_mail') != "") {
+            $params['expediteur'] = $this->request->getSession()->get('cte_mail');
             $params["copies"][] = "Me mettre en copie (" . $params['expediteur'] . ")";
         } else {
             $params['expediteur'] = $this->getParameter('mailer_from');
@@ -233,17 +221,17 @@ class CourrielController extends AbstractController {
         $contacts = array_merge($contactsDep, $contactsAca);
         $params['copies'] = array_merge($params['copies'], $contacts);
 
-        $form = $this->createForm(CourrielType::class, null, $params['copies']);
-        $request->getSession()->set('choix_copies', $params['copies']);
+        $form = $this->createForm(CourrielType::class, null, ["copies" => $params['copies']]);
+        $this->request->getSession()->set('choix_copies', $params['copies']);
 
         $params['form'] = $form->createView();
 
         // les params pour l'export XLS
         $params['canExportEtab'] = ($user->getProfil()->getCode() == RefProfil::CODE_PROFIL_RECT || $user->getProfil()->getCode() == RefProfil::CODE_PROFIL_DSDEN);
-        $request->getSession()->set('tdbDeplieRetour', true);
+        $this->request->getSession()->set('tdbDeplieRetour', true);
         $etab = $em->getRepository(RefEtablissement::class)->find($uais[0]);
-        $request->getSession()->set('dept_num', $etab->getCommune()->getDepartement()->getNumero());
-        $request->getSession()->set('expediteur', $params['expediteur']);
+        $this->request->getSession()->set('dept_num', $etab->getCommune()->getDepartement()->getNumero());
+        $this->request->getSession()->set('expediteur', $params['expediteur']);
 
         return $this->render('courriel/massRelance.html.twig', $params);
     }
@@ -251,55 +239,42 @@ class CourrielController extends AbstractController {
     /**
      * Envoi des courriels
      *
-     * @param \Symfony\Component\HttpFoundation\Request $request
      * @return \Symfony\Component\HttpFoundation\RedirectResponse
      */
 
-    public function envoiAction(Request $request, RefUserPerimetre $refUserPerimetre) {
-         //TODO : changer authentification
-         $user = $em->getRepository(RefUser::class)->find(136);
-         $perimetre = $refUserPerimetre->setPerimetreForUser($user);
-         $user->setPerimetre($perimetre);
-         $token = new UsernamePasswordToken($user, null, 'main', $user->getRoles());
-         $this->get('security.token_storage')->setToken($token);
-         $this->get('session')->set('_security_main', serialize($token));
-         /************ */
+    public function envoiAction(Swift_Mailer $mailer) {
+        $user = $this->getUser();
+        $em = $this->doctrine->getManager();
 
-        $request = $this->get('request');
-
-        $em = $this->getDoctrine()->getManager();
-
-        $choix_copies = $request->getSession()->get('choix_copies');
-        $form = $this->createForm(CourrielType::class, null, $choix_copies);
-
-        $user = $this->get('security.token_storage')->getToken()->getUser();
+        $choix_copies = $this->request->getSession()->get('choix_copies');
+        $form = $this->createForm(CourrielType::class, null, ["copies" => $choix_copies]);
 
         if ($user->getProfil()->getCode() == RefProfil::CODE_PROFIL_DGESCO ) {
             ini_set('memory_limit','512M');
             set_time_limit (60);
         }
 
-        if ($request->getMethod() == 'POST') {
+        if ($this->request->getMethod() == 'POST') {
 
-            $form->handleRequest($request);
+            $form->handleRequest($this->request);
 
             if ($form->isSubmitted() && $form->isValid()) {
 
                 //Identification de la campagne
-                $typeElectionId = $request->getSession()->getBag('attributes')->get('id_typeElection');
+                $typeElectionId = $this->request->getSession()->getBag('attributes')->get('id_typeElection');
                 if ($typeElectionId == RefSousTypeElection::ID_TYP_ELECT_A_ATTE || $typeElectionId == RefSousTypeElection::ID_TYP_ELECT_SS)
                     $typeElectionId = RefTypeElection::ID_TYP_ELECT_ASS_ATE;
                 $campagne = $em->getRepository(EleCampagne::class)->getLastCampagne($typeElectionId);
                 if (empty($campagne)) { throw $this->createNotFoundException('La campagne est inconnue (typeElectionId = '.$typeElectionId.').'); }
 
                 //Identification de la zone
-                $idZone = $request->getSession()->getBag('attributes')->get('id_zone');
+                $idZone = $this->request->getSession()->getBag('attributes')->get('id_zone');
                 $zone = EpleUtils::getZone($em, $idZone);
                 if (empty($zone)) { throw $this->createNotFoundException('La zone est inconnue ('. $idZone .').'); }
 
                 // 0167453 recuperer les filtres dans le tdb
-                $natureEtab = $request->getSession()->get('natureEtab');
-                $typeEtab = $request->getSession()->get('typeEtab');
+                $natureEtab = $this->request->getSession()->get('natureEtab');
+                $typeEtab = $this->request->getSession()->get('typeEtab');
 
                 // 014E exclus des EREA-ERPD dans les résultats ASS et ATE et PEE && (($typeEtab != null && $typeEtab->getCode() != RefTypeEtablissement::CODE_EREA_ERPD) || $typeEtab == null)
                 $isEreaErpdExclus = false;
@@ -308,8 +283,8 @@ class CourrielController extends AbstractController {
                     $isEreaErpdExclus = true;
                 }
 
-                $mailFrom = $request->getSession()->getBag('attributes')->get('expediteur');
-                $nbEtabArelancer = $request->getSession()->getBag('attributes')->get('nbEtabArelancer');
+                $mailFrom = $this->request->getSession()->getBag('attributes')->get('expediteur');
+                $nbEtabArelancer = $this->request->getSession()->getBag('attributes')->get('nbEtabArelancer');
 
 
                 // envoi de mail par paquet pour eviter la saturation de la memoire serveur par 1000 mails
@@ -334,7 +309,7 @@ class CourrielController extends AbstractController {
                         $objet = $dataRequestArray['objet'];
                         $corps = $dataRequestArray['message'];
 
-                        $courriel = \Swift_Message::newInstance()
+                        $courriel = (new Swift_Message())
                             ->setFrom($mailFrom)
                             ->setTo($tabAdresses)
                             ->setSubject($objet)
@@ -344,17 +319,17 @@ class CourrielController extends AbstractController {
                         if ($dataRequestArray['choix_copies']) {
                             $copies = array();
                             foreach ($dataRequestArray['choix_copies'] as $idContact) {
-                                if(strpos($dataRequestArray[$idContact], "Me mettre en copie (") !== false) {
-                                    $copies[] = str_replace("Me mettre en copie (", "", substr($dataRequestArray[$idContact], 0, -1));
+                                if(strpos($choix_copies[$idContact], "Me mettre en copie (") !== false) {
+                                    $copies[] = str_replace("Me mettre en copie (", "", substr($choix_copies[$idContact], 0, -1));
                                 } else {
-                                    $copies[] = $dataRequestArray[$idContact];
+                                    $copies[] = $choix_copies[$idContact];
                                 }
                             }
                             $courriel->setCc($copies);
                         }
 
                         // Mettre en place un serveur smtp pour tester l'envoi de mails
-                        $this->get('mailer')->send($courriel);
+                        $mailer->send($courriel);
 
                     } else {
                         // message d'erreur
@@ -363,7 +338,7 @@ class CourrielController extends AbstractController {
                 }
 
                 //Redirection vers le tableau de bord par défaut
-                return $this->redirect($this->generateUrl('EPLEElectionBundle_tableau_bord'));
+                return $this->redirect($this->generateUrl('ECECA_tableau_bord'));
             }
         }
     }
@@ -371,36 +346,22 @@ class CourrielController extends AbstractController {
     /**
      * Envoi des courriels
      *
-     * @param Request $request
      * @return RedirectResponse
      */
 
-    public function massEnvoiAction(Request $request, RefUserPerimetre $refUserPerimetre) {
-         //TODO : changer authentification
-         $user = $em->getRepository(RefUser::class)->find(136);
-         $perimetre = $refUserPerimetre->setPerimetreForUser($user);
-         $user->setPerimetre($perimetre);
-         $token = new UsernamePasswordToken($user, null, 'main', $user->getRoles());
-         $this->get('security.token_storage')->setToken($token);
-         $this->get('session')->set('_security_main', serialize($token));
-         /************ */
-        $request = $this->get('request');
+    public function massEnvoiAction(Swift_Mailer $mailer) {
+        $em = $this->doctrine->getManager();
+        $user = $this->getUser();
+        $choix_copies = $this->request->getSession()->get('choix_copies');
+        $form = $this->createForm(CourrielType::class, null, ["copies" => $choix_copies]);
 
-        $em = $this->getDoctrine()->getManager();
 
-        $choix_copies = $request->getSession()->get('choix_copies');
-        $form = $this->createForm(CourrielType::class, null, $choix_copies);
-
-      //  $user = $this->get('security.context')->getToken()->getUser();
-
-        if ($request->getMethod() == 'POST') {
-
-            $form->handleRequest($request);
-
+        if ($this->request->getMethod() == 'POST') {
+            $form->handleRequest($this->request);
             if ($form->isSubmitted() && $form->isValid()) {
 
                 // Recherche des établissements à relancer
-                $uais = $request->getSession()->getBag('attributes')->get('massRelanceEtabs');
+                $uais = $this->request->getSession()->getBag('attributes')->get('massRelanceEtabs');
                 $tabAdresses = array();
 
                 $etablissements = $em->getRepository(RefEtablissement::class)->findListEtablissementsByUais($uais);
@@ -412,7 +373,7 @@ class CourrielController extends AbstractController {
                 }
 
                 // Expéditeur
-                $mailFrom = $request->getSession()->getBag('attributes')->get('expediteur');
+                $mailFrom = $this->request->getSession()->getBag('attributes')->get('expediteur');
 
                 // Création de l'e-mail à envoyer
                 if (!empty($tabAdresses)) {
@@ -420,7 +381,7 @@ class CourrielController extends AbstractController {
                     $objet = $dataRequestArray['objet'];
                     $corps = $dataRequestArray['message'];
 
-                    $courriel = \Swift_Message::newInstance()
+                    $courriel = (new Swift_Message())
                         ->setFrom($mailFrom)
                         ->setTo($tabAdresses)
                         ->setSubject($objet)
@@ -430,23 +391,21 @@ class CourrielController extends AbstractController {
                     if ($dataRequestArray['choix_copies']) {
                         $copies = array();
                         foreach ($dataRequestArray['choix_copies'] as $idContact) {
-                            if(strpos($dataRequestArray[$idContact], "Me mettre en copie (") !== false) {
-                                $copies[] = str_replace("Me mettre en copie (", "", substr($dataRequestArray[$idContact], 0, -1));
+                            if(strpos($choix_copies[$idContact], "Me mettre en copie (") !== false) {
+                                $copies[] = str_replace("Me mettre en copie (", "", substr($choix_copies[$idContact], 0, -1));
                             } else {
-                                $copies[] = $dataRequestArray[$idContact];
+                                $copies[] = $choix_copies[$idContact];
                             }
                         }
                         $courriel->setCc($copies);
                     }
-
-                    $this->get('mailer')->send($courriel);
-
+                    $mailer->send($courriel);
                 } else {
                     // message d'erreur
                 }
 
                 //Redirection vers le tableau de bord par défaut
-                return $this->redirect($this->generateUrl('EPLEElectionBundle_tableau_bord'));
+                return $this->redirect($this->generateUrl('ECECA_tableau_bord'));
             }
         }
     }
@@ -454,30 +413,22 @@ class CourrielController extends AbstractController {
 
     /**
      * Envoi de courriel libre
-     * @param Request $request
-     * @param unknown $codeUrlTypeElect
+     * @param $codeUrlTypeElect
      * @throws AccessDeniedException
      * @return Response
      */
-    public function envoiLibreAction(Request $request, $codeUrlTypeElect, RefUserPerimetre $refUserPerimetre) {
-        $em = $this->getDoctrine()->getManager();
-        //TODO : changer authentification
-        $user = $em->getRepository(RefUser::class)->find(133);
-        $perimetre = $refUserPerimetre->setPerimetreForUser($user);
-        $user->setPerimetre($perimetre);
-        $token = new UsernamePasswordToken($user, null, 'main', $user->getRoles());
-        $this->get('security.token_storage')->setToken($token);
-        $this->get('session')->set('_security_main', serialize($token));
-        /************ */
-        if (false === $this->get('security.authorization_checker')->isGranted('ROLE_ENV_COUR_LIB_CE')) {
+    public function envoiLibreAction(Swift_Mailer $mailer, $codeUrlTypeElect) {
+        $em = $this->doctrine->getManager();
+        if (false === $this->isGranted('ROLE_ENV_COUR_LIB_CE')) {
             throw new AccessDeniedException();
         }
 
-       // $user = $this->get('security.context')->getToken()->getUser();
+        $user = $this->getUser();
         $joursCalendaires = $this->getParameter('jours_calendaires');
 
         // Récupération du type d'election
-        $typeElection = $em->getRepository(RefTypeElection::class)->find(RefTypeElection::getIdRefTypeElectionByCodeUrl($codeUrlTypeElect));
+        $idTypeElect = RefTypeElection::getIdRefTypeElectionByCodeUrl($codeUrlTypeElect);
+        $typeElection = $idTypeElect != null ? $em->getRepository(RefTypeElection::class)->find($idTypeElect) : null;
         if(empty($typeElection)){
             throw $this->createNotFoundException('Le type d\'élection n\'a pas été trouvé.');
         }
@@ -490,32 +441,6 @@ class CourrielController extends AbstractController {
 
         $params = array();
 
-        // Fonctionnalites par profil dans "Tableau des fonctions par profil-1.xlsx"
-        // Election des personnels ASS, ATE, PEE - DSDEN - en periode de saisie
-        // mantis 147942 : DSDEN et RECT peuvent envoyer le courriel libre pour les 3 types d'élection en période de saisie et de validation.
-        /*if (($user->getProfil()->getCode() == RefProfil::CODE_PROFIL_DSDEN || $user->getProfil()->getCode() == RefProfil::CODE_PROFIL_RECT)
-        // mantis 147942
-            && ($codeUrlTypeElect == RefTypeElection::CODE_URL_ASS_ATE || $codeUrlTypeElect == RefTypeElection::CODE_URL_PEE)
-            && !$campagne->isOpenSaisie($user->getPerimetre()->getAcademies(), $joursCalendaires)) {
-                $params['pasEnSaisie'] = "Cette fonctionnalité n'est disponible qu'en période de saisie";
-        }
-
-        // Election des personnels ASS, ATE, PEE - RECTORAT - en periode de validation
-        if (($user->getProfil()->getCode() == RefProfil::CODE_PROFIL_DSDEN || $user->getProfil()->getCode() == RefProfil::CODE_PROFIL_RECT)
-        // mantis 147942
-            && ($codeUrlTypeElect == RefTypeElection::CODE_URL_ASS_ATE || $codeUrlTypeElect == RefTypeElection::CODE_URL_PEE)
-            && !$campagne->isOpenValidation($user->getPerimetre()->getAcademies(), $joursCalendaires)) {
-                $params['pasEnValidation'] = "Cette fonctionnalité n'est disponible qu'en période de validation";
-        }
-
-        // Election des Parents d'élèves - DSDEN - en periode de saisie
-        if (($user->getProfil()->getCode() == RefProfil::CODE_PROFIL_DSDEN || $user->getProfil()->getCode() == RefProfil::CODE_PROFIL_RECT)
-        // mantis 147942
-            && $codeUrlTypeElect == RefTypeElection::CODE_URL_PARENT
-            && !$campagne->isOpenSaisie($user->getPerimetre()->getAcademies(), $joursCalendaires)) {
-                $params['pasEnSaisie'] = "Cette fonctionnalité n'est disponible qu'en période de saisie";
-        }*/
-
         $params['alert']= $this->getParameter('alert');
 
         $params['typeElect'] = $typeElection;
@@ -523,8 +448,8 @@ class CourrielController extends AbstractController {
         $form = $this->createForm(CourrielLibreType::class, null);
         $params['form'] = $form->createView();
 
-        if ($request->getMethod() == 'POST') {
-            $form->handleRequest($request);
+        if ($this->request->getMethod() == 'POST') {
+            $form->handleRequest($this->request);
             if ($form->isSubmitted() && $form->isValid()) {
                 $dataRequestArray = $form->getData();
 
@@ -618,14 +543,14 @@ class CourrielController extends AbstractController {
 
                 // mail
                 if (!empty($tabAdresses)) {
-                    $courriel = \Swift_Message::newInstance()
+                    $courriel = (new Swift_Message())
                         ->setFrom($expediteur)
                         ->setTo($tabAdresses)
                         ->setSubject($objet)
                         ->setBody($corps)
                     ;
 
-                    $this->get('mailer')->send($courriel);
+                    $mailer->send($courriel);
 
                     $params['courriel_envoye'] = "Courriel envoyé";
 
@@ -634,34 +559,24 @@ class CourrielController extends AbstractController {
                 }
             }
         }
-
         return $this->render('courriel/courrielLibre.html.twig', $params);
     }
 
     /**
      * exportEtablissementsXLS : export XLS des établissements n'ayant pas d'adresses mail
-     * @param \Symfony\Component\HttpFoundation\Request $request
      * @param integer $typeElectionId : identifiant type élection
      * @param $idZone : identifiant de zone
      * @throws AccessDeniedException
      */
 
-    public function exportEtablissementsSansMailXLSAction(Request $request, $typeElectionId, $idZone, RefUserPerimetre $refUserPerimetre) {
-        //TODO : changer authentification
-        $user = $em->getRepository(RefUser::class)->find(136);
-        $perimetre = $refUserPerimetre->setPerimetreForUser($user);
-        $user->setPerimetre($perimetre);
-        $token = new UsernamePasswordToken($user, null, 'main', $user->getRoles());
-        $this->get('security.token_storage')->setToken($token);
-        $this->get('session')->set('_security_main', serialize($token));
-        /************ */
-        //$user = $this->get('security.context')->getToken()->getUser();
+    public function exportEtablissementsSansMailXLSAction($typeElectionId, $idZone) {
+        $user = $this->getUser();
         if ($user->getProfil()->getCode() != RefProfil::CODE_PROFIL_RECT && $user->getProfil()->getCode() != RefProfil::CODE_PROFIL_DSDEN) {
             throw new AccessDeniedException();
         }
 
         $params = array();
-        $em = $this->getDoctrine()->getManager();
+        $em = $this->doctrine->getManager();
 
         //Identification de la campagne
         $campagne = $em->getRepository(EleCampagne::class)->getLastCampagne($typeElectionId);
@@ -669,20 +584,23 @@ class CourrielController extends AbstractController {
 
         //Identification des établissements qui n'ont pas encore saisi leurs résultats
         $zone = EpleUtils::getZone($em, $idZone);
-        $listeEtabsSansMails = $em->getRepository(RefEtablissement::class)->findEtablissementsWithoutMail($campagne, $zone, $user);
+        $listeEtabsSansMails = $em->getRepository(RefEtablissement::class)->findEtablissementsWithoutMail($campagne, $zone);
 
         // **************** Création de l'objet Excel *********************//
-        $phpExcelObject = $this->get('phpexcel')->createPHPExcelObject();
+        $spreadsheet = new Spreadsheet();
 
         // Export
-        $this->generateEtablissementsXLS($listeEtabsSansMails, $phpExcelObject);
+        $this->generateEtablissementsXLS($listeEtabsSansMails, $spreadsheet);
 
         // Création du writer
-        $writer = $this->get('phpexcel')->createWriter($phpExcelObject, 'Excel5');
-
+        $writer = new Xlsx($spreadsheet, 'Excel5');
 
         // Créer la réponse
-        $response = $this->get('phpexcel')->createStreamedResponse($writer);
+        $response =  new StreamedResponse(
+            function () use ($writer) {
+                $writer->save('php://output');
+            }
+        );
         $response->headers->set('Content-Type', 'text/vnd.ms-excel; charset=utf-8');
         $response->headers->set('Content-Disposition', 'attachment;filename= ExportEtablissementsSansAdresseMail_' . $campagne->getAnneeDebut() . '-' . $campagne->getAnneeFin() . '.xls');
         return $response;
@@ -691,50 +609,42 @@ class CourrielController extends AbstractController {
 
     /**
      * exportEtablissementsXLS : export XLS des établissements n'ayant pas d'adresses mail
-     * @param \Symfony\Component\HttpFoundation\Request $request
      * @throws AccessDeniedException
      */
 
-    public function exportMasseEtablissementsSansMailXLSAction(Request $request, RefUserPerimetre $refUserPerimetre) {
-        //TODO : changer authentification
-        $user = $em->getRepository(RefUser::class)->find(136);
-        $perimetre = $refUserPerimetre->setPerimetreForUser($user);
-        $user->setPerimetre($perimetre);
-        $token = new UsernamePasswordToken($user, null, 'main', $user->getRoles());
-        $this->get('security.token_storage')->setToken($token);
-        $this->get('session')->set('_security_main', serialize($token));
-        /************ */
-        //$user = $this->get('security.context')->getToken()->getUser();
+    public function exportMasseEtablissementsSansMailXLSAction() {
+        $user = $this->getUser();
         if ($user->getProfil()->getCode() != RefProfil::CODE_PROFIL_RECT && $user->getProfil()->getCode() != RefProfil::CODE_PROFIL_DSDEN) {
             throw new AccessDeniedException();
         }
 
         $params = array();
-        $em = $this->getDoctrine()->getManager();
+        $em = $this->doctrine->getManager();
 
         //Identification des établissements qui n'ont pas encore saisi leurs résultats
-        $uais = $request->getSession()->getBag('attributes')->get('massRelanceEtabs');
+        $uais = $this->request->getSession()->getBag('attributes')->get('massRelanceEtabs');
         $listeEtab = $em->getRepository(RefEtablissement::class)->findListEtablissementsByUais($uais);
         $listeEtabsSansMails = array();
         foreach ($listeEtab as $etab) {
             if ($etab->getContact() == "")
                 array_push($listeEtabsSansMails, $etab);
-
         }
 
         // **************** Création de l'objet Excel *********************//
-        $phpExcelObject = $this->get('phpexcel')->createPHPExcelObject();
+        $spreadsheet = new Spreadsheet();
 
         // Export
-        $this->generateEtablissementsXLS($listeEtabsSansMails, $phpExcelObject);
+        $this->generateEtablissementsXLS($listeEtabsSansMails, $spreadsheet);
 
         // Création du writer
-        $writer = $this->get('phpexcel')->createWriter($phpExcelObject, 'Excel5');
-
-
+        $writer = new Xlsx($spreadsheet, 'Excel5');
         // Créer la réponse
         $anneeScolaire = EcecaExportUtils::getAnneeScolaireEncours();
-        $response = $this->get('phpexcel')->createStreamedResponse($writer);
+        $response =  new StreamedResponse(
+            function () use ($writer) {
+                $writer->save('php://output');
+            }
+        );
         $response->headers->set('Content-Type', 'text/vnd.ms-excel; charset=utf-8');
         $response->headers->set('Content-Disposition', 'attachment;filename= ExportEtablissementsSansAdresseMail_'. $anneeScolaire .'.xls');
         return $response;
@@ -748,8 +658,8 @@ class CourrielController extends AbstractController {
      * @return Response
      **/
     public function findAllAcademieAction() {
-        $em = $this->getDoctrine()->getManager();
-        $typeElect = $this->get('request')->request->get('typeElect');
+        $em = $this->doctrine->getManager();
+        $typeElect = $this->request->request->get('typeElect');
 
         $lastCampagne = $em->getRepository(EleCampagne::class)->getLastCampagne($typeElect);
         $campagneDebut = new \DateTime($lastCampagne->getAnneeDebut(). "-01-01");
@@ -780,19 +690,10 @@ class CourrielController extends AbstractController {
      * à utiliser uniquement pour l'envoi de courriel libre
      * @return Response
      **/
-    public function findDepartementsByCodeAcademieAction(RefUserPerimetre $refUserPerimetre) {
-        //TODO : changer authentification
-        $user = $em->getRepository(RefUser::class)->find(136);
-        $perimetre = $refUserPerimetre->setPerimetreForUser($user);
-        $user->setPerimetre($perimetre);
-        $token = new UsernamePasswordToken($user, null, 'main', $user->getRoles());
-        $this->get('security.token_storage')->setToken($token);
-        $this->get('session')->set('_security_main', serialize($token));
-        /************ */
-        $em = $this->getDoctrine()->getManager();
-        $request = $this->get('request');
-        //$user = $this->get('security.context')->getToken()->getUser();
-        $academie_code = $request->request->get('academie_code');
+    public function findDepartementsByCodeAcademieAction() {
+        $em = $this->doctrine->getManager();
+        $user = $this->getUser();
+        $academie_code = $this->request->request->get('academie_code');
 
         $departements = array();
         //DSDEN multi-departements
@@ -836,21 +737,12 @@ class CourrielController extends AbstractController {
      * à utiliser uniquement pour l'envoi de courriel libre
      * @return Response
      */
-    public function findEtablissementsByZoneAndUaiOrLibelleAction(RefUserPerimetre $refUserPerimetre) {
-        //TODO : changer authentification
-        $user = $em->getRepository(RefUser::class)->find(136);
-        $perimetre = $refUserPerimetre->setPerimetreForUser($user);
-        $user->setPerimetre($perimetre);
-        $token = new UsernamePasswordToken($user, null, 'main', $user->getRoles());
-        $this->get('security.token_storage')->setToken($token);
-        $this->get('session')->set('_security_main', serialize($token));
-        /************ */
-        $em = $this->getDoctrine()->getManager();
-        $request = $this->get('request');
-        //$user = $this->get('security.context')->getToken()->getUser();
-        $uai_or_libelle = $request->request->get('uai_or_libelle');
-        $academie_code = $request->request->get('academie_code');
-        $departement_numero = $request->request->get('departement_numero');
+    public function findEtablissementsByZoneAndUaiOrLibelleAction() {
+        $em = $this->doctrine->getManager();
+        $user = $this->getUser();
+        $uai_or_libelle = $this->request->request->get('uai_or_libelle');
+        $academie_code = $this->request->request->get('academie_code');
+        $departement_numero = $this->request->request->get('departement_numero');
 
         //on recupere une liste des listes des établissements dans le périmetre du DSDEN
         if ($user->getProfil()->getCode() == RefProfil::CODE_PROFIL_DSDEN) {
@@ -924,19 +816,10 @@ class CourrielController extends AbstractController {
      * à utiliser uniquement pour l'envoi de courriel libre
      * @return Response
      */
-    public function findEtablissementByUaiOrLibelleAction(RefUserPerimetre $refUserPerimetre) {
-        //TODO : changer authentification
-        $user = $em->getRepository(RefUser::class)->find(136);
-        $perimetre = $refUserPerimetre->setPerimetreForUser($user);
-        $user->setPerimetre($perimetre);
-        $token = new UsernamePasswordToken($user, null, 'main', $user->getRoles());
-        $this->get('security.token_storage')->setToken($token);
-        $this->get('session')->set('_security_main', serialize($token));
-        /************ */
-        $em = $this->getDoctrine()->getManager();
-        $request = $this->get('request');
-        //$user = $this->get('security.context')->getToken()->getUser();
-        $uai_or_libelle = $request->request->get('uai_or_libelle');
+    public function findEtablissementByUaiOrLibelleAction() {
+        $em = $this->doctrine->getManager();
+        $user = $this->getUser();
+        $uai_or_libelle = $this->request->request->get('uai_or_libelle');
 
         if ($user->getProfil()->getCode() == RefProfil::CODE_PROFIL_RECT) {
             $academie_code = $user->getIdZone();
@@ -1000,48 +883,47 @@ class CourrielController extends AbstractController {
     /**
      * Fonction permettant la génération des établissements
      * @param array $data : tableau array contenant les données à exporter
-     * @param \PHPExcel : objet de la librairie PhpExcelObject
      * @return $ligne
      */
-    private function generateEtablissementsXLS($data, &$phpExcelObject)
+    private function generateEtablissementsXLS($data, &$spreadsheet)
     {
-        $em = $this->getDoctrine()->getManager();
+        $em = $this->doctrine->getManager();
 
-        $sheet = $phpExcelObject->getActiveSheet();
+        $sheet = $spreadsheet->getActiveSheet();
         $styleArray = array(
             'font' => array(
                 'bold' => true
             )
         );
 
-        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A1', 'UAI/RNE');
+        $spreadsheet->setActiveSheetIndex(0)->setCellValue('A1', 'UAI/RNE');
         $sheet->getStyle('A1')->applyFromArray($styleArray);
-        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B1', 'Libellé');
+        $spreadsheet->setActiveSheetIndex(0)->setCellValue('B1', 'Libellé');
         $sheet->getStyle('B1')->applyFromArray($styleArray);
-        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C1', 'Nature d\'établissement');
+        $spreadsheet->setActiveSheetIndex(0)->setCellValue('C1', 'Nature d\'établissement');
         $sheet->getStyle('C1')->applyFromArray($styleArray);
-        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D1', 'Code postal');
+        $spreadsheet->setActiveSheetIndex(0)->setCellValue('D1', 'Code postal');
         $sheet->getStyle('D1')->applyFromArray($styleArray);
-        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('E1', 'Commune');
+        $spreadsheet->setActiveSheetIndex(0)->setCellValue('E1', 'Commune');
         $sheet->getStyle('E1')->applyFromArray($styleArray);
-        $phpExcelObject->setActiveSheetIndex(0)->setCellValue('F1', 'Département');
+        $spreadsheet->setActiveSheetIndex(0)->setCellValue('F1', 'Département');
         $sheet->getStyle('F1')->applyFromArray($styleArray);
 
         $ligne = 2;
         if ($data != null && sizeof($data) > 0) {
             foreach($data as $etab){
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('A' . $ligne, $etab->getUai());
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('B' . $ligne, $etab->getLibelle());
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('C' . $ligne, $etab->getUaiNature() != null ? $etab->getUaiNature()->getLibelleLong() : '');
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('D' . $ligne, $etab->getCommune()->getCodePostal()." ");
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('E' . $ligne, $etab->getCommune()->getLibelle());
-                $phpExcelObject->setActiveSheetIndex(0)->setCellValue('F' . $ligne, $etab->getCommune()->getDepartement()->getLibelle() . " (" . $etab->getCommune()->getDepartement()->getNumero() . ")");
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue('A' . $ligne, $etab->getUai());
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue('B' . $ligne, $etab->getLibelle());
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue('C' . $ligne, $etab->getUaiNature() != null ? $etab->getUaiNature()->getLibelleLong() : '');
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue('D' . $ligne, $etab->getCommune()->getCodePostal()." ");
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue('E' . $ligne, $etab->getCommune()->getLibelle());
+                $spreadsheet->setActiveSheetIndex(0)->setCellValue('F' . $ligne, $etab->getCommune()->getDepartement()->getLibelle() . " (" . $etab->getCommune()->getDepartement()->getNumero() . ")");
                 $ligne ++;
             }
         }
 
         // Activer la 1ère feuille
-        $phpExcelObject->setActiveSheetIndex(0);
+        $spreadsheet->setActiveSheetIndex(0);
 
         $sheet->getColumnDimension('A')->setWidth(20);
         $sheet->getColumnDimension('B')->setWidth(30);

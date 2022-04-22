@@ -47,7 +47,7 @@ class RefUserPerimetre {
 
     /**
      * @var array() communes
-     * // TODO NON UTILISE
+     * // NON UTILISE
      */
     private $communes;
 
@@ -56,10 +56,6 @@ class RefUserPerimetre {
      */
     private $etablissements;
 
-    /**
-     *
-     * @var unknown
-     */
     private $limitedToEtabs;
 
     private $isPerimetreVide;
@@ -107,16 +103,6 @@ class RefUserPerimetre {
                 break;
 
             case RefProfil::CODE_PROFIL_RECT:
-
-//                $this->setDegres(array('1', '2'));
-//                $this->setTypeElections($typesElections);
-//                $academie = $this->doctrine->getRepository(RefAcademie::class)->find($user->getLogin());
-//                $this->addAcademie($academie);
-//                $departements = $this->doctrine->getRepository(RefDepartement::class)->findBy(array('academie' => $academie->getCode()));
-//                $this->setDepartements($departements);
-
-
-//                 v3:
                 $this->setDegres(array('1', '2'));
                 $this->setTypeElections($typesElections);
                 $academie = $this->doctrine->getRepository(RefAcademie::class)->find($user->getLogin());
@@ -178,12 +164,9 @@ class RefUserPerimetre {
                         $dateCampagneDebut = new Datetime($campagne->getAnneeDebut() . '-01-01');
                         if($academie->getAcademieFusion() != null && $academie->getDateDesactivation() <= $dateCampagneDebut) {
                             $academie = $this->doctrine->getRepository(RefAcademie::class)->find( $academie->getAcademieFusion()->getCode());
-                            //$newAcademies = $this->doctrine->getRepository(RefAcademie::class)->getchildnewAcademies( $academie->getAcademieFusion()->getCode());
-                            //$this->setAcademies( $newAcademies);
                         }
                         $this->addAcademie($academie);
                         $user->setIdZone($academie->getCode());
-                        //$this->addAcademie($etab->getCommune()->getDepartement()->getAcademie());
                     }
                 }
                 $this->limitedToEtabs = true;
@@ -192,7 +175,6 @@ class RefUserPerimetre {
             case RefProfil::CODE_PROFIL_CE:
                 $this->setDegres(array('2'));
                 $this->setTypeElections($typesElections);
-                // dd($lst_uai);
                 foreach ($lst_uai as $uai) {
                     $etab = $this->doctrine->getRepository(RefEtablissement::class)->findOneBy(["uai" => $uai]);
                     if (null != $etab && null != $etab->getCommune() && $etab->getActif()){ // YME - HPQC DEFECT #220
@@ -250,27 +232,27 @@ class RefUserPerimetre {
         return $this;
     }
 
-    public function addAcademie(\App\Entity\RefAcademie $aca)
+    public function addAcademie(RefAcademie $aca)
     {
         if (!in_array($aca, $this->academies)) $this->academies[] = $aca;
     }
 
-    public function addDepartement(\App\Entity\RefDepartement $dept)
+    public function addDepartement(RefDepartement $dept)
     {
         if (!in_array($dept, $this->departements)) $this->departements[] = $dept;
     }
 
-    public function addEtablissement(\App\Entity\RefEtablissement $etab)
+    public function addEtablissement(RefEtablissement $etab)
     {
         $this->etablissements[] = $etab;
     }
 
-    public function addCommune(\App\Entity\RefCommune $comm)
+    public function addCommune(RefCommune $comm)
     {
         if (!in_array($comm, $this->communes)) $this->communes[] = $comm;
     }
 
-    public function addTypeElection(\App\Entity\RefTypeElection $type)
+    public function addTypeElection(RefTypeElection $type)
     {
         $this->typeElections[] = $type;
     }
@@ -362,24 +344,6 @@ class RefUserPerimetre {
         $email = $this->container->getParameter('mailer_admin');
 
         switch ($user->getProfil()->getCode()) {
-
-            /*
-            case RefProfil::CODE_PROFIL_RECT:
-                // contact académique
-                if (!empty($this->academies)) {
-                    $academie = $this->academies[0];
-                    if ($academie != null) {
-                        $contactsAcademie = $this->doctrine->getRepository(RefContact::class)->findContactsByIdZone($academie->getCode());
-                        if ($contactsAcademie != null && sizeof($contactsAcademie) > 0) {
-                            $contactAcademie = $contactsAcademie[0];
-                            $email = $contactAcademie->getEmail1();
-                        }
-                    }
-                }
-
-                break;
-            */
-
             case RefProfil::CODE_PROFIL_IEN:
             case RefProfil::CODE_PROFIL_DE:
                 if (!empty($this->departements)) {
@@ -394,11 +358,10 @@ class RefUserPerimetre {
                                 $email = $contactDepartement->getEmail1();
                             }
                         }
-
                     }
                 }
-
                 break;
+
             case RefProfil::CODE_PROFIL_CE:
                 $email = array();
                 if (!empty($this->departements)) {
@@ -420,6 +383,7 @@ class RefUserPerimetre {
                 }
                 $email = implode(";", array_unique($email));
                 break;
+
             case RefProfil::CODE_PROFIL_DSDEN:
                 $email = array();
                 if (!empty($this->academies)) {
@@ -448,37 +412,7 @@ class RefUserPerimetre {
         return $email;
     }
 
-    public function getUrlEduscol() {
-        return $this->container->getParameter('url_eduscol');
-    }
-
-    public function getVersion() {
-        return $this->container->getParameter('version');
-    }
-
     public function isLimitedToEtabs(){
         return $this->limitedToEtabs;
-    }
-
-    public function getUrlDocumentation() {
-        return $this->container->getParameter('url_documentation');
-    }
-
-    public function getUrlCE()
-    {
-        return $this->container->getParameter('url_documentation_ce');
-    }
-
-    public function getUrlDE()
-    {
-        return $this->container->getParameter('url_documentation_de');
-    }
-
-    public function getRgaaStatus() {
-        return $this->container->getParameter('rgaa_status');
-    }
-
-    public function getRgaaDeclarationLink() {
-        return $this->container->getParameter('rgaa_declaration_link');
     }
 }

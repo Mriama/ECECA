@@ -12,15 +12,11 @@ use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class EleParticipationType extends AbstractType {
-    protected $class;
 
-    public function __construct($class)
-    {
-        $this->refTypeElection = $class;
-    }
+    public function __construct($class) {}
 
     public function buildForm(FormBuilderInterface $builder, array $options) {
-
+        $refTypeElection = $options["typeElect"];
         $builder->add('nbInscrits', IntegerType::class, array (
             'label'  => '* Nombre d\'inscrits',
             'required' => true,
@@ -63,7 +59,7 @@ class EleParticipationType extends AbstractType {
                 'error_bubbling' => true,
                 'attr' => array('min' =>0)
             ));
-        if(($this->refTypeElection != null && $this->refTypeElection->getId() == RefTypeElection::ID_TYP_ELECT_PARENT)) {
+        if(($refTypeElection != null && $refTypeElection->getId() == RefTypeElection::ID_TYP_ELECT_PARENT)) {
             $builder->add('modaliteVote', EntityType::class, array(
                 'label' => 'Modalité de vote',
                 'multiple' => false,
@@ -75,13 +71,14 @@ class EleParticipationType extends AbstractType {
                 },
                 'required' => true,
                 'choice_label' => 'libelle',
-                'empty_data' => 'Votre sélection'));
+                'placeholder' => 'Votre sélection'));
         }
     }
 
     public function configureOptions(OptionsResolver $resolver) {
         $resolver->setDefaults(array(
-            'data_class' => 'App\Entity\EleParticipation'
+            'data_class' => 'App\Entity\EleParticipation',
+            'typeElect' => null
         ));
     }
 

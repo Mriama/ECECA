@@ -4,7 +4,7 @@
 {% block menu %}{% endblock %}
 {% block ariane %}{% block arianeComplements %}{% endblock %}{% endblock %}
 {% block contentPage %}
-{% include 'flash.html.twig' with {'flash':'info'} %}{% include 'flash.html.twig' with {'flash':'erreur'} %}
+	{% include 'flash.html.twig' with {'flash':'info'} %}{% include 'flash.html.twig' with {'flash':'erreur'} %}
 	{% if messageKO is defined %}
 		<div class="message erreur">{{ messageKO }}</div>
 	{% endif %}

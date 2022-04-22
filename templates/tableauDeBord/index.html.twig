@@ -54,12 +54,12 @@
 					{% endif %}
 					<td class="actions">
 						{% if tabBord['validationPossible'] %}
-							<a href="{{ path('EPLEElectionBundle_resultats_transmis', { 'codeUrlTypeElect': tabBord['typeElection'].getCodeUrlById, 'numDept' : 0 }) }}"><img src="{{ asset('images/pictos/accept.png') }}" alt="Valider les résultats" title="Valider les résultats" /></a>
+							<a href="{{ path('ECECA_resultats_transmis', { 'codeUrlTypeElect': tabBord['typeElection'].getCodeUrlById, 'numDept' : 0 }) }}"><img src="{{ asset('images/pictos/accept.png') }}" alt="Valider les résultats" title="Valider les résultats" /></a>
 						{% endif %}
 					</td>
 					<td class="actions">
 						{% if tabBord['campagneOpenSaisie'] %}
-							<a href="{{ path('EPLEElectionBundle_relance_courriel', { 'idZone':idZone, 'typeElectionId':tabBord['typeElection'].id()}) }}">
+							<a href="{{ path('ECECA_relance_courriel', { 'idZone':idZone, 'typeElectionId':tabBord['typeElection'].id()}) }}">
 								<img src="{{ asset('images/pictos/email.png') }}" alt="Contacter les établissements" title="Contacter les établissements" />
 							</a>
 						{% endif %}
@@ -128,18 +128,12 @@
 						{% endif %}
 						<td class="actions">
 							{% if eleRes['validationPossible'] %}
-								{# 							BBL commente: à la consultation des résultats par établissement, la zone est tjrs département#}
-								{# 							{% if zone == 'Départements' %}#}
-								{# 								<a href="{{ path('EPLEElectionBundle_resultats_transmis', { 'codeUrlTypeElect': eleRes['typeElection'].getCodeUrlById, 'numDept' : tabBord['zone'].numero }) }}"><img src="{{ asset('images/pictos/accept.png') }}" alt="Valider les résultats" title="Valider les résultats" /></a>#}
-								{# 							{% else %}#}
-								{# 								<a href="{{ path('EPLEElectionBundle_resultats_transmis', { 'codeUrlTypeElect': eleRes['typeElection'].getCodeUrlById, 'numDept' : 0 }) }}"><img src="{{ asset('images/pictos/accept.png') }}" alt="Valider les résultats" title="Valider les résultats" /></a>#}
-								{# 							{% endif %}#}
-								<a href="{{ path('EPLEElectionBundle_resultats_transmis', { 'codeUrlTypeElect': eleRes['typeElection'].getCodeUrlById, 'numDept' : tabBord['zone'].numero }) }}"><img src="{{ asset('images/pictos/accept.png') }}" alt="Valider les résultats" title="Valider les résultats" /></a>
+								<a href="{{ path('ECECA_resultats_transmis', { 'codeUrlTypeElect': eleRes['typeElection'].getCodeUrlById, 'numDept' : tabBord['zone'].numero }) }}"><img src="{{ asset('images/pictos/accept.png') }}" alt="Valider les résultats" title="Valider les résultats" /></a>
 							{% endif %}
 						</td>
 						<td class="actions">
 							{% if eleRes['campagneOpenSaisie'] %}
-								<a href="{{ path('EPLEElectionBundle_relance_courriel', { 'idZone':idZone, 'typeElectionId':eleRes['typeElection'].id()}) }}">
+								<a href="{{ path('ECECA_relance_courriel', { 'idZone':idZone, 'typeElectionId':eleRes['typeElection'].id()}) }}">
 									<img src="{{ asset('images/pictos/email.png') }}" alt="Contacter les établissements" title="Contacter les établissements" />
 								</a>
 							{% endif %}
@@ -164,8 +158,8 @@
 		$('#masquer_tabBordZone').hide();
 		{% endif %}
 		{% endif %}
-		var getRechercheEtablissementsByNumDepartementAjaxPath = "{{ path('EPLEElectionBundle_ajax_getRechercheEtablissementsByNumDepartement') }}";
-		var getEtablissementsByNumDepartementAjaxPath = "{{ path('EPLEElectionBundle_ajax_getEtablissementsByNumDepartement') }}";
+		var getRechercheEtablissementsByNumDepartementAjaxPath = "{{ path('ECECA_ajax_getRechercheEtablissementsByNumDepartement') }}";
+		var getEtablissementsByNumDepartementAjaxPath = "{{ path('ECECA_ajax_getEtablissementsByNumDepartement') }}";
 
 	</script>
 

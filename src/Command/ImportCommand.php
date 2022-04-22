@@ -1,20 +1,33 @@
 <?php
 namespace App\Command;
 
-use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
-use Symfony\Component\Console\Input\InputArgument;
+use App\Utils\ImportRamseseService;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
-class ImportCommand extends ContainerAwareCommand
+class ImportCommand extends Command
 {
+    public $logger;
+    public $params;
+    public $importRamseseService;
 
-	/**
-	 * 
-	 * {@inheritDoc}
-	 * @see \Symfony\Component\Console\Command\Command::configure()
-	 */
-	
+    public function __construct(LoggerInterface $importLogger, ParameterBagInterface $params, ImportRamseseService $importRamseseService)
+    {
+        $this->logger = $importLogger;
+        $this->params = $params;
+        $this->importRamseseService = $importRamseseService;
+        parent::__construct();
+    }
+
+    /**
+     *
+     * {@inheritDoc}
+     * @see \Symfony\Component\Console\Command\Command::configure()
+     */
+
     protected function configure()
     {
         $this->setName("ramsese:import")->setDescription("Commande pour importer les fichiers communes et ramsese");
@@ -29,26 +42,24 @@ class ImportCommand extends ContainerAwareCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $logger = $this->getContainer()->get("import_logger");
-        
         // Récupération des paramètres
-        $ftpServer = $this->getContainer()->getParameter('ramsese_ftp_server');
-        $ftpPort = $this->getContainer()->getParameter('ramsese_ftp_port');
-        $ftpUser = $this->getContainer()->getParameter('ramsese_ftp_user');
-        $ftpPassword = $this->getContainer()->getParameter('ramsese_ftp_password');
-        $ftpPath = $this->getContainer()->getParameter('ramsese_ftp_path');
-        
+        $ftpServer = $this->params->get('ramsese_ftp_server');
+        $ftpPort = $this->params->get('ramsese_ftp_port');
+        $ftpUser = $this->params->get('ramsese_ftp_user');
+        $ftpPassword = $this->params->get('ramsese_ftp_password');
+        $ftpPath = $this->params->get('ramsese_ftp_path');
+
         // Patterns des fichiers
-        $uploadDir = $this->getContainer()->getParameter('ramsese_upload_dir');
-        
-         $logger->info("Informations de connexion : " . $ftpUser . ':' . $ftpPassword . '@' . $ftpServer . ':' . $ftpPort .'|'. $ftpPath);
-        
+        $uploadDir = $this->params->get('ramsese_upload_dir');
+
+        $this->logger->info("Informations de connexion : " . $ftpUser . ':' . $ftpPassword . '@' . $ftpServer . ':' . $ftpPort .'|'. $ftpPath);
+
         // connexion ftp
         $idConn = ftp_connect ($ftpServer, $ftpPort);
-       
+
         if ($idConn && ftp_login($idConn, $ftpUser, $ftpPassword)) {
             ftp_pasv($idConn, true);
-            
+
             // Tri des fichier dans le dossier d'exploitation
             $listeFichiers = ftp_nlist($idConn, $ftpPath);
             natsort($listeFichiers);
@@ -64,73 +75,73 @@ class ImportCommand extends ContainerAwareCommand
                 //vérification de l'existence d'un fichier communes
 
                 // Patterns des fichiers
-                $refComPattern = $this->getContainer()->getParameter('communes_refcom_pattern');
+                $refComPattern = $this->params->get('communes_refcom_pattern');
                 foreach ($listeFichiers as $key => $fichier) {
                     $url = $this->getRootDir() . $uploadDir . basename($fichier);
                     if (strpos(basename($url), $refComPattern) === 0) {
                         array_push($arrayFichierCommunes, $fichier);
                         // copie du fichier des communes dans le repertoire de traitement
-                        $logger->info('Téléchargement du fichier des communes' . $fichier . ' dans le répertoire ' . $this->getRootDir() . $uploadDir);
+                        $this->logger->info('Téléchargement du fichier des communes' . $fichier . ' dans le répertoire ' . $this->getRootDir() . $uploadDir);
                         if (ftp_get($idConn, $url, $fichier, FTP_BINARY)) {
-                            $logger->info("Le fichier des communes: " . $fichier . " est recupéré dans le répertoire de traitement");
+                            $this->logger->info("Le fichier des communes: " . $fichier . " est recupéré dans le répertoire de traitement");
                             // supprimer le fichier des communes sur le serveur
                             if (ftp_delete($idConn, $fichier)) {
-                                $logger->info("Le fichier des communes: " . $fichier . " est supprimé du répertoire de dépot du serveur");
+                                $this->logger->info("Le fichier des communes: " . $fichier . " est supprimé du répertoire de dépot du serveur");
                             } else {
-                                $logger->error("Probleme lors de la suppression du fichier des communes dans le répertoire de dépot du serveur : " . $fichier);
+                                $this->logger->error("Probleme lors de la suppression du fichier des communes dans le répertoire de dépot du serveur : " . $fichier);
                             }
                             // Appel du service d'import des communes
                             $this->getApplication()->getKernel()->getContainer()->get('import_commune_service')->import($url);
                         } else {
-                            $logger->error("Probleme lors de la recuperation du fichier : " . basename($url));
+                            $this->logger->error("Probleme lors de la recuperation du fichier : " . basename($url));
                         }
                     }
                 }
-                 if(sizeof($arrayFichierCommunes) == 0){
-                     $logger->info("Aucun fichier des communes n’était présent : l’import des communes n’a pas pu être réalisé");
-                 }
+                if(sizeof($arrayFichierCommunes) == 0){
+                    $this->logger->info("Aucun fichier des communes n’était présent : l’import des communes n’a pas pu être réalisé");
+                }
 
                 //////////////////////
                 ///     FIN EVOL 16
                 /////////////////////
 
-                $logger->info("Traitement de : " . count($listeFichiers) . " fichier(s)");
+                $this->logger->info("Traitement de : " . count($listeFichiers) . " fichier(s)");
 
                 foreach ($listeFichiers as $fichier) {
-                	if(!in_array($fichier, $arrayFichierCommunes)){
-                		// copie du fichier dans le repertoire de traitement
-                		$logger->info('Téléchargement du fichier ' . $fichier . ' dans le répertoire ' . $this->getRootDir() . $uploadDir);
-                		$url = $this->getRootDir() . $uploadDir . basename($fichier);
-                		if (ftp_get($idConn, $url, $fichier, FTP_BINARY)) {
-                			$logger->info("Le fichier : " . $fichier . " est recupéré dans le répertoire de traitement");
-                		
-                			// supprimer le fichier sur le serveur
-                			if (ftp_delete($idConn, $fichier)) {
-                				$logger->info("Le fichier : " . $fichier . " est supprimé du répertoire de dépot du serveur");
-                			} else {
-                				$logger->error("Probleme lors de la suppression du fichier dans le répertoire de dépot du serveur : " . $fichier);
-                			}
-                		
-                			// Appel du service d'import
-                			$this->getApplication()->getKernel()->getContainer()->get('import_ramsese_service')->import($url);
-                		
-                		} else {
-                			$logger->error("Probleme lors de la recuperation du fichier : " . basename($url));
-                		}
-                	}
+                    if(!in_array($fichier, $arrayFichierCommunes)){
+                        // copie du fichier dans le repertoire de traitement
+                        $this->logger->info('Téléchargement du fichier ' . $fichier . ' dans le répertoire ' . $this->getRootDir() . $uploadDir);
+                        $url = $this->getRootDir() . $uploadDir . basename($fichier);
+                        if (ftp_get($idConn, $url, $fichier, FTP_BINARY)) {
+                            $this->logger->info("Le fichier : " . $fichier . " est recupéré dans le répertoire de traitement");
+
+                            // supprimer le fichier sur le serveur
+                            if (ftp_delete($idConn, $fichier)) {
+                                $this->logger->info("Le fichier : " . $fichier . " est supprimé du répertoire de dépot du serveur");
+                            } else {
+                                $this->logger->error("Probleme lors de la suppression du fichier dans le répertoire de dépot du serveur : " . $fichier);
+                            }
+
+                            // Appel du service d'import
+                            $this->importRamseseService->import($url);
+
+                        } else {
+                            $this->logger->error("Probleme lors de la recuperation du fichier : " . basename($url));
+                        }
+                    }
                 }
-            
+
             } else {
-                $logger->info("Aucun fichier à traiter");
+                $this->logger->info("Aucun fichier à traiter");
             }
             ftp_close($idConn);
         }else{
-            $logger->error("Erreur de connexion au serveur FTP !");
+            $this->logger->error("Erreur de connexion au serveur FTP !");
         }
     }
 
     protected function getRootDir()
     {
-        return __DIR__ . "/../../../../web/";
+        return __DIR__ . "/../../public/";
     }
 }

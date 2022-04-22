@@ -2,16 +2,13 @@
 
 namespace App\Repository;
 
+use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\EntityRepository;
 use App\Entity\RefAcademie;
 use App\Entity\RefDepartement;
 
-class RefCommuneRepository extends EntityRepository
-{
-
-    public function queryBuilderFindCommuneParZone($zone = null)
-    {
-
+class RefCommuneRepository extends EntityRepository {
+    public function queryBuilderFindCommuneParZone($zone = null) {
         $query = $this->createQueryBuilder('c')->leftjoin('c.departement', 'd')->addSelect('d');
 
         if ($zone instanceof RefDepartement) {
@@ -24,27 +21,14 @@ class RefCommuneRepository extends EntityRepository
         }
 
         $query = $query->orderBy('c.libelle', 'ASC')->addOrderBy('c.codePostal', 'ASC');
-
         return $query;
     }
 
     /**
-     * @param : $zone : Entity RefAcademie ou RefDepartement
-     * @return ArrayCollection of RefCommune composé de l'ensemble des communes de l'académie ou du département
-     * "findCommuneParZone" permet de récupérer l'ensemble des communes associés à une académie ou un département
-     */
-    public function findCommuneParZone($zone = null)
-    {
-        return $this->queryBuilderFindCommuneParZone($zone)->getQuery()->getResult();
-    }
-
-    /**
-     * @return nb of RefCommune supprimées
+     * @return int nb of RefCommune supprimées
      * "deleteCommuneSansEtab" permet de supprimer l'ensemble des communes associés à aucun etablissement
      */
-    public function deleteCommuneSansEtab()
-    {
-
+    public function deleteCommuneSansEtab() {
         $query_etab = $this->_em->createQueryBuilder();
         $query_etab->add('select', 'com.id')
             ->add('from', 'App\Entity\RefEtablissement e')
@@ -82,25 +66,24 @@ class RefCommuneRepository extends EntityRepository
     {
         $sql = "SELECT id, code_postal FROM ref_commune";
         $stmt = $this->getEntityManager()->getConnection()->prepare($sql);
-        $stmt->execute();
+        $stmt->executeQuery();
         $array = array();
-        while ($row = $stmt->fetch()) {
+        while ($row = $stmt->fetchAssociative()) {
             $array[$row['code_postal']] = $row['id'];
         }
-
         return $array;
     }
+
     /**
      * retourne un tableau associatif code_postal => id de ref_commune, utilisé dans l'import ramsese
-     *
      */
     public function getArrayRefCommuneByCodeInsee()
     {
         $sql = "SELECT id, departement, libelle, code_postal, code_insee FROM ref_commune";
         $stmt = $this->getEntityManager()->getConnection()->prepare($sql);
-        $stmt->execute();
+        $stmt->executeQuery();
         $array = array();
-        while ($row = $stmt->fetch()) {
+        while ($row = $stmt->fetchAssociative()) {
             $array[$row['code_insee']] = array(
                 'id' => $row['id'],
                 'departement' => $row['departement'],
@@ -109,32 +92,25 @@ class RefCommuneRepository extends EntityRepository
                 'code_insee' => $row['code_insee']
             );
         }
-
         return $array;
     }
 
     /**
-     *
-     * @param unknown $codeInsee
+     * @param $codeInsee
      */
     public function findIdParCodeInsee($listeDonneesAMettreAJour)
     {
         $sql = "SELECT MIN(id) as id, code_insee FROM ref_commune ";
         $sql .= "WHERE code_insee IN (";
 
-// 	    echo '<pre>';
-// 	    var_dump($listeDonneesAMettreAJour);
-// 	    echo '</pre>';
-// 	    die();
-
         foreach ($listeDonneesAMettreAJour as $key => $array) {
             $sql .= '"' . $array['insee'] . '",';
         }
         $sql = substr($sql, 0, (strlen($sql) - 1)) . ") GROUP BY code_insee";
         $stmt = $this->getEntityManager()->getConnection()->prepare($sql);
-        $stmt->execute();
+        $stmt->executeQuery();
         $result = array();
-        while ($row = $stmt->fetch()) {
+        while ($row = $stmt->fetchAssociative()) {
             $result[$row['code_insee']] = $row['id'];
         }
         return $result;
@@ -144,61 +120,61 @@ class RefCommuneRepository extends EntityRepository
     /**
      * Insertion / Mise à jour des communes via Import avec le fichier uairefco
      */
-	public function insertListeRefCommunesByImport($listeRefCommunesImport)
+    public function insertListeRefCommunesByImport($listeRefCommunesImport)
     {
         $db = $this->_em->getConnection();
         $j = 0;
         $sizeArray = sizeof($listeRefCommunesImport);
         $tmpArray = array_chunk($listeRefCommunesImport, 500);
         foreach($tmpArray as $tmp){
-        	foreach ($tmp as $refCommuneImport) {
-        		if ($j == 0) {
-        			$query = "INSERT INTO ref_commune (	id,
+            foreach ($tmp as $refCommuneImport) {
+                if ($j == 0) {
+                    $query = "INSERT INTO ref_commune (	id,
                                                     departement,
                                                     libelle,
                                                     code_postal,
                                                     code_insee)
                                                     VALUES ";
-        		}
-        	
-        		$query .= "(" . $db->quote($refCommuneImport->getId()) . ","
-        				. $db->quote($refCommuneImport->getDepartement()->getNumero()) . ","
-        						. $db->quote($refCommuneImport->getLibelle()) . ","
-        								. $db->quote($refCommuneImport->getCodePostal()) . ","
-        										. $db->quote($refCommuneImport->getCodeInsee())
-        										. "),";
-        	
-        		$j++;
-        		if ($j == 1000) {
-        			$query = substr($query, 0, strlen($query) - 1);
-        			$query .= " ON DUPLICATE KEY UPDATE libelle = VALUES(libelle),
+                }
+
+                $query .= "(" . $db->quote($refCommuneImport->getId()) . ","
+                    . $db->quote($refCommuneImport->getDepartement()->getNumero()) . ","
+                    . $db->quote($refCommuneImport->getLibelle()) . ","
+                    . $db->quote($refCommuneImport->getCodePostal()) . ","
+                    . $db->quote($refCommuneImport->getCodeInsee())
+                    . "),";
+
+                $j++;
+                if ($j == 1000) {
+                    $query = substr($query, 0, strlen($query) - 1);
+                    $query .= " ON DUPLICATE KEY UPDATE libelle = VALUES(libelle),
                                                     departement = VALUES(departement),
                                                     code_postal = VALUES(code_postal),
                                                     code_insee = VALUES(code_insee)";
-        	
-        			$stmt = $db->prepare($query);
-        			$params = array();
-        			$stmt->execute($params);
-        	
-        			$j = 0;
-        		}
-        	}
-        	
-        	if ($j > 0) {
-        		$query = substr($query, 0, strlen($query) - 1);
-        		$query .= " ON DUPLICATE KEY UPDATE libelle = VALUES(libelle),
+
+                    $stmt = $db->prepare($query);
+                    $params = array();
+                    $stmt->executeQuery($params);
+
+                    $j = 0;
+                }
+            }
+
+            if ($j > 0) {
+                $query = substr($query, 0, strlen($query) - 1);
+                $query .= " ON DUPLICATE KEY UPDATE libelle = VALUES(libelle),
                                                 departement = VALUES(departement),
                                                 code_postal = VALUES(code_postal),
                                                 code_insee = VALUES(code_insee)";
-        	
-        		$stmt = $db->prepare($query);
-        		$params = array();
-        		$stmt->execute($params);
-        	
-        		$j = 0;
-        	}
+
+                $stmt = $db->prepare($query);
+                $params = array();
+                $stmt->executeQuery($params);
+
+                $j = 0;
+            }
         }
-        
+
     }
 
     //return integer

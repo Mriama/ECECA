@@ -1,19 +1,45 @@
 monolog:
+    channels: ['connexion', 'import', 'import_commune', 'purge']
     handlers:
         main:
             type: stream
+            action_level: debug
+            handler: nested
+            buffer_size: 50 # How many messages should be saved? Prevent memory leaks
             path: "%kernel.logs_dir%/%kernel.environment%.log"
+            channels: ['!connexion', '!import', '!import_commune', '!purge' ] # Include all channels, except 'foo' and 'bar'
+
+        connexion:
+            type: stream
+            handler: file_log
+            path: '%kernel.logs_dir%/connexion.log'
+            channels: connexion
+
+        import:
+            type: stream
+            handler: file_log
+            path: '%kernel.logs_dir%/import.log'
+            channels: import
+
+        import_commune:
+            type: stream
+            handler: file_log
+            path: '%kernel.logs_dir%/import_commune.log'
+            channels: import_commune
+
+        purge:
+            type: stream
+            handler: file_log
+            path: '%kernel.logs_dir%/purge.log'
+            channels: purge
+
+        nested:
+            type: stream
+            path: php://stderr
             level: debug
-            channels: ["!event"]
-        # uncomment to get logging in your browser
-        # you may have to allow bigger header sizes in your Web server configuration
-        #firephp:
-        #    type: firephp
-        #    level: info
-        #chromephp:
-        #    type: chromephp
-        #    level: info
+            formatter: monolog.formatter.json
+
         console:
             type: console
             process_psr_3_messages: false
-            channels: ["!event", "!doctrine", "!console"]
+            channels: ["!event", "!doctrine"]

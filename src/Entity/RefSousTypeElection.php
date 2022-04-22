@@ -12,12 +12,12 @@ use Doctrine\ORM\Mapping as ORM;
  */
 class RefSousTypeElection
 {
-	
-	const ID_TYP_ELECT_A_ATTE = 10;
-	const ID_TYP_ELECT_SS = 11;
-	const CODE_URL_A_ATTE = 'a_atte';
-	const CODE_URL_SS = 'ss';
-	
+
+    const ID_TYP_ELECT_A_ATTE = 10;
+    const ID_TYP_ELECT_SS = 11;
+    const CODE_URL_A_ATTE = 'a_atte';
+    const CODE_URL_SS = 'ss';
+
     /**
      * @var integer
      *
@@ -39,7 +39,7 @@ class RefSousTypeElection
      * @ORM\Column(name="libelle", type="string", length=255)
      */
     private $libelle;
-    
+
     /**
      * @ORM\ManyToOne(targetEntity="App\Entity\RefTypeElection")
      * @ORM\JoinColumn(name="id_type_election", referencedColumnName="id", nullable=false)
@@ -49,13 +49,13 @@ class RefSousTypeElection
     /**
      * Get id
      *
-     * @return integer 
+     * @return integer
      */
     public function getId()
     {
         return $this->id;
     }
-    
+
     /**
      * Set id
      *
@@ -64,8 +64,8 @@ class RefSousTypeElection
      */
     public function setId($id)
     {
-    	$this->id = $id;
-    	return $this;
+        $this->id = $id;
+        return $this;
     }
 
     /**
@@ -77,14 +77,14 @@ class RefSousTypeElection
     public function setCode($code)
     {
         $this->code = $code;
-    
+
         return $this;
     }
 
     /**
      * Get code
      *
-     * @return string 
+     * @return string
      */
     public function getCode()
     {
@@ -100,64 +100,62 @@ class RefSousTypeElection
     public function setLibelle($libelle)
     {
         $this->libelle = $libelle;
-    
+
         return $this;
     }
 
     /**
      * Get libelle
      *
-     * @return string 
+     * @return string
      */
     public function getLibelle()
     {
         return $this->libelle;
     }
-    
+
     /**
-     * 
+     *
      * @return RefTypeElection
      */
     public function getTypeElection(){
-    	return $this->typeElection;
+        return $this->typeElection;
     }
-    
+
     /**
-     * 
-     * @param unknown $typeElection
-     * @return \App\Entity\RefTypeElection
+     *
+     * @param $typeElection
+     * @return RefSousTypeElection
      */
     public function setTypeElection($typeElection){
-    	$this->typeElection = $typeElection;
-    	return $this;
+        $this->typeElection = $typeElection;
+        return $this;
     }
-    
-    
-    
+
     /********************************************* LOGIQUE METIER ***************************************/
-    
+
     public static function getIdRefSousTypeElectionByCodeUrl($codeUrl='') {
-    	$id = null;
-    	switch($codeUrl) {
-    		case self::CODE_URL_A_ATTE:
-    			$id = 10;
-    			break;
-    		case self::CODE_URL_SS:
-    			$id = 11;
-    			break;
-    	}
-    	return $id;
+        $id = null;
+        switch($codeUrl) {
+            case self::CODE_URL_A_ATTE:
+                $id = 10;
+                break;
+            case self::CODE_URL_SS:
+                $id = 11;
+                break;
+        }
+        return $id;
     }
-    
+
     public static function getCodesUrls() {
-    	return array(
-    			10=>self::CODE_URL_A_ATTE,
-    			11=>self::CODE_URL_SS);
+        return array(
+            10=>self::CODE_URL_A_ATTE,
+            11=>self::CODE_URL_SS);
     }
-    
+
     public function getCodeUrlById() {
-    	$urls = $this->getCodesUrls();
-    	return $urls[$this->id];
+        $urls = $this->getCodesUrls();
+        return $urls[$this->id];
     }
-	
+
 }

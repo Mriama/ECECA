@@ -1,0 +1,137 @@
+App\Entity\RefContact:
+    properties:
+        email1:
+            - Length: { max: 255, maxMessage: "L'adresse électronique ne doit pas dépasser {{ limit }} caractères." }
+    constraints:
+        - Callback: isEmail1Valid
+        - Callback: isEmail2Valid
+        - Callback: isTelephoneValid
+
+App\Entity\RefFederation:
+    properties:
+        libelle:
+            - NotBlank: {message: "Le nom de la fédération est obligatoire"}
+            - Length: { max: 255,  maxMessage: "Le nom ne doit pas dépasser {{ limit }} caractères." }
+
+App\Entity\RefOrganisation:
+    properties:
+        libelle:
+            - NotBlank: {message: "Le nom de l'organisation est obligatoire"}
+            - Length: { max: 255, maxMessage: "Le nom ne doit pas dépasser {{ limit }} caractères." }
+        ordre:
+            - NotBlank: {message: "L'ordre d'affichage de l'organisation est obligatoire"}
+            - Range: { min: 1, minMessage: L'ordre doit être un entier strictement positif. }
+            - Type: { type: integer, message: L'ordre doit être un entier. }
+
+App\Entity\RefEtablissement:
+    constraints:
+        - Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity: { fields: uai, message: "Cet identifiant UAI est déjà utilisé par un autre établissement." }
+    properties:
+        uai:
+            - NotBlank: {message: "L'identifiant UAI est obligatoire."}
+            - Length: { max: 8, minMessage: "L'identifiant UAI ne doit pas contenir plus de {{ limit }} caractères. "}
+            - Regex: { pattern: '~^([0-9]{7})*([a-z]{1})$~i', message: "L'identifiant UAI doit contenir 7 chiffres suivis d'une lettre (exemple : 1234567A). "}
+        libelle:
+            - NotBlank: {message: "Le nom de l'établissement est obligatoire"}
+            - Length: { max: 255, minMessage: "Le nom ne doit pas dépasser {{ limit }} caractères." }
+        contact:
+            - NotBlank: {message: "L'adresse électronique de contact est obligatoire."}
+            - Length: { max: 255, maxMessage: "L'adresse électronique ne doit pas dépasser {{ limit }} caractères." }
+            - Regex: {pattern: '~^[_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,6})$~i', message: "L'email doit être de la forme ce.numeroUAI@ac-codeAcademie.fr ou contact@domaine.fr (sans accent)."}
+
+App\Entity\RefCommune:
+    properties:
+        codePostal:
+            - NotBlank: {message: "Le code postal est obligatoire."}
+            - Length: { min: 5, minMessage: "Le code postal doit contenir au moins {{ limit }} caractères."}
+    constraints:
+        - Callback: isCodePostalValid
+
+App\Entity\EleCampagne:
+    properties:
+        dateDebutSaisie:
+            - Type: {type: DateTimeInterface }
+        dateFinSaisie:
+            - Type: {type: DateTimeInterface }
+        dateDebutValidation:
+            - Type: {type: DateTimeInterface }
+        dateFinValidation:
+            - Type: {type: DateTimeInterface }
+        dateDebutConsultation:
+            - Type: {type: DateTimeInterface }
+        dateFinConsultation:
+            - Type: {type: DateTimeInterface,}
+    constraints:
+        - Callback: isCampagneValid
+
+App\Entity\EleParticipation:
+    properties:
+        nbInscrits:
+            - NotBlank: {message: "Le nombre d'inscrits est obligatoire."}
+            - Type:
+                  type: int
+                  message: La valeur {{ value }} n'est pas un type {{ type }} valide.
+        nbVotants:
+            - NotBlank: {message: "Le nombre de votants est obligatoire."}
+            - Type:
+                  type: int
+                  message: La valeur {{ value }} n'est pas un type {{ type }} valide.
+        nbNulsBlancs:
+            - NotBlank: {message: "Le nombre de bulletins nuls ou blancs est obligatoire."}
+            - Type:
+                  type: int
+                  message: La valeur {{ value }} n'est pas un type {{ type }} valide.
+        nbSiegesPourvoir:
+            - NotBlank: {message: "Le nombre de sièges à pourvoir est obligatoire."}
+            - Type:
+                  type: int
+                  message: La valeur {{ value }} n'est pas un type {{ type }} valide.
+        nbSiegesPourvus:
+            - NotBlank: {message: "Le nombre de sièges pourvus est obligatoire."}
+            - Type:
+                  type: int
+                  message: La valeur {{ value }} n'est pas un type {{ type }} valide.
+
+App\Entity\EleResultat:
+    properties:
+        nbVoix:
+            - NotBlank: {message: "Le nombre de voix est obligatoire."}
+            - Type:
+                  type: int
+                  message: La valeur {{ value }} n'est pas un type {{ type }} valide.
+        nbSieges:
+            - NotBlank: {message: "Le nombre de sièges est obligatoire."}
+            - Type:
+                  type: int
+                  message: La valeur {{ value }} n'est pas un type {{ type }} valide.
+        nbSiegesSort:
+            - NotBlank: {message: "Le nombre de sièges pourvus par tirage au sort est obligatoire."}
+            - Type:
+                  type: int
+                  message: La valeur {{ value }} n'est pas un type {{ type }} valide.
+
+App\Entity\EleEtablissement:
+    properties:
+        participation:
+            - Valid: ~
+        resultats:
+            - Valid: ~
+    constraints:
+        - Callback: isParticipationValid
+        - Callback: isResultatsValid
+
+App\Entity\EleFichier:
+    properties:
+        file:
+            - File:
+                  maxSize: 250k
+                  maxSizeMessage: La taille du fichier est trop importante ({{ size }} Ko). La limite autorisée est de {{ limit }} Ko.
+                  mimeTypes: [application/pdf, application/x-pdf]
+                  mimeTypesMessage: Le format de fichier est incorrect. Seul le format PDF est autorisé.
+
+App\Model\ContactModel:
+    properties:
+        libelle:
+            - NotBlank: {message: "Le libellé est obligatoire"}
+        contact:
+            - Valid: ~

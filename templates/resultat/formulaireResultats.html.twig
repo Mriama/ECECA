@@ -1,39 +1,41 @@
-<form action="{{ path('EPLEElectionBundle_resultats', { 'codeUrlTypeElect':typeElect.codeUrlById}) }}" method="post" accept-charset="UTF-8" {{ form_start(form) }}>
-	<div id="form">	
-		{{ form_errors(form) }}		
+<form action="{{ path('ECECA_resultats', { 'codeUrlTypeElect':typeElect.codeUrlById}) }}" method="post" accept-charset="UTF-8">
+	{{ form_start(form) }}
+	<div id="form">
+		{{ form_errors(form) }}
 		<div id="academie">{{ form_label(form[ 'academie']) }}{{ form_widget(form['academie']) }}</div>
 		<div id="departement" >{{ form_label(form['departement']) }}{{ form_widget(form['departement']) }}</div>
 		<div>{{ form_label(form['typeEtablissement']) }}{{ form_widget(form['typeEtablissement']) }}</div>
 		{% if form['sousTypeElection'] is defined %}
 			<div id="choix_sous_type_election">{{ form_label(form['sousTypeElection']) }}{{ form_widget(form['sousTypeElection']) }}</div>
-		{% endif %}	
+		{% endif %}
 		{% if form_label(form['etatSaisie']) %}
 			<div>{{ form_label(form['etatSaisie']) }}{{ form_widget(form['etatSaisie']) }}</div>
 		{% else %}
 			{{ form_widget(form['etatSaisie']) }}
 		{% endif %}
 		<div id="choix_etab">{{ form_label(form['choix_etab']) }}{{ form_widget(form['choix_etab']) }}</div>
-	    <div id="choix_commune">{{ form_label(form['commune']) }}{{ form_widget(form['commune']) }}</div>
-        <div id="choix_etablissement">{{ form_label(form['etablissement']) }}{{ form_widget(form['etablissement']) }}</div>
-        {{ form_rest(form) }}
+		<div id="choix_commune">{{ form_label(form['commune']) }}{{ form_widget(form['commune']) }}</div>
+		<div id="choix_etablissement">{{ form_label(form['etablissement']) }}{{ form_widget(form['etablissement']) }}</div>
+		{{ form_rest(form) }}
 	</div>
-    <input type="hidden" value="{{ app.session.get('select_academie') }}" id="academie_selectionne" />
+	<input type="hidden" value="{{ app.session.get('select_academie') }}" id="academie_selectionne" />
 	<input type="hidden" value="{{ app.session.get('select_departement') }}" id="departement_selectionne" />
 	<input type="hidden" value="{{ app.session.get('select_commune') }}" id="commune_selectionne" />
 	<input type="hidden" value="{{ app.session.get('select_etablissement') }}" id="etablissement_selectionne" />
 	<input type="hidden" value="{{ app.user.idZone }}" id="id_zone_user" />
 	<input type="hidden" value="{{ app.user.perimetre.limitedToEtabs }}" id="isLimitedToEtabs" />
-	
+
 	<div class="boutons">
 		<input id="submit" type="submit" onclick="return verifieEtatSaisie('resultatZoneEtabType');" value="Rechercher" title="Rechercher les résultats" />
 	</div>
+	{{ form_end(form) }}
 </form>
 
 <script type="text/javascript">
-    var getAcademieDepartementCommuneFromZoneAjaxPath = "{{ path('EPLEAdminBundle_ajax_getAcaDepComByZone') }}";
-    console.log(getAcademieDepartementCommuneFromZoneAjaxPath);
-    var codeUrlTypeElect = "{{ typeElect.codeUrlById }}";
- 	afficheAcademieDepartementCommune('resultatZoneEtabType');
+	var getAcademieDepartementCommuneFromZoneAjaxPath = "{{ path('ECECA_ajax_getAcaDepComByZone') }}";
+	console.log(getAcademieDepartementCommuneFromZoneAjaxPath);
+	var codeUrlTypeElect = "{{ typeElect.codeUrlById }}";
+	afficheAcademieDepartementCommune('resultatZoneEtabType');
 	ajouterIndicatorChargement('resultatZoneEtabType');
 	afficheSousTypeElection('resultatZoneEtabType');
 	afficheTypeEtab('resultatZoneEtabType', codeUrlTypeElect);

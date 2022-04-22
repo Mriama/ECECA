@@ -1,4 +1,4 @@
-<html>
+<html lang="fr">
 {% block stylesheets %}
 	<link href="css/eple_pv.css" type="text/css" rel="stylesheet" />
 {% endblock %}
@@ -9,7 +9,7 @@
 	<div class="text-center">
 		<h1 class="u">PROCES-VERBAL DE CARENCE</h1>
 		<p class="b">Carence de candidatures</p><br/>
-		{% if typeElect.codeUrlById == constant('\\EPLE\\ElectionBundle\\Entity\\RefTypeElection::CODE_URL_PARENT') and electEtablissement.etablissement.typeEtablissement.degre == 1 %}
+		{% if typeElect.codeUrlById == constant('App\\Entity\\RefTypeElection::CODE_URL_PARENT') and electEtablissement.etablissement.typeEtablissement.degre == 1 %}
 		{% else %}
 			<p>
 				{% if electEtablissement.etablissement.typeEtablissement.id == 2
@@ -22,7 +22,7 @@
 			</p><br />
 		{% endif %}
 		<p class="u b">Élection des représentants des
-			{% if typeElect.codeUrlById == constant('\\EPLE\\ElectionBundle\\Entity\\RefTypeElection::CODE_URL_PARENT') %}
+			{% if typeElect.codeUrlById == constant('App\\Entity\\RefTypeElection::CODE_URL_PARENT') %}
 				parents d'élèves
 			{% else %}
 				personnels
@@ -34,26 +34,26 @@
 				d'administration
 			{%- endif -%}
 			{% if (sousTypeElect is defined
-				and (sousTypeElect.codeUrlById == constant('\\EPLE\\ElectionBundle\\Entity\\RefSousTypeElection::CODE_URL_A_ATTE')
-				or sousTypeElect.codeUrlById == constant('\\EPLE\\ElectionBundle\\Entity\\RefSousTypeElection::CODE_URL_SS')))
-				or typeElect.codeUrlById == constant('\\EPLE\\ElectionBundle\\Entity\\RefTypeElection::CODE_URL_PEE')
-				or typeElect.codeUrlById == constant('\\EPLE\\ElectionBundle\\Entity\\RefTypeElection::CODE_URL_ASS_ATE') %}
+				and (sousTypeElect.codeUrlById == constant('App\\Entity\\RefSousTypeElection::CODE_URL_A_ATTE')
+				or sousTypeElect.codeUrlById == constant('App\\Entity\\RefSousTypeElection::CODE_URL_SS')))
+				or typeElect.codeUrlById == constant('App\\Entity\\RefTypeElection::CODE_URL_PEE')
+				or typeElect.codeUrlById == constant('App\\Entity\\RefTypeElection::CODE_URL_ASS_ATE') %}
 				:
 			{%- endif -%}
 		</p>
 
 		{% if sousTypeElect is defined %}
-			{% if sousTypeElect.codeUrlById == constant('\\EPLE\\ElectionBundle\\Entity\\RefSousTypeElection::CODE_URL_A_ATTE') %}
-				<p><img src="images/pictos/checkbox.jpg" /> Deuxième collège : Personnels d’administration, techniques, ouvriers, de service, de laboratoire</p>
-			{% elseif sousTypeElect.codeUrlById == constant('\\EPLE\\ElectionBundle\\Entity\\RefSousTypeElection::CODE_URL_SS') %}
-				<p><img src="images/pictos/checkbox.jpg" /> Troisième collège : Personnels sociaux et de santé</p>
+			{% if sousTypeElect.codeUrlById == constant('App\\Entity\\RefSousTypeElection::CODE_URL_A_ATTE') %}
+				<p><img src="images/pictos/checkbox.jpg" alt="case à cocher" /> Deuxième collège : Personnels d’administration, techniques, ouvriers, de service, de laboratoire</p>
+			{% elseif sousTypeElect.codeUrlById == constant('App\\Entity\\RefSousTypeElection::CODE_URL_SS') %}
+				<p><img src="images/pictos/checkbox.jpg" alt="case à cocher" /> Troisième collège : Personnels sociaux et de santé</p>
 			{% endif %}
 		{% else %}
-			{% if typeElect.codeUrlById == constant('\\EPLE\\ElectionBundle\\Entity\\RefTypeElection::CODE_URL_PEE') %}
-				<p><img src="images/pictos/checkbox.jpg" /> Premier collège : Personnels d’enseignement, de direction, d’éducation, de surveillance,
+			{% if typeElect.codeUrlById == constant('App\\Entity\\RefTypeElection::CODE_URL_PEE') %}
+				<p><img src="images/pictos/checkbox.jpg" alt="case à cocher" /> Premier collège : Personnels d’enseignement, de direction, d’éducation, de surveillance,
 					<br />d’assistance éducative ou pédagogique et de documentation</p>
-			{% elseif typeElect.codeUrlById == constant('\\EPLE\\ElectionBundle\\Entity\\RefTypeElection::CODE_URL_ASS_ATE') %}
-				<p><img src="images/pictos/checkbox.jpg" /> Second collège : Personnels d’administration, de santé, sociaux, techniques, ouvriers, de service, de laboratoire</p>
+			{% elseif typeElect.codeUrlById == constant('App\\Entity\\RefTypeElection::CODE_URL_ASS_ATE') %}
+				<p><img src="images/pictos/checkbox.jpg" alt="case à cocher" /> Second collège : Personnels d’administration, de santé, sociaux, techniques, ouvriers, de service, de laboratoire</p>
 			{% endif %}
 		{% endif %}
 
@@ -144,13 +144,13 @@
 
 	<h4>&nbsp;</h4>
 	<p>Les
-	{% if typeElect.codeUrlById == constant('\\EPLE\\ElectionBundle\\Entity\\RefTypeElection::CODE_URL_PARENT') %}
+	{% if typeElect.codeUrlById == constant('App\\Entity\\RefTypeElection::CODE_URL_PARENT') %}
 		parents d'élèves
 	{% else %}
 		personnels
 	{% endif %}
 	ont été avisés le..............., par voie d’affichage, que
-	{% if typeElect.codeUrlById == constant('\\EPLE\\ElectionBundle\\Entity\\RefTypeElection::CODE_URL_PARENT') %}
+	{% if typeElect.codeUrlById == constant('App\\Entity\\RefTypeElection::CODE_URL_PARENT') %}
 		l'élection des représentants des parents d’élèves
 	{% else %}
 		les élections des représentants des personnels
@@ -159,19 +159,19 @@
 	{% if electEtablissement.etablissement.typeEtablissement.degre == 1 %}
 		d'école
 	{% else %}
-		{% if typeElect.codeUrlById != constant('\\EPLE\\ElectionBundle\\Entity\\RefTypeElection::CODE_URL_PARENT') %}
+		{% if typeElect.codeUrlById != constant('App\\Entity\\RefTypeElection::CODE_URL_PARENT') %}
 			d'administration, pour le collège électoral mentionné ci-dessus,
 		{% else %}
 			d'administration
 		{% endif %}
 	{% endif %}
-	{% if typeElect.codeUrlById == constant('\\EPLE\\ElectionBundle\\Entity\\RefTypeElection::CODE_URL_PARENT') %}
+	{% if typeElect.codeUrlById == constant('App\\Entity\\RefTypeElection::CODE_URL_PARENT') %}
 		sera organisée le..........</p>
 	{% else %}
 		seraient organisées le..........</p>
 	{% endif %}
 	{#Evolution#}
-	{% if typeElect.codeUrlById == constant('\\EPLE\\ElectionBundle\\Entity\\RefTypeElection::CODE_URL_PARENT') %}
+	{% if typeElect.codeUrlById == constant('App\\Entity\\RefTypeElection::CODE_URL_PARENT') %}
 		<p>
 			Le.........., les fédérations ou unions de parents d'élèves, les associations locales de parents d'élèves
 			ainsi que les parents d'élèves qui ne se sont pas constitués en associations

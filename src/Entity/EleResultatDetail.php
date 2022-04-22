@@ -51,20 +51,20 @@ class EleResultatDetail
 
     /**
      *
-     * @var App\Entity\EleEtablissement
+     * 		@var EleEtablissement
      * 		@ORM\ManyToOne(targetEntity="App\Entity\EleEtablissement", cascade={"persist"})
      *      @ORM\JoinColumn(name="id_etablissement", referencedColumnName="id", nullable=true, onDelete="CASCADE")
      */
     private $electionEtab;
-    
+
     /**
      *
-     * @var App\Entity\RefOrganisation
+     * 		@var RefOrganisation
      * 		@ORM\ManyToOne(targetEntity="App\Entity\RefOrganisation")
      *      @ORM\JoinColumn(name="id_organisation", referencedColumnName="id")
      */
     private $organisation;
-    
+
     /**
      *
      * @var integer
@@ -75,7 +75,7 @@ class EleResultatDetail
     /**
      * Get id
      *
-     * @return integer 
+     * @return integer
      */
     public function getId()
     {
@@ -91,14 +91,14 @@ class EleResultatDetail
     public function setLibelle($libelle)
     {
         $this->libelle = $libelle;
-    
+
         return $this;
     }
 
     /**
      * Get libelle
      *
-     * @return string 
+     * @return string
      */
     public function getLibelle()
     {
@@ -114,14 +114,14 @@ class EleResultatDetail
     public function setNbVoix($nbVoix)
     {
         $this->nbVoix = $nbVoix;
-    
+
         return $this;
     }
 
     /**
      * Get nbVoix
      *
-     * @return integer 
+     * @return integer
      */
     public function getNbVoix()
     {
@@ -137,14 +137,14 @@ class EleResultatDetail
     public function setNbSieges($nbSieges)
     {
         $this->nbSieges = $nbSieges;
-    
+
         return $this;
     }
 
     /**
      * Get nbSieges
      *
-     * @return integer 
+     * @return integer
      */
     public function getNbSieges()
     {
@@ -160,78 +160,78 @@ class EleResultatDetail
     public function setNbSiegesSort($nbSiegesSort)
     {
         $this->nbSiegesSort = $nbSiegesSort;
-    
+
         return $this;
     }
 
     /**
      * Get nbSiegesSort
      *
-     * @return integer 
+     * @return integer
      */
     public function getNbSiegesSort()
     {
         return $this->nbSiegesSort;
     }
-    
-	/**
-	 * Set electionEtab
-	 *
-	 * @param App\Entity\EleEtablissement $electionEtab        	
-	 */
-	public function setElectionEtab( \App\Entity\EleEtablissement $electionEtab){
-		$this->electionEtab = $electionEtab;
-	}
-	
-	/**
-	 * Get electionEtab
-	 *
-	 * @return App\Entity\EleEtablissement
-	 */
-	public function getElectionEtab(){
-		return $this->electionEtab;
-	}
-	
-	/**
-	 * Set organisation
-	 *
-	 * @param App\Entity\RefOrganisation $organisation        	
-	 */
-	public function setOrganisation( \App\Entity\RefOrganisation $organisation){
-		$this->organisation = $organisation;
-	}
-	
-	/**
-	 * Get organisation
-	 *
-	 * @return App\Entity\RefOrganisation
-	 */
-	public function getOrganisation(){
-		return $this->organisation;
-	}
-    
-	public function getNbCandidats(){
-		return $this->nbCandidats;
-	}
-	public function setNbCandidats($nbCandidats){
-		$this->nbCandidats = $nbCandidats;
-		return $this;
-	}
-	
+
+    /**
+     * Set electionEtab
+     *
+     * @param EleEtablissement $electionEtab
+     */
+    public function setElectionEtab( EleEtablissement $electionEtab){
+        $this->electionEtab = $electionEtab;
+    }
+
+    /**
+     * Get electionEtab
+     *
+     * @return EleEtablissement
+     */
+    public function getElectionEtab(){
+        return $this->electionEtab;
+    }
+
+    /**
+     * Set organisation
+     *
+     * @param RefOrganisation $organisation
+     */
+    public function setOrganisation( RefOrganisation $organisation){
+        $this->organisation = $organisation;
+    }
+
+    /**
+     * Get organisation
+     *
+     * @return RefOrganisation
+     */
+    public function getOrganisation(){
+        return $this->organisation;
+    }
+
+    public function getNbCandidats(){
+        return $this->nbCandidats;
+    }
+    public function setNbCandidats($nbCandidats){
+        $this->nbCandidats = $nbCandidats;
+        return $this;
+    }
+
     /**
      * ************************************************ LOGIQUE METIER *********************************************
      */
     /**
      * *************** Données Calculées ****************************
      */
-    
+
     /**
      * Get nbSiegesTotal = (nbSieges + nbSiegeSort)
      *
-     * @return smallint
+     * @return int
      */
     public function getNbSiegesTotal(){
         return (min($this->nbSieges, $this->nbCandidats) + $this->nbSiegesSort);
     }
-	
+
 }

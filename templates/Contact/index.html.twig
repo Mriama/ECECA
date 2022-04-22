@@ -1,4 +1,4 @@
-{% extends 'layout.html.twig' %}
+{% extends 'layout_admin.html.twig' %}
 
 {% block title %}
 	{{ parent() }} - Liste des contacts {{ form.vars.value.typeZone =='RefAcademie' ? 'académiques' : 'départementaux'}}
@@ -7,67 +7,69 @@
 
 {% block arianeComplements %}{{ parent() }}<li>Liste des contacts {{ form.vars.value.typeZone =='RefAcademie' ? 'académiques' : 'départementaux'}}
 	pour l'élection <abbr title="{{ form.vars.value.typeElection.libelle }}">{{ form.vars.value.typeElection.code }}</abbr>
-</li>{% endblock %}
+	</li>{% endblock %}
 
 {% block content %}
-<p>Les informations sur les contacts vous permettent d'indiquer, pour chaque type d'élection, les informations
-nécessaires à la communication avec les services académiques et départementaux. Les adresses électroniques
-sont utilisées dans l'application pour les fonctionnalités de rappels et courriels libres.</p>
+	<p>Les informations sur les contacts vous permettent d'indiquer, pour chaque type d'élection, les informations
+		nécessaires à la communication avec les services académiques et départementaux. Les adresses électroniques
+		sont utilisées dans l'application pour les fonctionnalités de rappels et courriels libres.</p>
 
 
-<form action="{{ path('contacts') }}" method="post" accept-charset="UTF-8" {{ form_start(form) }}>
-	<p class="note">Un astérisque * marque un champ obligatoire</p>
+	<form action="{{ path('ECECA_contacts') }}" method="post" accept-charset="UTF-8">
+		{{ form_start(form) }}
+		<p class="note">Un astérisque * marque un champ obligatoire</p>
 		{{ form_widget(form) }}
-	<div class="boutons"><input type="submit" value="Valider" /></div>
-</form>
+		<div class="boutons"><input type="submit" value="Valider" /></div>
+		{{ form_end(form) }}
+	</form>
 
-{% if isZoneSansContact %}<p class="no-print"><a href="{{ path('EPLEAdminBundle_contact_ajouter') }}" class="ajouter">
-	Ajouter un contact {{ form.vars.value.typeZone =='RefAcademie' ? 'académique' : 'départemental'}}
-	pour l'élection <abbr title="{{ form.vars.value.typeElection.libelle }}">{{ form.vars.value.typeElection.code }}</abbr>
-</a></p>{% endif %}
-<table>
-	{% for mContact in modelContacts %}
-		{% if loop.first  %}
+	{% if isZoneSansContact %}<p class="no-print"><a href="{{ path('ECECA_contact_ajouter') }}" class="ajouter">
+			Ajouter un contact {{ form.vars.value.typeZone =='RefAcademie' ? 'académique' : 'départemental'}}
+			pour l'élection <abbr title="{{ form.vars.value.typeElection.libelle }}">{{ form.vars.value.typeElection.code }}</abbr>
+		</a></p>{% endif %}
+	<table>
+		{% for mContact in modelContacts %}
+			{% if loop.first  %}
+				<tr>
+					<th scope="col">{{ mContact.departement ==null ? 'Académie' : 'Département' }}</th>
+					<th scope="col">Nom</th>
+					<th scope="col">Prénom</th>
+					{% if mContact.departement == null %}
+						<th scope="col">Adresse électronique</th>
+					{% else %}
+						{% if form.vars.value.typeElection.id == 3 %}
+							<th scope="col">Adresse électronique 1<sup>er</sup> degré</th>
+						{% endif %}
+						<th scope="col">Adresse électronique 2<sup>nd</sup> degré</th>
+					{% endif %}
+					<th scope="col">Téléphone</th>
+					<th scope="col" class="actions">Actions</th>
+				</tr>
+			{% endif  %}
 			<tr>
-				<th scope="col">{{ mContact.departement ==null ? 'Académie' : 'Département' }}</th>
-				<th scope="col">Nom</th>
-				<th scope="col">Prénom</th>
-                {% if mContact.departement == null %}
-					<th scope="col">Adresse électronique</th>
-                {% else %}
-                    {% if form.vars.value.typeElection.id == 3 %}
-						<th scope="col">Adresse électronique 1<sup>er</sup> degré</th>
-                    {% endif %}
-					<th scope="col">Adresse électronique 2<sup>nd</sup> degré</th>
-                {% endif %}
-				<th scope="col">Téléphone</th>
-				<th scope="col" class="actions">Actions</th>
-			</tr>
-		{% endif  %}
-		<tr>
-			<td>{{ mContact.libelle|title }}</td>
-			<td>{{ mContact.contact.nom }}</td>
-			<td>{{ mContact.contact.prenom }}</td>
+				<td>{{ mContact.libelle|title }}</td>
+				<td>{{ mContact.contact.nom }}</td>
+				<td>{{ mContact.contact.prenom }}</td>
 
-            {% if mContact.departement ==null %}
-				<td>{{ mContact.contact.email1 }}</td>
-            {% else %}
-                {% if form.vars.value.typeElection.id == 3 %}
+				{% if mContact.departement ==null %}
 					<td>{{ mContact.contact.email1 }}</td>
-					<td>{{ mContact.contact.email2 }}</td>
-                {% else %}
-					<td>{{ mContact.contact.email1 }}</td>
-                {% endif %}
-            {% endif %}
-			<td>{{ mContact.contact.telephone }}</td>
-			<td class="actions">
-				<a href="{{ path('EPLEAdminBundle_contact_modifier', { 'contactId':mContact.contact.id }) }}"><img src="{{ asset('images/pictos/edit.png') }}" alt="Modifier" title="Modifier le contact" /></a>
-			</td>
-		</tr>
-	{% else %}
-		<tr>
-			<td colspan="2" class="message erreur">{{ mess_warning[001] }}</td>
-		</tr>
-	{% endfor %}
-</table>
+				{% else %}
+					{% if form.vars.value.typeElection.id == 3 %}
+						<td>{{ mContact.contact.email1 }}</td>
+						<td>{{ mContact.contact.email2 }}</td>
+					{% else %}
+						<td>{{ mContact.contact.email1 }}</td>
+					{% endif %}
+				{% endif %}
+				<td>{{ mContact.contact.telephone }}</td>
+				<td class="actions">
+					<a href="{{ path('ECECA_contact_modifier', { 'contactId':mContact.contact.id }) }}"><img src="{{ asset('images/pictos/edit.png') }}" alt="Modifier" title="Modifier le contact" /></a>
+				</td>
+			</tr>
+		{% else %}
+			<tr>
+				<td colspan="2" class="message erreur">{{ mess_warning[001] }}</td>
+			</tr>
+		{% endfor %}
+	</table>
 {% endblock %}
